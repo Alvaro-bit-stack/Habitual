@@ -1,0 +1,22 @@
+# Each area's owner is requested as a reviewer when files in that area change.
+# Replace the teammate placeholders below with real GitHub usernames (e.g. @their-name),
+# then remove the leading "# " on those lines.
+
+# Default: repository owner reviews anything not listed below
+*                       @Alvaro-bit-stack
+
+# Core & data
+# /src/engine.js        @CORE-OWNER
+# /src/data.js          @CORE-OWNER
+# /CONTRACT.md          @CORE-OWNER
+# /tests/               @CORE-OWNER
+
+# Tracker & rewards
+# /src/shell.js         @TRACKER-OWNER
+# /src/shell.css        @TRACKER-OWNER
+
+# Discovery & community
+# /src/discover.js      @DISCOVERY-OWNER
+# /src/discover.css     @DISCOVERY-OWNER
+# /src/community.js     @DISCOVERY-OWNER
+# /src/community.css    @DISCOVERY-OWNER

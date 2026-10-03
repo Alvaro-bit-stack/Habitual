@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Inline src/ files into one self-contained page: dist/sidequest.html (artifact body, no doctype)
 and dist/preview.html (full document for local headless testing). Missing files are skipped."""
+import base64
 import os
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -8,8 +9,9 @@ SRC = os.path.join(ROOT, "src")
 DIST = os.path.join(ROOT, "dist")
 FONTS = ("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;"
          "12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap")
-CSS = ["shell.css", "discover.css", "community.css"]
-JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "boot.js"]
+CSS = ["shell.css", "discover.css", "community.css", "showcase.css"]
+JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "boot.js"]
+MODELS = os.path.join(ROOT, "assets", "models")
 
 
 def read(name):
@@ -46,6 +48,14 @@ def main():
                 '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
                 '<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>'
                 f'</head><body>{body}</body></html>')
+    # Characters ship as script files (base64 GLB) so the showcase can load them even from file://.
+    os.makedirs(os.path.join(DIST, "models"), exist_ok=True)
+    for f in sorted(os.listdir(MODELS)) if os.path.isdir(MODELS) else []:
+        if f.endswith(".glb"):
+            with open(os.path.join(MODELS, f), "rb") as g:
+                b64 = base64.b64encode(g.read()).decode()
+            with open(os.path.join(DIST, "models", f[:-4] + ".js"), "w") as out:
+                out.write(f'(window.SQ_MODELS=window.SQ_MODELS||{{}})["{f[:-4]}"]="{b64}";')
     print("built dist/sidequest.html", len(body), "bytes")
 
 

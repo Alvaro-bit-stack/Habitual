@@ -440,6 +440,7 @@
     { tab: "today", label: "Today", ic: "sun" },
     { tab: "discover", label: "Discover", ic: "compass" },
     { tab: "community", label: "Community", ic: "users" },
+    { tab: "showcase", label: "Showcase", ic: "star" },
     { tab: "me", label: "Me", ic: "user" }
   ];
   function renderNav(tab) {

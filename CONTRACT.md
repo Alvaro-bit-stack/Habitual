@@ -242,6 +242,11 @@ SQUI.hobbyIcon(hobbyId, size=24)      // per-hobby glyph (custom → its categor
 SQUI.mascot(stage 0..4, {mood, size, accessories})  // 2D Sprout SVG
 SQUI.money([lo,hi]) -> "$25–60" / "Free"
 SQUI.setTheme("system"|"light"|"dark")
+SQUI.getTheme() -> "system"|"light"|"dark"
+SQUI.celebrate(overlayEl, {levelUp}) -> bool   // defined by showcase.js; showReward calls it. The 3D character
+                                      //  leaps up behind the reward card and cheers (level-up: bigger, spins,
+                                      //  cheers twice). Returns false (2D Sprout stays) when the model isn't
+                                      //  loaded yet or reduced motion is on.
 ```
 **Event binding:** screens render HTML strings; `mount(root)` wires listeners with `data-action`
 attributes and event delegation. Bind to `root.firstElementChild` (your screen's own node), not
@@ -351,14 +356,19 @@ showing "11 of 16" that opens `achievements`); every tracked hobby with
 level, XP bar, sessions and streak (tap to open it); a share button; and Settings (nudge time,
 appearance, sample data, two-step reset). Character customization is paused until new models exist.
 
-- **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`. Rigged by
-  `tools/rig.py` (Blender CLI; `--faces N` removes enclosed faces and reduces the mesh) with
-  clips `idle` (loops), `wave` (plays when the character loads) and `cheer` (plays on tap;
-  reuse it for level-ups). `build.py` writes each as `dist/models/<id>.js` (base64 on
-  `window.SQ_MODELS[id]`) so it also loads when `dist/preview.html` is opened from disk.
+- **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, built by
+  `tools/mixamo_merge.py` from Neo's Mixamo downloads (Adrian and Alvaro get a fitted copy of Neo's
+  Mixamo skeleton and its skin weights). Clips: `idle` (keyed by the script, loops), `JoyfulJump`,
+  `SillyDance`, `Breakdance`, `GoalkeeperDive`, `StandardWalk`, `DrunkWalk` (all kept in place).
+  Me: greets with JoyfulJump, each tap plays the next move and names it. Celebrations: JoyfulJump,
+  level-ups SillyDance. Older models from `tools/rig.py` (idle/wave/cheer) still work as fallbacks.
+  `build.py` writes each as `dist/models/<id>.js` (base64 on `window.SQ_MODELS[id]`) so it also loads
+  when `dist/preview.html` is opened from disk.
 - **Selected character:** `SQ.state.user.character` (survives `normalize` because it is on
   `user`). Everyone can pick any character for now; later it is set from the signed-in user.
-- **three.js r147** loads from jsDelivr only when this tab opens (see "Always online" in section 1).
+- **Celebrations:** every reward (`SQUI.showReward`, which all XP gains go through) brings the
+  character in via `SQUI.celebrate`. The model is preloaded 2 s after startup so the first one is instant.
+- **three.js r147** loads from jsDelivr (on the Me tab or by the preload) (see "Always online" in section 1).
 
 ## 7. Working together
 

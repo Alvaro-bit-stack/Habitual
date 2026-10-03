@@ -574,6 +574,8 @@
       var prevFocus = document.activeElement;
       var prevKey = focusKey(prevFocus);
       root.appendChild(el);
+      // The 3D character (showcase.js) leaps in when it's available; otherwise the 2D Sprout stays.
+      if (!reduced && SQUI.celebrate) { try { SQUI.celebrate(el, { levelUp: !!(lvUp || hLvUp) }); } catch (e) { logErr(e); } }
       var btn = el.querySelector("[data-rw-close]");
       try { btn.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 

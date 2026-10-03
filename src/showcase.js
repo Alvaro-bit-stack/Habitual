@@ -19,6 +19,11 @@
 
   function sq() { return G.SQ; }
   function pct(a, b) { return b > 0 ? Math.max(0, Math.min(100, Math.round(a / b * 100))) : 0; }
+  // Mood: the character slumps (SadIdle) until a session is logged today, then perks up (HappyIdle).
+  function happyToday() {
+    var S = sq(), t = S.today();
+    return S.state.sessions.some(function (x) { return x.date === t; });
+  }
   function characterId() {
     var id = sq().state.user.character;
     return CHARACTERS.some(function (c) { return c.id === id; }) ? id : CHARACTERS[0].id;
@@ -107,10 +112,11 @@
     gltf.animations.forEach(function (clip) { actions[clip.name] = mixer.clipAction(clip); });
     // Mixamo models (tools/mixamo_merge.py) carry idle + named moves; older ones idle/wave/cheer.
     function pick(names) { return names.filter(function (n) { return actions[n]; })[0]; }
+    function rest() { return pick([happyToday() ? "HappyIdle" : "SadIdle", "idle"]); } // re-checked every time
     var greet = pick(["wave", "JoyfulJump"]), cheer = pick(["JoyfulJump", "cheer"]), party = pick(["SillyDance", "cheer"]);
     var moves = MOVES.filter(function (n) { return actions[n]; }), nextMove = 0;
     function play(name) {
-      var next = actions[name], once = name !== "idle";
+      var next = actions[name], once = !/idle$/i.test(name || "");
       if (!next || (still && once)) return;
       next.reset().setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
       next.clampWhenFinished = once;
@@ -118,8 +124,8 @@
       if (cur && cur !== next) cur.crossFadeTo(next, 0.3, false);
       cur = next;
     }
-    mixer.addEventListener("finished", function (e) { if (e.action === cur) play("idle"); });
-    play("idle");
+    mixer.addEventListener("finished", function (e) { if (e.action === cur) play(rest()); });
+    play(rest());
 
     // Intro: "wave" in place, or leap up from below (behind the reward card) and cheer.
     var t0 = null, intro = opts.intro || "wave", leap = intro !== "wave" && !still;
@@ -219,7 +225,7 @@
       '<section class="sc-hero">' +
       '<div class="sc-stage"><p class="sc-status small muted" role="status">Loading ' + esc(who.name) + "…</p></div>" +
       '<h1 class="h1">' + esc(who.name) + "</h1>" +
-      '<p class="sc-move small muted" aria-live="polite">Tap ' + esc(who.name) + " to see a move</p>" +
+      '<p class="sc-move small muted" aria-live="polite">' + (happyToday() ? "Tap " + esc(who.name) + " to see a move" : "Log a session today to cheer " + esc(who.name) + " up") + "</p>" +
       '<div class="sc-level"><div class="row"><span class="h3">Level ' + p.level + '</span><span class="spacer"></span><span class="small muted"><span class="num">' + p.xpIntoLevel + " / " + p.xpForNext + "</span> XP to level " + (p.level + 1) + "</span></div>" +
       '<div class="progress xp" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '"><div class="progress-bar" style="width:' + pct(p.xpIntoLevel, p.xpForNext) + '%"></div></div></div>' +
       '<div class="seg" role="radiogroup" aria-label="Character">' + CHARACTERS.map(function (c) {

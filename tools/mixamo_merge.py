@@ -174,35 +174,36 @@ mesh.data.materials.clear(); mesh.data.materials.append(mat)
 for img in bpy.data.images:
     if img.size[0] > 1024: img.scale(1024, 1024)
 
-# None of the downloaded clips is a calm idle, so key one: arms relaxed at the sides from the T-pose,
+# If none of the downloaded clips is an idle (e.g. HappyIdle), key one: arms relaxed at the sides from the T-pose,
 # gentle breathing and a slow head turn. Rotations are given about WORLD axes and converted per bone.
-import math
-from mathutils import Quaternion, Vector
-bpy.context.view_layer.update()
-W = arm.matrix_world.to_3x3().normalized()
-def wrot(name, axis, deg):
-    q_rest = (W @ arm.data.bones[name].matrix_local.to_3x3()).to_quaternion()
-    return q_rest.inverted() @ Quaternion(Vector(axis).normalized(), math.radians(deg)) @ q_rest
-def bone(n): return "mixamorig:" + n
-idle = bpy.data.actions.new("idle"); idle.use_fake_user = True
-ad0 = arm.animation_data or arm.animation_data_create(); ad0.action = idle
-for pb in arm.pose.bones: pb.rotation_mode = "QUATERNION"
-for i in range(7):  # 6 keys over 3 s; last == first so it loops
-    t = i / 6; b_ = math.sin(t * 2 * math.pi)
-    rots = {
-        bone("RightArm"): wrot(bone("RightArm"), (0, 1, 0), -72 - 2 * b_),  # about +Y: - lowers the -X arm
-        bone("LeftArm"): wrot(bone("LeftArm"), (0, 1, 0), 72 + 2 * b_),
-        bone("RightForeArm"): wrot(bone("RightForeArm"), (0, 0, 1), 10),
-        bone("LeftForeArm"): wrot(bone("LeftForeArm"), (0, 0, 1), -10),
-        bone("Spine1"): wrot(bone("Spine1"), (1, 0, 0), 1.5 * b_),
-        bone("Head"): wrot(bone("Head"), (0, 0, 1), 6 * math.sin(t * 2 * math.pi)),
-    }
-    for pb in arm.pose.bones:
-        pb.rotation_quaternion = rots.get(pb.name, Quaternion())
-        pb.keyframe_insert("rotation_quaternion", frame=1 + i * 15)
-ad0.action = None
-for pb in arm.pose.bones: pb.rotation_quaternion = Quaternion()
-actions.insert(0, idle)
+if not any(a.name.lower().endswith("idle") for a in actions):
+    import math
+    from mathutils import Quaternion, Vector
+    bpy.context.view_layer.update()
+    W = arm.matrix_world.to_3x3().normalized()
+    def wrot(name, axis, deg):
+        q_rest = (W @ arm.data.bones[name].matrix_local.to_3x3()).to_quaternion()
+        return q_rest.inverted() @ Quaternion(Vector(axis).normalized(), math.radians(deg)) @ q_rest
+    def bone(n): return "mixamorig:" + n
+    idle = bpy.data.actions.new("idle"); idle.use_fake_user = True
+    ad0 = arm.animation_data or arm.animation_data_create(); ad0.action = idle
+    for pb in arm.pose.bones: pb.rotation_mode = "QUATERNION"
+    for i in range(7):  # 6 keys over 3 s; last == first so it loops
+        t = i / 6; b_ = math.sin(t * 2 * math.pi)
+        rots = {
+            bone("RightArm"): wrot(bone("RightArm"), (0, 1, 0), -72 - 2 * b_),  # about +Y: - lowers the -X arm
+            bone("LeftArm"): wrot(bone("LeftArm"), (0, 1, 0), 72 + 2 * b_),
+            bone("RightForeArm"): wrot(bone("RightForeArm"), (0, 0, 1), 10),
+            bone("LeftForeArm"): wrot(bone("LeftForeArm"), (0, 0, 1), -10),
+            bone("Spine1"): wrot(bone("Spine1"), (1, 0, 0), 1.5 * b_),
+            bone("Head"): wrot(bone("Head"), (0, 0, 1), 6 * math.sin(t * 2 * math.pi)),
+        }
+        for pb in arm.pose.bones:
+            pb.rotation_quaternion = rots.get(pb.name, Quaternion())
+            pb.keyframe_insert("rotation_quaternion", frame=1 + i * 15)
+    ad0.action = None
+    for pb in arm.pose.bones: pb.rotation_quaternion = Quaternion()
+    actions.insert(0, idle)
 
 # One NLA track per clip so the glTF exporter writes each as a named animation.
 ad = arm.animation_data or arm.animation_data_create()

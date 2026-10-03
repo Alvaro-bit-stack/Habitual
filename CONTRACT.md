@@ -358,8 +358,10 @@ appearance, sample data, two-step reset). Character customization is paused unti
 
 - **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, built by
   `tools/mixamo_merge.py` from Neo's Mixamo downloads (Adrian and Alvaro get a fitted copy of Neo's
-  Mixamo skeleton and its skin weights). Clips: `idle` (keyed by the script, loops), `JoyfulJump`,
-  `SillyDance`, `Breakdance`, `GoalkeeperDive`, `StandardWalk`, `DrunkWalk` (all kept in place).
+  Mixamo skeleton and its skin weights). Clips (all kept in place): `SadIdle` and `HappyIdle`, plus
+  moves `JoyfulJump`, `SillyDance`, `Breakdance`, `GoalkeeperDive`, `StandardWalk`, `DrunkWalk`.
+  **Mood:** the resting pose is `SadIdle` until a session is logged today, then `HappyIdle` (checked
+  every time the character returns to rest). The script keys a plain `idle` only if no idle is supplied.
   Me: greets with JoyfulJump, each tap plays the next move and names it. Celebrations: JoyfulJump,
   level-ups SillyDance. Older models from `tools/rig.py` (idle/wave/cheer) still work as fallbacks.
   `build.py` writes each as `dist/models/<id>.js` (base64 on `window.SQ_MODELS[id]`) so it also loads

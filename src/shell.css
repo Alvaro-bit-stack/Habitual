@@ -169,9 +169,10 @@ button.list-row:hover { background: color-mix(in srgb, var(--surface-2) 60%, tra
 .nav-inner { display: flex; max-width: 560px; margin: 0 auto; height: var(--nav-h); }
 .nav-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  border: 0; background: transparent; color: var(--ink-2); font-size: 12px; font-weight: 600;
+  border: 0; background: transparent; color: var(--ink-2); font-size: 11.5px; font-weight: 600;
   position: relative; min-width: 0;
 }
+.nav-btn > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
 .nav-btn .nav-ic { position: relative; display: inline-grid; place-items: center; width: 52px; height: 30px; border-radius: 999px; transition: background-color .15s; }
 .nav-btn.on { color: var(--leaf); }
 .nav-btn.on .nav-ic { background: color-mix(in srgb, var(--leaf) 14%, transparent); }

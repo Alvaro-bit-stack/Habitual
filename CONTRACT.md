@@ -302,3 +302,15 @@ Theme rule: bare `:root` light values; `@media (prefers-color-scheme: dark){ :ro
 `:root[data-theme="dark"]{...; color-scheme:dark}`. Never use literal colors in component rules.
 Accessibility: visible `:focus-visible`, buttons are `<button>`, `prefers-reduced-motion` respected,
 tap targets ≥ 44px, works at 360px width with no horizontal scroll.
+
+-------------------------------------------------------------------------------
+## 4. SHOWCASE — `src/showcase.js`, `src/showcase.css` (Tracker & rewards)
+
+Fifth nav tab `showcase`: rotating 3D character + trophy shelf (every tracked hobby with level, XP bar,
+sessions, milestones, weekly streak) + share button.
+- Characters: `assets/models/<id>.glb` (ids `neo`, `adrian`, `alvaro`), rigged by `tools/rig.py` (Blender CLI; `--faces N` culls enclosed faces and decimates) with
+  clips `idle` (loops), `wave` (plays on load), `cheer` (plays on tap; reuse it for level-ups). `build.py` writes each as
+  `dist/models/<id>.js` setting `window.SQ_MODELS[id]` (base64) so it loads from file:// too.
+- Selected character is stored in `SQ.state.user.character` (kept by `normalize`). Later: set from the signed-in user.
+- Exception to "no libraries / no network": three.js r147 is loaded from jsDelivr only when this tab opens.
+  The rest of the app still works offline.

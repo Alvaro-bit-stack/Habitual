@@ -15,7 +15,7 @@ param adminObjectId string
 @description('Optional: Gemini features stay off until it is set (re-run deploy.sh)')
 param geminiApiKey string = ''
 @description('App Service plan tier: F1 is free, B1 is ~$13/month with no daily CPU cap')
-param planSku string = 'F1'
+param planSku string = 'B1'
 
 var tenantId = subscription().tenantId
 

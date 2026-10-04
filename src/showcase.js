@@ -51,7 +51,14 @@
     }
     return loadThree().then(function () { return buffers[id]; }).then(function (buf) {
       ready[id] = true;
-      return new Promise(function (res, rej) { new G.THREE.GLTFLoader().parse(buf, "", res, rej); });
+      return new Promise(function (res, rej) {
+        // GLTFLoader reads embedded textures with fetch(blob:) when createImageBitmap exists. Pages with a
+        // strict connect-src (Claude artifacts, many hosts) refuse that fetch and the character renders as
+        // untextured gray clay. Hiding createImageBitmap while the parser is built makes it use <img> instead.
+        var cib = G.createImageBitmap;
+        try { G.createImageBitmap = undefined; new G.THREE.GLTFLoader().parse(buf, "", res, rej); }
+        finally { G.createImageBitmap = cib; }
+      });
     });
   }
   var still = G.matchMedia("(prefers-reduced-motion: reduce)").matches;

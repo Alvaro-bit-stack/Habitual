@@ -156,14 +156,13 @@
 .cm-hd-b h1 { font-size: 30px !important; }
 .cm-hd-people { display: flex; align-items: center; gap: 12px; margin-top: 6px; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
 .cm-hd-people strong { color: var(--ink); font-size: 15px; }
-/* Huddle: the characters themselves, overlapping. Front one biggest and on top; the others stand
-   a step back (smaller, a little higher, slightly dimmer) on each side. */
-.cm-huddle { position: relative; display: flex; align-items: flex-end; justify-content: center; flex: none; height: 76px; padding: 0 2px; }
-.cm-gp { position: relative; flex: none; display: block; }
+/* Huddle: head-and-torso cutouts of the characters, overlapping. Front one biggest and on top; the
+   others a step back (smaller, slightly dimmer) on each side. The bottom fades out at the waist. */
+.cm-huddle { position: relative; display: flex; align-items: flex-end; justify-content: center; flex: none; height: 54px; padding: 0 2px; }
+.cm-gp { position: relative; flex: none; display: block; overflow: hidden; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); }
 .cm-gp .cm-mii { display: block; }
-.cm-gp-front { z-index: 3; }
-.cm-gp-near-l, .cm-gp-near-r { z-index: 2; margin-bottom: 5px; filter: brightness(.95) saturate(.92); }
-.cm-gp-far-l, .cm-gp-far-r { z-index: 1; margin-bottom: 9px; filter: brightness(.88) saturate(.82); }
-.cm-gp-near-l { margin-right: -36px; } .cm-gp-near-r { margin-left: -36px; }
-.cm-gp-far-l { margin-right: -30px; } .cm-gp-far-r { margin-left: -30px; }
-.cm-huddle::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: 0; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 12%, transparent); filter: blur(4px); z-index: 0; }
+.cm-gp-front { z-index: 3; height: 54px; }
+.cm-gp-near-l, .cm-gp-near-r { z-index: 2; height: 45px; filter: brightness(.95) saturate(.92); }
+.cm-gp-far-l, .cm-gp-far-r { z-index: 1; height: 37px; filter: brightness(.88) saturate(.82); }
+.cm-gp-near-l { margin-right: -60px; } .cm-gp-near-r { margin-left: -60px; }
+.cm-gp-far-l { margin-right: -48px; } .cm-gp-far-r { margin-left: -48px; }

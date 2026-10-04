@@ -387,7 +387,7 @@ local to the SVG illustrations. All content stays self-contained, without remote
 
 Header: a "NEWARK, NJ" eyebrow, the "Community" title, then a huddle of neighbors going to
 meetups for your hobbies this week: one person large in front and smaller people stepping back on
-each side, overlapping like a group photo (1, 3 or 5 characters by headcount), with "N neighbors going" beside it.
+each side, overlapping head-and-torso cutouts like a group photo (1, 3 or 5 characters by headcount), with "N neighbors going" beside it.
 
 Check-in is not in the app: no check-in buttons or XP for attending. `SQ.checkIn` stays in the
 engine for later. The event achievements `event_1` / `event_5` unlock when you RSVP to 1 / 5 events

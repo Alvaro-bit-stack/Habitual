@@ -23,8 +23,8 @@
     comeback: ["Welcome back", "Log a session after 14+ days away.", "comeback"],
     milestone_1: ["Level up", "Tick your first skill milestone.", "skill"],
     milestone_5: ["Getting good", "Tick 5 skill milestones.", "skill"],
-    event_1: ["Showed up", "Check in at your first event.", "social"],
-    event_5: ["Regular face", "Check in at 5 events.", "social"],
+    event_1: ["Showed up", "RSVP to your first local event.", "social"],
+    event_5: ["Regular face", "RSVP to 5 local events.", "social"],
     level_5: ["Sapling", "Reach player level 5.", "consistency"]
   };
 
@@ -396,8 +396,8 @@
       comeback: !!ctx.comeback,
       milestone_1: skills >= 1,
       milestone_5: skills >= 5,
-      event_1: state.checkins.length >= 1,
-      event_5: state.checkins.length >= 5,
+      event_1: joinedCount() >= 1,
+      event_5: joinedCount() >= 5,
       level_5: levelFor(state.user.xp).level >= 5
     };
     staticIds().forEach(function (id) { if (cond[id]) unlock(id, out); });
@@ -578,11 +578,18 @@
     }).map(function (x) { return x.e; });
   }
 
+  // Events you've joined (RSVP'd, or checked in under the old check-in flow), counted once each.
+  function joinedCount() {
+    var seen = {};
+    state.rsvps.concat(state.checkins).forEach(function (id) { seen[id] = 1; });
+    return Object.keys(seen).length;
+  }
   function toggleRsvp(eventId) {
     ensure();
     if (!eventById(eventId)) return false;
     var i = state.rsvps.indexOf(eventId);
     if (i >= 0) state.rsvps.splice(i, 1); else state.rsvps.push(eventId);
+    if (i < 0) checkAchievements([]); // event_1 / event_5 unlock on RSVP (check-in is no longer in the app)
     save();
     return i < 0;
   }

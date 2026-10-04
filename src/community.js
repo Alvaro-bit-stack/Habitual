@@ -6,7 +6,6 @@
   var G = globalThis;
 
   var AREA = "Sample community · Newark area";
-  var CHECKIN_XP = 60;
     var WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   var WD_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -93,9 +92,6 @@
   }
 
   function rsvpBtn(e, extra) {
-    if (e.checkedIn) {
-      return '<span class="cm-done">' + icon("check", 16) + " Checked in</span>";
-    }
     return '<button type="button" class="btn sm cm-rsvp' + (e.rsvp ? " on" : "") + (extra || "") +
       '" data-action="rsvp" data-id="' + esc(e.id) + '" aria-pressed="' + (e.rsvp ? "true" : "false") +
       '" aria-label="' + (e.rsvp ? "Going to " : "RSVP to ") + esc(e.title) + '">' +
@@ -257,7 +253,7 @@
         '<ul class="cm-why">' +
           '<li><span class="cm-why-ic" aria-hidden="true">' + icon("users", 20) + "</span><span>Find people nearby at your level</span></li>" +
           '<li><span class="cm-why-ic" aria-hidden="true">' + icon("calendar", 20) + "</span><span>Join small local meetups and practice sessions</span></li>" +
-          '<li><span class="cm-why-ic cm-why-xp" aria-hidden="true">' + icon("spark", 20) + "</span><span>Earn <strong>" + CHECKIN_XP + " XP</strong> every time you check in</span></li>" +
+          '<li><span class="cm-why-ic cm-why-xp" aria-hidden="true">' + icon("spark", 20) + "</span><span>Unlock <strong>achievements</strong> as you join meetups</span></li>" +
         "</ul>" +
         '<div class="stack">' +
           '<button type="button" class="btn primary block" data-action="go" data-to="pick">I already have a hobby</button>' +
@@ -380,7 +376,7 @@
     }).join('') + '</span>';
   }
   function eventCard(e) {
-    var label = e.checkedIn ? 'Checked in' : e.rsvp ? 'You’re going' : e.level;
+    var label = e.rsvp ? 'You’re going' : e.level;
     var status = e.checkedIn || e.rsvp;
     return '<li class="cm-feed-event cm-ev' + (e.rsvp ? ' is-going' : '') + '">' +
       '<button type="button" class="cm-event-photo" data-action="open-event" data-id="' + esc(e.id) + '" aria-label="View ' + esc(e.title) + '">' +
@@ -393,8 +389,7 @@
       '<span class="cm-event-place">' + icon('pin', 14) + ' ' + esc(e.place) + '</span></span></button>' +
       '<div class="cm-feed-foot"><button type="button" class="cm-attendance" data-action="open-member" data-id="' + esc(e.id) + '" aria-label="Meet ' + esc(e.host) + ', ' + going(e) + ' going">' + crowd(e) +
       '<span><strong>' + going(e) + ' going</strong><span class="cm-host">with ' + esc(e.host) + '</span></span></button>' + rsvpBtn(e) + '</div>' +
-      venueCredit(e) +
-      (e.canCheckIn ? '<button type="button" class="btn primary block cm-checkin" data-action="checkin" data-id="' + esc(e.id) + '" aria-label="Check in to ' + esc(e.title) + '">' + icon('pin', 16) + ' Check in · +60 XP</button>' : '') + '</li>';
+      venueCredit(e) + '</li>';
   }
   function groupCard(g) {
     var events = allEvents().filter(function (e) { return e.hobbyId === g.hobbyId && e.date >= today(); });
@@ -467,11 +462,36 @@
           icon(o[2], 16) + '<span>' + esc(o[1]) + '</span>' + (o[0] === value ? '<i class="cm-opt-check">' + icon('check', 16) + '</i>' : '') + '</li>';
       }).join('') + '</ul></div>';
   }
+  // Header: location eyebrow, title, and a small "group photo" of neighbors going this week.
+  function weekStats() {
+    var t = today(), mine = allEvents().filter(function (e) { var d = diffDays(t, e.date); return d >= 0 && d < 7 && isTracked(e.hobbyId); });
+    var heads = [];
+    mine.forEach(function (e) { var id = avatarFor(e.host); if (heads.indexOf(id) < 0) heads.push(id); });
+    return { events: mine.length, people: mine.reduce(function (n, e) { return n + going(e); }, 0), first: heads[0] || selectedAvatar() };
+  }
+  // One person in front, then people behind on each side, smaller the further back (1, 3 or 5 heads).
+  function groupPhoto(first, people) {
+    var n = people >= 12 ? 5 : people >= 3 ? 3 : 1, start = AVATARS.indexOf(first), out = [];
+    for (var i = 0; i < n; i++) out.push(AVATARS[(start + i) % AVATARS.length]);
+    var slots = n === 5 ? ['far-l', 'near-l', 'front', 'near-r', 'far-r'] : n === 3 ? ['near-l', 'front', 'near-r'] : ['front'];
+    var order = n === 5 ? [3, 1, 0, 2, 4] : n === 3 ? [1, 0, 2] : [0];
+    return '<span class="cm-huddle" data-heads="' + n + '" aria-hidden="true">' + slots.map(function (slot, k) {
+      var size = slot === 'front' ? 56 : slot.indexOf('near') === 0 ? 42 : 32;
+      return '<span class="cm-gp cm-gp-' + slot + '">' + mii(out[order[k]], size) + '</span>';
+    }).join('') + '</span>';
+  }
+  function feedHeader() {
+    var w = weekStats();
+    return '<header class="cm-feed-header cm-hd-b"><span class="cm-hd-eyebrow">' + icon('pin', 14) + ' Newark, NJ</span><h1>Community</h1>' +
+      '<span class="cm-hd-people">' + groupPhoto(w.first, w.people) +
+      '<span>' + (w.people ? '<strong>' + w.people + ' neighbors going</strong><br>to meetups for your hobbies this week'
+                           : 'No meetups for your hobbies this week yet. Explore <strong>All events</strong>') + '</span></span></header>';
+  }
   function render() {
     if (!SQ() || !SQ().communityUnlocked()) return renderLocked();
     var groups = view.category === 'groups';
     return '<div class="screen cm cm-feed">' +
-      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span></header>' +
+      feedHeader() +
       '<div class="cm-categories" role="group" aria-label="Community categories">' + CATEGORIES.map(function (c) {
         return '<button type="button" data-action="category" data-v="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '" class="' + (view.category === c[0] ? 'on' : '') + '"><span aria-hidden="true">' + icon(c[2], 23) + '</span>' + c[1] + '</button>';
       }).join('') + '</div>' +
@@ -568,20 +588,9 @@
 
     h += '<div class="stack cm-actions">';
     h += '<button type="button" class="btn block cm-share-wide" data-action="share-event" data-id="' + esc(e.id) + '">' + shareIcon(18) + " Share this event</button>" + sharedLine(e);
-    if (e.checkedIn) {
-      h += '<div class="cm-done cm-done-lg">' + icon("check", 20) + " Checked in · +" + CHECKIN_XP + " XP</div>";
-    } else {
-      if (e.canCheckIn) {
-        h += '<button type="button" class="btn primary block" data-action="checkin" data-id="' + esc(e.id) + '">' + icon("pin", 18) + " Check in · +" + CHECKIN_XP + " XP</button>";
-      }
-      h += '<button type="button" class="btn block cm-rsvp' + (e.rsvp ? " on" : "") + '" data-action="rsvp" data-id="' + esc(e.id) + '" aria-pressed="' + e.rsvp + '">' +
-        (e.rsvp ? icon("check", 18) + " Going · tap to cancel" : "I’m going") + "</button>";
-      if (e.rsvp && !e.canCheckIn) {
-        h += '<p class="small muted cm-hint">Check-in opens on the day. It\'s worth ' + CHECKIN_XP + " XP.</p>";
-      } else if (!e.rsvp) {
-        h += '<p class="small muted cm-hint">RSVP so the host knows, then check in when you get there for ' + CHECKIN_XP + " XP.</p>";
-      }
-    }
+    h += '<button type="button" class="btn block cm-rsvp' + (e.rsvp ? " on" : "") + '" data-action="rsvp" data-id="' + esc(e.id) + '" aria-pressed="' + e.rsvp + '">' +
+      (e.rsvp ? icon("check", 18) + " Going · tap to cancel" : "I’m going") + "</button>";
+    if (!e.rsvp) h += '<p class="small muted cm-hint">RSVP so the host knows you’re coming.</p>';
     h += "</div>";
 
     h += '<div class="cm-safety"><span class="cm-fic" aria-hidden="true">' + icon("leaf", 18) + "</span>" +
@@ -839,19 +848,13 @@
       }
       else if (a === "rsvp") {
         var e = findEvent(id);
+        var had = {};
+        SQ().achievementsList().forEach(function (x) { if (x.unlocked) had[x.id] = 1; });
         var on = SQ().toggleRsvp(id);
+        var won = SQ().achievementsList().filter(function (x) { return x.unlocked && !had[x.id]; })[0];
         arrivingEvent = on ? id : null;
-        SQUI.toast(on ? "You joined the group" + (e ? " · " + e.title : "") : "RSVP removed");
+        SQUI.toast(!on ? "RSVP removed" : won ? "Achievement unlocked · " + won.name : "You joined the group" + (e ? " · " + e.title : ""));
         SQUI.refresh();
-      }
-      else if (a === "checkin") {
-        var r = SQ().checkIn(id);
-        if (!r) { SQUI.toast("Check-in isn't open for this event"); SQUI.refresh(); return; }
-        SQUI.refresh();
-        try {
-          var p = SQUI.showReward(r, { title: "Checked in" });
-          if (p && p.then) p.then(function () { SQUI.refresh(); });
-        } catch (e2) { /* overlay optional */ }
       }
     });
   }

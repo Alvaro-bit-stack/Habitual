@@ -50,7 +50,7 @@
   padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: var(--radius-sm);
 }
 .cm-today-txt, .cm-ev-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
-.cm-checkin, .cm-today .btn { min-height: 44px; }
+.cm-today .btn { min-height: 44px; }
 .cm-none { margin: 0; }
 
 /* Filters */
@@ -215,7 +215,6 @@
 .cm-feed-event .cm-rsvp { min-width: 82px; font-size: 12px; border-color: var(--line); background: var(--surface-2); }
 .cm-feed-event .cm-rsvp.on { background: var(--leaf); color: var(--leaf-ink); border-color: transparent; }
 .cm-feed-event .cm-done { font-size: 12px; background: var(--surface-2); color: var(--leaf); }
-.cm-feed-event .cm-checkin { margin-top: 12px; font-size: 13px; }
 .cm-feed-end { text-align: center; color: var(--ink-2); font-size: 13px; padding: 24px 16px; line-height: 1.5; }
 .cm-feed .cm-sample { font-size: 11px; }
 .cm-feed-group { display: flex; align-items: center; width: 100%; gap: 14px; padding: 0 0 18px; min-height: 100px; background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; }

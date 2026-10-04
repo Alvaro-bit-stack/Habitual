@@ -385,7 +385,13 @@ The old numbered trail layout is retired. The app uses a blue mobile theme in bo
 a single readable column, including on larger screens. Artwork palette values are
 local to the SVG illustrations. All content stays self-contained, without remote images.
 
-Header: "Community" centered with the location under it (no avatar button).
+Header: a "NEWARK, NJ" eyebrow, the "Community" title, then a huddle of neighbors going to
+meetups for your hobbies this week: one person large in front and smaller people stepping back on
+each side (1, 3 or 5 heads by headcount), with "N neighbors going" beside it.
+
+Check-in is not in the app: no check-in buttons or XP for attending. `SQ.checkIn` stays in the
+engine for later. The event achievements `event_1` / `event_5` unlock when you RSVP to 1 / 5 events
+(checked-in events from older saves still count).
 Tabs, in order: Going (default) / For you / All events / Your groups. Below them two dropdowns:
 When (Any day / Today / Tomorrow / This weekend; hidden on Your groups) and Hobby, a
 type-to-search combobox (`#cm-hobby`, listbox `#cm-hobby-list`; arrows, Enter, Escape, tap; a clear

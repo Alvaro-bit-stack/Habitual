@@ -154,13 +154,16 @@ test('Dates are one dropdown, not a row of buttons',()=>{
 });
 test('More people going shows more heads (1 to 5), host in front',()=>{
   const html=screens.community.render();
-  const heads=[...html.matchAll(/data-heads="(\d)"[^]*?<strong>(\d+) going/g)].map(m=>[+m[1],+m[2]]);
+  const heads=[...html.matchAll(/class="cm-crowd" data-heads="(\d)"[^]*?<strong>(\d+) going/g)].map(m=>[+m[1],+m[2]]);
   assert.ok(heads.length===18);
   heads.forEach(([h,n])=>assert.equal(h, n<=1?1:n<=3?2:n<=7?3:n<=14?4:5));
 });
-test('Header has no avatar button; location sits under the title',()=>{
+test('Header: location eyebrow, title, and a huddle of neighbors with one person in front',()=>{
   const html=screens.community.render();assert.ok(!html.includes('cm-self-avatar'));
-  assert.ok(/<h1>Community<\/h1><span class="cm-location">/.test(html));
+  assert.ok(/<span class="cm-hd-eyebrow">[^]*?Newark, NJ<\/span><h1>Community<\/h1>/.test(html),'location sits above the title');
+  const hud=html.match(/class="cm-huddle" data-heads="(\d)"[^]*?<\/span><\/span><span>/);assert.ok(hud,'header shows the huddle');
+  assert.equal((html.match(/cm-gp-front/g)||[]).length,1,'exactly one person in front');
+  assert.ok(/neighbors going<\/strong>/.test(html));
 });
 test('Level filter shows on For you and All events only; All levels events count for every level',()=>{
   action('category','going');assert.ok(!screens.community.render().includes('id="cm-level"'));

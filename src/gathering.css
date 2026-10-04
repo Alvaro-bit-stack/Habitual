@@ -149,3 +149,19 @@
 .cm-opt-check { margin-left: auto; display: flex; color: var(--leaf); font-style: normal; }
 .cm-combo-list [role="option"] > span { min-width: 0; }
 .cm-level-mid { color: var(--sky); background: color-mix(in srgb, var(--sky) 13%, transparent); }
+
+/* Header: eyebrow location, title, group photo of neighbors */
+.cm-feed-header.cm-hd-b { flex-direction: column; align-items: stretch; text-align: left; gap: 6px; margin: 4px 0 18px; }
+.cm-hd-eyebrow { display: inline-flex; align-items: center; gap: 4px; color: var(--leaf); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.cm-hd-b h1 { font-size: 30px !important; }
+.cm-hd-people { display: flex; align-items: center; gap: 12px; margin-top: 6px; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
+.cm-hd-people strong { color: var(--ink); font-size: 15px; }
+/* Huddle: front person big and on top; the rest step back and shrink on each side */
+.cm-huddle { position: relative; display: flex; align-items: center; justify-content: center; flex: none; height: 60px; }
+.cm-gp { position: relative; flex: none; display: grid; place-items: start center; overflow: hidden; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--bg); box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 14%, transparent); }
+.cm-gp .cm-mii { margin-top: 2px; transform: scale(2.05); transform-origin: center top; }
+.cm-gp-front { z-index: 3; width: 56px; height: 56px; }
+.cm-gp-near-l, .cm-gp-near-r { z-index: 2; width: 42px; height: 42px; filter: brightness(.96) saturate(.92); }
+.cm-gp-far-l, .cm-gp-far-r { z-index: 1; width: 32px; height: 32px; filter: brightness(.9) saturate(.8); }
+.cm-gp-near-l { margin-right: -14px; } .cm-gp-near-r { margin-left: -14px; }
+.cm-gp-far-l { margin-right: -12px; } .cm-gp-far-r { margin-left: -12px; }

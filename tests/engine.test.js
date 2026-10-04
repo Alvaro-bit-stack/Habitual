@@ -337,10 +337,12 @@ function suite(source) {
     assert(todayEv && futureEv, "has today + future events");
     eq(todayEv.canCheckIn, false);
     eq(SQ.checkIn(todayEv.id), null, "needs rsvp");
+    eq(SQ.achievementsList().find((a) => a.id === "event_1").unlocked, null);
     eq(SQ.toggleRsvp(todayEv.id), true);
+    assert(SQ.achievementsList().find((a) => a.id === "event_1").unlocked, "event_1 unlocks on the first RSVP");
     eq(SQ.events().find((e) => e.id === todayEv.id).canCheckIn, true);
-    const r = SQ.checkIn(todayEv.id);
-    eq(r.xpGained, 60); assert(r.newAchievements.some((a) => a.id === "event_1"));
+    const r = SQ.checkIn(todayEv.id); // engine API kept; the app no longer offers check-in
+    eq(r.xpGained, 60); assert(!r.newAchievements.some((a) => a.id === "event_1"), "already unlocked by the RSVP");
     eq(SQ.checkIn(todayEv.id), null, "only once");
     const after = SQ.events().find((e) => e.id === todayEv.id);
     assert(after.checkedIn && !after.canCheckIn);
@@ -348,6 +350,9 @@ function suite(source) {
     eq(SQ.checkIn(futureEv.id), null, "future date");
     eq(SQ.toggleRsvp(futureEv.id), false, "toggle off");
     eq(SQ.toggleRsvp("no-such-event"), false);
+    const others = SQ.events().filter((e) => e.id !== todayEv.id && e.id !== futureEv.id).slice(0, 4); // + the RSVP above = 5
+    others.forEach((e) => SQ.toggleRsvp(e.id));
+    assert(SQ.achievementsList().find((a) => a.id === "event_5").unlocked || SQ.events().length < 5, "event_5 unlocks after 5 events joined");
     eq(SQ.checkIn("no-such-event"), null);
     if (todayEv.hobbyId === "running") eq(SQ.state.tracked[0].xp, 60, "hobby xp on check-in");
   });

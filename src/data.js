@@ -776,8 +776,8 @@
     { id: "comeback", name: "Welcome Back", desc: "Log a session after 14 or more days away.", category: "comeback" },
     { id: "milestone_1", name: "Skill Unlocked", desc: "Tick your first skill milestone.", category: "skill" },
     { id: "milestone_5", name: "Getting Good", desc: "Tick 5 skill milestones in total.", category: "skill" },
-    { id: "event_1", name: "Showed Up", desc: "Check in at your first local event.", category: "social" },
-    { id: "event_5", name: "Regular Face", desc: "Check in at 5 local events.", category: "social" },
+    { id: "event_1", name: "Showed Up", desc: "RSVP to your first local event.", category: "social" },
+    { id: "event_5", name: "Regular Face", desc: "RSVP to 5 local events.", category: "social" },
     { id: "level_5", name: "Level 5", desc: "Reach player level 5.", category: "starter" }
   ];
 

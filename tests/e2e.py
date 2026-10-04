@@ -547,26 +547,8 @@ def flow_demo_community(c):
     expect(c.page.locator(f".cm-ev .cm-rsvp[data-id='{eid}']").first.get_attribute("aria-pressed") == ("false" if was else "true"), m, "rsvp", "aria-pressed not updated")
     c.page.locator(f".cm-ev .cm-rsvp[data-id='{eid}']").first.click()
     expect(c.js(f"() => SQ.state.rsvps.includes('{eid}')") == was, m, "rsvp", "rsvp did not toggle back")
-    # check-in from today strip
-    ci = c.page.locator(".cm-checkin")
-    expect(ci.count() >= 1, m, "checkin", "no check-in button for demo RSVP today")
-    if ci.count():
-        ev = ci.first.get_attribute("data-id")
-        xp0 = c.js("() => SQ.state.user.xp")
-        for _ in range(3):
-            c.js("() => SQUI.refresh()")
-        c.page.locator(".cm-checkin").first.click()
-        got = c.overlay_xp()
-        expect(got == 60, m, "checkin", f"check-in +{got}")
-        c.audit("35-reward-checkin", nav_check=False)
-        c.close_overlay()
-        expect(c.js("() => SQ.state.user.xp") == xp0 + 60, m, "checkin", "check-in xp double/missing")
-        expect(c.js(f"() => SQ.state.checkins.filter(x => x==='{ev}').length") == 1, m, "checkin", "checkins dup")
-        c.page.locator(f".cm-today-top[data-id='{ev}']").click()
-        expect(c.screen() == "event", m, "event", "not on event")
-        expect("Checked in" in c.page.locator("#app-main").inner_text(), m, "event", "event not showing checked in")
-        c.audit("36-event-checked")
-        c.click("[data-action=back]")
+    # check-in was removed from the app: no check-in buttons anywhere
+    expect(c.page.locator(".cm-checkin, [data-action=checkin]").count() == 0, m, "checkin", "check-in button still shown")
     # an event not RSVPd -> detail
     c.page.locator(".cm-ev .cm-ev-main").nth(1).click()
     expect(c.screen() == "event", m, "event2", "not on event")

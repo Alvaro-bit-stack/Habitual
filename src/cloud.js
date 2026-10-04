@@ -102,6 +102,7 @@
   var messages={local:'Saved on this device',pending:'Saved on this device · Waiting to sync',syncing:'Syncing your progress…',synced:'Saved on this device and in your account',offline:'Offline · Your hobbies are available. Changes will sync when you reconnect.',signin:'Saved on this device · Sign in to resume syncing',connecting:'Connecting your account…',conflict:'Another device has different progress. Both copies are kept until you choose.',rejected:'Cloud could not accept this progress. Your device copy is kept; export it before making changes.',storage:'Device storage is full or unavailable. Export your progress now; recent changes may not survive closing the app.'};
   function button(action,text){return '<button type="button" class="btn sm" data-cloud-action="'+action+'">'+text+'</button>';}
   function panelBody(){
+    if(G.SQ.isGuest&&G.SQ.isGuest())return '<h2 class="h3">Guest mode</h2><p class="small" role="status">Nothing is saved. Your progress disappears when you close this tab.</p><div class="row">'+button('end-guest','Start over and save on this device')+'</div>';
     var text='<h2 class="h3">Your saved progress</h2><p class="small" role="status">'+esc(messages[status]||messages.local)+'</p>';
     if(owner)text+='<p class="small muted">Signed in as '+esc(owner.email||owner.name)+'</p>';
     if(stage&&!owner||stage&&status==='signin')return text+loginForm();
@@ -127,7 +128,7 @@
   async function init(){
     if(ready)return;ready=true;
     try{
-      owner=read('habitual.cloud.owner',null);if(owner)activate(owner);
+      owner=G.SQ.isGuest&&G.SQ.isGuest()?null:read('habitual.cloud.owner',null);if(owner)activate(owner);
       G.SQ.subscribe(function(ok){if(suppress)return;if(!ok){storageFailed=true;if(core)core.blocked='storage';tell('storage');return;}storageFailed=false;if(core&&core.blocked==='storage')core.blocked=null;tell(core&&core.blocked==='conflict'?'conflict':core?'pending':'local');schedule();});
       if(location.protocol==='file:'){tell('local');return;}
       var cached=read('habitual.cloud.config',{enabled:false});config=cached;
@@ -158,6 +159,7 @@
       }else if(action==='import-confirm'){backup(persisted());replace(read('sidequest.v1',null));tell('pending');await sync();refresh();}
       else if(action==='cancel'){pendingImport=null;tell(status);}
       else if(action==='cancel-login'){stage=null;tell(status);}
+      else if(action==='end-guest'){G.SQ.endGuest();if(G.SQ.state.onboarded)G.SQUI.go('today',{},{reset:true});else G.SQUI.go('pick',{step:'character'},{reset:true});}
       else if(action==='resend'){stage='email';tell(status);}
       else if(action==='import-file'){
         var input=document.createElement('input');input.type='file';input.accept='application/json,.json';

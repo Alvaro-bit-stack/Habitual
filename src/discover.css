@@ -627,3 +627,9 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .plan-src { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--ink-2); }
 .plan-src svg { color: #0f6b3a; stroke-width: 3; }
 .plan-src a { color: var(--ink); }
+
+/* First-run choice: saved on this device, or a guest run */
+.ob-start { gap: 12px; }
+.ob-start-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; min-height: 72px; padding: 16px 18px; text-align: left;
+  border: 2px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.ob-start-opt:first-child { border-color: var(--leaf); }

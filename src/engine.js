@@ -94,11 +94,29 @@
     };
   }
 
+  // Guest mode keeps progress in sessionStorage: it lasts through reloads, and the browser
+  // deletes it when the tab or window closes. The flag itself lives there too.
+  var GUEST = "hobitual.guest";
+  function isGuest() {
+    try { return !!(G.sessionStorage && G.sessionStorage.getItem(GUEST) === "1"); } catch (e) { return false; }
+  }
   function storage() {
     try {
+      if (isGuest()) return G.sessionStorage;
       if (typeof G.localStorage !== "undefined" && G.localStorage) return G.localStorage;
     } catch (e) { /* access can throw */ }
     return null;
+  }
+  function startGuest() {
+    try { G.sessionStorage.setItem(GUEST, "1"); G.sessionStorage.removeItem(KEY); } catch (e) { /* stays in memory only */ }
+    var keepCharacter = state && state.user && state.user.character;
+    init();
+    if (keepCharacter) state.user.character = keepCharacter;
+    return state;
+  }
+  function endGuest() {
+    try { G.sessionStorage.removeItem(GUEST); G.sessionStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+    return init();
   }
 
   function normalize(s) {
@@ -878,6 +896,9 @@
     init: init,
     replaceState: replaceState,
     useStorage: useStorage,
+    isGuest: isGuest,
+    startGuest: startGuest,
+    endGuest: endGuest,
     subscribe: function (fn) { saveListeners.push(fn); return function () { saveListeners = saveListeners.filter(function (x) { return x !== fn; }); }; },
     setRemoteEvents: function (events) { remoteEvents = events; },
     isLiveCommunity: function () { return remoteEvents !== null; },

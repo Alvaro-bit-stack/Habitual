@@ -718,7 +718,7 @@
   }
   // First run: splash, pick a guide character, a short intro, then five questions the guide asks.
   var splashTimer = null;
-  var FIRST_RUN_STEPS = ["splash", "character", "intro", "name", "email", "location", "hobbies", "next"];
+  var FIRST_RUN_STEPS = ["splash", "start", "character", "intro", "name", "email", "location", "hobbies", "next"];
   var QUESTION_STEPS = ["name", "email", "location", "hobbies", "next"];
   var GUIDES = ["adrian", "avatar1"]; // shown as "Option 1" / "Option 2"
   function guideId() {
@@ -755,6 +755,14 @@
     return '<div class="screen ob-splash" data-dc="onboard" data-step="splash"><button type="button" class="ob-splash-hit" data-action="ob-splash" aria-label="Start">' +
       '<span class="ob-splash-art" aria-hidden="true"><span class="ob-trail"></span>' + mii(guideId(), 180, "ob-flyer") + "</span>" +
       '<span class="ob-wordmark">Habitual</span><span class="ob-tagline">Trade the scroll for something you love</span></button></div>';
+  }
+  // Saved on this device, or a guest run that disappears when the tab closes.
+  function startStep() {
+    return obShell("start", '<header class="ob-head ob-center"><h1 class="h1">How do you want to start?</h1></header>' +
+      '<div class="stack ob-start">' +
+      '<button type="button" class="ob-start-opt" data-action="ob-start-save"><span class="h3">Get started</span><span class="small muted">Your progress is saved on this device.</span></button>' +
+      '<button type="button" class="ob-start-opt" data-action="ob-start-guest"><span class="h3">Continue as guest</span><span class="small muted">Just trying it out. Nothing is kept after you close this tab.</span></button>' +
+      "</div>", "");
   }
   function characterStep() {
     var cur = SQ.state.user.character;
@@ -852,6 +860,7 @@
     render: function (params) {
       var step = (params && params.step) || (onboarded() ? "hobbies" : "splash");
       if (step === "splash") return splashStep();
+      if (step === "start") return startStep();
       if (step === "character") return characterStep();
       if (step === "intro") return introStep();
       if (step === "next") return obNextStep();
@@ -868,7 +877,9 @@
           if (!onboarded() && idx > 1) { goStep(FIRST_RUN_STEPS[idx - 1]); return; }
           OB = null; SQUI.back();
         },
-        "ob-splash": function () { if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; } goStep("character"); },
+        "ob-splash": function () { if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; } goStep("start"); },
+        "ob-start-save": function () { if (SQ.isGuest()) SQ.endGuest(); goStep("character"); },
+        "ob-start-guest": function () { SQ.startGuest(); goStep("character"); },
         "ob-char": function (t) {
           SQ.state.user.character = t.getAttribute("data-id"); SQ.save();
           host.querySelectorAll(".ob-option").forEach(function (b) { var on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
@@ -905,7 +916,7 @@
         splashTimer = setTimeout(function () {
           splashTimer = null;
           var cur = SQUI.current && SQUI.current();
-          if (cur && cur.name === "pick" && (!cur.params || !cur.params.step || cur.params.step === "splash")) goStep("character");
+          if (cur && cur.name === "pick" && (!cur.params || !cur.params.step || cur.params.step === "splash")) goStep("start");
         }, 1800);
         return;
       }

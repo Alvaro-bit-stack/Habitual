@@ -47,7 +47,7 @@ input, textarea, select { font-size: 16px; }
 .cm-dates button.on { background: var(--leaf); color: var(--leaf-ink); }
 .cm-feed-label { margin-bottom: 16px; }
 .cm-feed-label h2 { font-size: 17px; font-weight: 700; letter-spacing: -.015em; }
-.cm-event-feed, .cm-feed-groups { display: flex; flex-direction: column; gap: 24px; }
+.cm-event-feed, .cm-feed-groups { display: flex; flex-direction: column; align-items: stretch; gap: 24px; } /* stretch: the wide-screen grid rule sets align-items: start, which would shrink each card to its content */
 .cm-feed-event.cm-ev { padding: 0 0 12px; border-bottom: 1px solid var(--line); }
 .cm-event-photo { border-radius: 16px; aspect-ratio: 1.65; min-height: 0; }
 .cm-photo-tag { top: 12px; left: 12px; font-size: 12px; background: var(--photo-tag); color: var(--photo-tag-ink); }

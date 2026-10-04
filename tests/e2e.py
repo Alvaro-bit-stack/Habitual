@@ -481,7 +481,7 @@ def flow_skip_onboarding(c):
     expect("Jo" in c.page.locator(".td-greet").inner_text(), m, "level-task", "Today should greet the user by name")
     nxt = c.page.locator(".td-next").inner_text()
     expect("advanced task" in nxt.lower() and "30" in nxt, m, "level-task", f"Up next should be an advanced task: {nxt!r}")
-    expect(c.page.locator(".hc-tier").first.inner_text().strip() == "Advanced", m, "level-task", "tier badge missing on Today")
+    expect(c.page.locator(".hc .sc-stars, .hc-tier").count() == 0, m, "level-task", "skill level should show on Me, not on Today cards")
     c.audit("05-today-level-task")
 
 

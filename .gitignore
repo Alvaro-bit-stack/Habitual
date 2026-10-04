@@ -8,3 +8,7 @@ assets/models/src/
 .env
 .env.*
 !.env.example
+backend/local.settings.json
+backend/.env
+backend/data/
+cloud-config.json

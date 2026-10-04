@@ -2,13 +2,15 @@
 """Build Habitual (Ocean design) into one page, dist/Habitual.html, with venue photos and Showcase models."""
 import base64
 import json
+import hashlib
+import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 DIST = ROOT / "dist"
 CSS = ["shell.css", "discover.css", "community.css", "showcase.css", "mobile.css", "ocean.css", "gathering.css"]
-JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "boot.js"]
+JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "sync-core.js", "cloud.js", "boot.js"]
 FONT_URL = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
 
 
@@ -62,6 +64,7 @@ def document(body):
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
             '<meta name="apple-mobile-web-app-capable" content="yes">'
+            '<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12649c">'
             '<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>'
             '</head><body>' + body + '</body></html>')
 
@@ -75,7 +78,13 @@ def main():
         b64 = base64.b64encode(model.read_bytes()).decode("ascii")
         (DIST / "models" / (model.stem + ".js")).write_text(
             '(window.SQ_MODELS=window.SQ_MODELS||{})[' + json.dumps(model.stem) + ']="' + b64 + '";', encoding="utf-8")
-    print("Built dist/Habitual.html (Ocean design).")
+    for name in ["manifest.webmanifest", "icon.svg", "auth.html"]:
+        shutil.copyfile(SRC / name, DIST / name)
+    config = ROOT / "cloud-config.json"
+    (DIST / "cloud-config.json").write_text(config.read_text(encoding="utf-8") if config.exists() else '{"enabled":false}', encoding="utf-8")
+    digest = hashlib.sha256((DIST / "Habitual.html").read_bytes()).hexdigest()[:16]
+    (DIST / "sw.js").write_text((SRC / "sw.js").read_text(encoding="utf-8").replace("__BUILD_ID__", digest), encoding="utf-8")
+    print("Built dist/Habitual.html (Ocean design, offline shell and optional cloud sync).")
 
 
 if __name__ == "__main__":

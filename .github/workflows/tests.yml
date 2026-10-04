@@ -14,7 +14,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - uses: actions/setup-python@v5
         with:
@@ -22,6 +22,14 @@ jobs:
 
       - name: Content checks
         run: node tests/data.check.js
+
+      - name: Backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Backend and offline sync tests
+        run: |
+          npm test --prefix backend
+          node --test tests/sync.test.js tests/cloud-integration.test.js
 
       - name: Engine tests
         run: node tests/engine.test.js

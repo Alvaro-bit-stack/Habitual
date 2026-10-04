@@ -106,3 +106,12 @@ This demo uses a curated photo catalog, not a live Places/search API. To add a v
 ### Design
 
 The app uses the Ocean design: DM Sans, pale blue, inset cards and a floating navigation bar. `src/mobile.css` holds the shared mobile shell and `src/ocean.css` the Ocean layer. Google Fonts and the Showcase 3D library need a connection; venue photos and model files are local. The pre-update local changes remain recoverable in the Git stash named `Habitual local venue feed before PR 1 update`.
+
+
+## Azure backend and offline hobbies
+
+The backend is prepared locally; no Azure resources have been deployed. See [backend/README.md](backend/README.md) for the API, local server, authentication/database setup, and rollout checks.
+
+Hobby progress saves on the device first. Configured accounts sync private progress with revision checks; offline edits survive reloads, and conflicting device copies require a choice instead of silently overwriting. Me includes sync status and backup export/import. The service worker caches the hosted app shell after an online visit. Event attendance requires server confirmation; live event check-ins, real group posts and delivered messages remain future work. Default cloud configuration is disabled.
+
+Run `python build.py`, then `npm ci --prefix backend` and `npm run dev --prefix backend`. Open `http://127.0.0.1:7071/Habitual.html`, then use Me to connect the local test account. This tests the integration without an Azure subscription. The local server is loopback-only and is not the deployment server. All saved preview HTML files still work without cloud configuration.

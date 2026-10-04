@@ -2,9 +2,10 @@
 .cm-mii { position: relative; display: inline-block; flex: none; height: var(--mii-size, 106px); width: calc(var(--mii-size, 106px) * .8); vertical-align: bottom; }
 .cm-mii::before, .cm-mii::after { content: ""; position: absolute; inset: 0; background-image: var(--mii-idle); background-repeat: no-repeat; background-size: 100% 100%; }
 .cm-mii::after { background-image: var(--mii-run); background-size: 800% 100%; opacity: 0; }
-.cm-feed-header { gap: 8px; }
-.cm-feed-header h1 { flex: 1; }
-.cm-feed-header .cm-location { padding: 0; background: none; white-space: nowrap; font-size: 11px; }
+/* Header: title centered, location right under it */
+.cm-feed-header { flex-direction: column; justify-content: center; align-items: center; gap: 2px; text-align: center; min-height: 0; margin: 4px 0 18px; }
+.cm-feed-header h1 { flex: none; }
+.cm-feed-header .cm-location { padding: 0; background: none; white-space: nowrap; font-size: 12px; color: var(--ink-2); }
 .cm-self-avatar { display: grid; place-items: start center; width: 44px; height: 44px; flex: none; padding: 0; border: 1px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--surface); }
 .cm-self-avatar .cm-mii { margin-top: -3px; }
 .cm-event-photo { aspect-ratio: 1.5; }
@@ -54,4 +55,22 @@
 @media (prefers-reduced-motion: reduce) {
   .cm-you.cm-arriving .cm-mii { visibility: visible; } .cm-you.cm-arriving::before, .cm-you.cm-arriving .cm-you-label { opacity: 1; transform: translateX(-50%); }
 }
-@media (max-width: 370px) { .cm-feed-header h1 { font-size: 24px; } .cm-feed-header .cm-location { font-size: 10px; } }
+@media (max-width: 370px) { .cm-feed-header h1 { font-size: 24px; } .cm-feed-header .cm-location { font-size: 11px; } }
+
+/* Filters: When + Hobby as two pill dropdowns */
+.cm-filters { display: flex; gap: 8px; margin: 0 0 16px; }
+.cm-filter { position: relative; flex: 1 1 0; min-width: 0; display: flex; align-items: center; min-height: 44px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: var(--ink-2); }
+.cm-filter.on { border-color: var(--leaf); color: var(--leaf); background: color-mix(in srgb, var(--leaf) 8%, var(--surface)); }
+.cm-filter > span:first-child { position: absolute; left: 14px; display: flex; pointer-events: none; }
+.cm-filter select { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; min-height: 42px; padding: 0 32px 0 38px; border: 0; border-radius: 22px; background: transparent; color: var(--ink); font: 600 13px var(--font-body); text-overflow: ellipsis; cursor: pointer; }
+.cm-filter.on select { color: var(--leaf); }
+.cm-filter select:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+.cm-filter-caret { position: absolute; right: 12px; display: flex; transform: rotate(90deg); pointer-events: none; }
+.cm-filter select option { color: var(--ink); background: var(--surface); }
+
+/* Who's going: host in front, more heads behind as more people join */
+.cm-crowd { display: flex; align-items: center; flex: none; }
+.cm-crowd .cm-attendance-icon { position: relative; width: 38px; height: 38px; border: 2px solid var(--surface); box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 14%, transparent); }
+.cm-crowd .cm-attendance-icon + .cm-attendance-icon { margin-left: -16px; }
+.cm-crowd .cm-attendance-icon:nth-child(n+2) { width: 34px; height: 34px; filter: saturate(.9) brightness(.97); }
+.cm-crowd .cm-attendance-icon:nth-child(n+4) { width: 30px; height: 30px; margin-left: -14px; }

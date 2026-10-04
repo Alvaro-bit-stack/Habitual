@@ -383,8 +383,12 @@ The old numbered trail layout is retired. The app uses a blue mobile theme in bo
 a single readable column, including on larger screens. Artwork palette values are
 local to the SVG illustrations. All content stays self-contained, without remote images.
 
-Community filters: Upcoming / Today / Tomorrow / Weekend; For you / All events /
-Your groups / Going. Weekend means the upcoming Saturday-Sunday, or the remaining
+Header: "Community" centered with the location under it (no avatar button).
+Tabs, in order: Going (default) / For you / All events / Your groups. Below them two dropdowns:
+When (Any day / Today / Tomorrow / This weekend; hidden on Your groups) and Hobby (All hobbies,
+then tracked hobbies, then the rest), which also narrows Your groups. Reset clears both.
+Each event shows who's going as a stack of character heads, host in front: 1 head for 1 person,
+2 for 2-3, 3 for 4-7, 4 for 8-14, 5 for 15+ (your character joins the stack once you RSVP). This weekend means the upcoming Saturday-Sunday, or the remaining
 current weekend. Group listings are independent of date filters. Search is rendered only in All events
 and filters that category immediately, without replacing the search field. Its query
 is retained when changing categories but never filters For you, Your groups or Going.

@@ -33,6 +33,8 @@ def open_community(browser, reduced=False):
     page.goto("file://" + PAGE)
     page.wait_for_timeout(400)
     page.evaluate('SQ.seedDemo(); SQUI.go("community")')
+    page.click('[data-action="category"][data-v="all"]')
+    page.click('[data-action="category"][data-v="all"]')
     page.wait_for_timeout(300)
     eid = page.evaluate("""(() => {
       const b = [...document.querySelectorAll('button[data-action="rsvp"]')].find(b => /I.m going/.test(b.innerText));

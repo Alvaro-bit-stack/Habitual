@@ -44,6 +44,8 @@ function ids() {
 function query(value) { search.value=value; inputHandlers.input(); }
 let checks = 0;
 function test(name, fn) { fn(); checks++; console.log('PASS ' + name); }
+test('Going is the first tab and the default',()=>{const html=screens.community.render();assert.ok(/data-action="category" data-v="going" aria-pressed="true"/.test(html));assert.ok(html.indexOf('data-v="going"')<html.indexOf('data-v="for-you"'));assert.ok(html.includes('Your plans start here'));});
+action('category','for-you');
 test('For you shows tracked hobbies',()=>assert.deepEqual(ids(), ['ev-drawing-1','ev-guitar-1','ev-running-1','ev-running-2']));
 action('category','all');
 test('All events exposes the full catalog',()=>assert.equal(ids().length,18));
@@ -107,7 +109,7 @@ test('Broken photos reveal the location fallback',()=>{
 });
 test('Event thumbnails no longer contain character scenes; host avatars remain',()=>{
   const html=screens.community.render();assert.ok(!html.includes('cm-scene-cast'));
-  assert.equal((html.match(/class="cm-attendance-icon"/g)||[]).length,18);
+  assert.equal((html.match(/class="cm-crowd"/g)||[]).length,18);
 });
 test('Search exists only in All events and does not filter other tabs',()=>{
   action('category','all');query('guitar');assert.equal(ids().length,1);
@@ -117,6 +119,28 @@ test('Search exists only in All events and does not filter other tabs',()=>{
   action('category','going');assert.ok(!screens.community.render().includes('id="cm-search"'));
   action('category','all');assert.equal(ids().length,1);
   query('');
+});
+test('Hobby filter narrows events and groups, and resets with the feed',()=>{
+  action('category','all');action('hobby-filter','running');
+  assert.deepEqual(ids(),['ev-running-1','ev-running-2']);
+  assert.ok(/<option value="running" selected>Running<\/option>/.test(screens.community.render()));
+  action('category','groups');const g=screens.community.render();assert.ok(g.includes('Running · Newark area'));assert.ok(!g.includes('Guitar · Newark area'));
+  assert.ok(!g.includes('id="cm-when"'));assert.ok(g.includes('id="cm-hobby"'));
+  action('reset-feed');assert.equal(ids().length,18);
+});
+test('Dates are one dropdown, not a row of buttons',()=>{
+  const html=screens.community.render();assert.ok(html.includes('<select id="cm-when" data-action="date-filter">'));
+  assert.ok(html.includes('>This weekend</option>'));assert.ok(!html.includes('class="cm-dates"'));
+});
+test('More people going shows more heads (1 to 5), host in front',()=>{
+  const html=screens.community.render();
+  const heads=[...html.matchAll(/data-heads="(\d)"[^]*?<strong>(\d+) going/g)].map(m=>[+m[1],+m[2]]);
+  assert.ok(heads.length===18);
+  heads.forEach(([h,n])=>assert.equal(h, n<=1?1:n<=3?2:n<=7?3:n<=14?4:5));
+});
+test('Header has no avatar button; location sits under the title',()=>{
+  const html=screens.community.render();assert.ok(!html.includes('cm-self-avatar'));
+  assert.ok(/<h1>Community<\/h1><span class="cm-location">/.test(html));
 });
 test('Community uses a page title instead of the Habitual wordmark',()=>{
   const html=screens.community.render();assert.ok(html.includes('<h1>Community</h1>'));

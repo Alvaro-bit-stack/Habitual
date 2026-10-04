@@ -15,7 +15,7 @@
 
   // view state for the community list (kept for the session)
   var arrivingEvent = null;
-  var view = { when: "upcoming", category: "for-you", query: "" };
+  var view = { when: "upcoming", category: "going", query: "", hobby: "" };
 
   function esc(s) { return SQUI.esc(s == null ? "" : String(s)); }
   function icon(n, s) { try { return SQUI.icon(n, s) || ""; } catch (e) { return ""; } }
@@ -151,8 +151,8 @@
     "</div>";
   }
 
-  var DATE_FILTERS = [['upcoming', 'Upcoming'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['weekend', 'Weekend']];
-  var CATEGORIES = [['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users'], ['going', 'Going', 'calendar']];
+  var DATE_FILTERS = [['upcoming', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['weekend', 'This weekend']];
+  var CATEGORIES = [['going', 'Going', 'calendar'], ['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users']];
 
   var AVATARS = ['neo', 'adrian', 'alvaro'];
   function selectedAvatar() {
@@ -237,13 +237,25 @@
       if (!matchesDate(e)) return false;
       if (view.category === 'for-you' && !isTracked(e.hobbyId) && !e.rsvp && !e.checkedIn) return false;
       if (view.category === 'going' && !e.rsvp && !e.checkedIn) return false;
+      if (view.hobby && e.hobbyId !== view.hobby) return false;
       return matchesQuery([e.title, e.place, e.host, hobbyName(e.hobbyId), (group(e.hobbyId) || {}).name || ''].join(' '));
     });
   }
   function feedGroups() {
     return (data().groups || []).filter(function (g) {
-      return isTracked(g.hobbyId) && matchesQuery(g.name + ' ' + hobbyName(g.hobbyId));
+      return isTracked(g.hobbyId) && (!view.hobby || g.hobbyId === view.hobby) && matchesQuery(g.name + ' ' + hobbyName(g.hobbyId));
     });
+  }
+  // Host in front, then a few more heads behind: more people going, more heads (1 to 5).
+  function crowdSize(n) { return n <= 1 ? 1 : n <= 3 ? 2 : n <= 7 ? 3 : n <= 14 ? 4 : 5; }
+  function crowd(e) {
+    var n = +going(e) || 0, size = crowdSize(n), host = avatarFor(e.host), first = AVATARS.indexOf(host);
+    var heads = [host];
+    if ((e.rsvp || e.checkedIn) && size > 1) heads.push(selectedAvatar());
+    for (var i = 1; heads.length < size; i++) heads.push(AVATARS[(first + i) % AVATARS.length]);
+    return '<span class="cm-crowd" data-heads="' + size + '" aria-hidden="true">' + heads.map(function (id, k) {
+      return '<span class="cm-attendance-icon" style="z-index:' + (size - k) + '">' + mii(id, 42) + '</span>';
+    }).join('') + '</span>';
   }
   function eventCard(e) {
     var label = e.checkedIn ? 'Checked in' : e.rsvp ? 'You’re going' : e.level;
@@ -257,7 +269,7 @@
       '<span class="cm-ev-body"><span class="cm-event-date">' + esc(dayLabel(e.date)) + ' · ' + esc(e.time) + '</span>' +
       '<span class="cm-ev-title">' + esc(e.title) + '</span>' +
       '<span class="cm-event-place">' + icon('pin', 14) + ' ' + esc(e.place) + '</span></span></button>' +
-      '<div class="cm-feed-foot"><button type="button" class="cm-attendance" data-action="open-member" data-id="' + esc(e.id) + '" aria-label="Meet ' + esc(e.host) + '"><span class="cm-attendance-icon">' + character(e.host, 42) + '</span>' +
+      '<div class="cm-feed-foot"><button type="button" class="cm-attendance" data-action="open-member" data-id="' + esc(e.id) + '" aria-label="Meet ' + esc(e.host) + ', ' + going(e) + ' going">' + crowd(e) +
       '<span><strong>' + going(e) + ' going</strong><span class="cm-host">with ' + esc(e.host) + '</span></span></button>' + rsvpBtn(e) + '</div>' +
       venueCredit(e) +
       (e.canCheckIn ? '<button type="button" class="btn primary block cm-checkin" data-action="checkin" data-id="' + esc(e.id) + '" aria-label="Check in to ' + esc(e.title) + '">' + icon('pin', 16) + ' Check in · +60 XP</button>' : '') + '</li>';
@@ -292,19 +304,35 @@
       list.map(groups ? groupCard : eventCard).join('') + '</ul>' +
       '<p class="cm-feed-end">' + (groups ? 'Your hobby groups' : 'You’re all caught up') + '</p>';
   }
+  // Hobbies you track first, then the rest that have events here.
+  function hobbyOptions() {
+    var ids = [];
+    (SQ().state.tracked || []).forEach(function (t) { if (ids.indexOf(t.hobbyId) < 0 && data().groups.some(function (g) { return g.hobbyId === t.hobbyId; })) ids.push(t.hobbyId); });
+    allEvents().forEach(function (e) { if (ids.indexOf(e.hobbyId) < 0) ids.push(e.hobbyId); });
+    return [['', 'All hobbies']].concat(ids.map(function (id) { return [id, hobbyName(id)]; }));
+  }
+  function filterSelect(id, label, action, value, options, ic) {
+    var on = options.some(function (o) { return o[0] === value && o[0] !== options[0][0]; });
+    return '<label class="cm-filter' + (on ? ' on' : '') + '" for="' + id + '"><span aria-hidden="true">' + icon(ic, 16) + '</span>' +
+      '<span class="sr-only">' + label + '</span>' +
+      '<select id="' + id + '" data-action="' + action + '">' + options.map(function (o) {
+        return '<option value="' + esc(o[0]) + '"' + (o[0] === value ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+      }).join('') + '</select><span class="cm-filter-caret" aria-hidden="true">' + icon('chevron-right', 14) + '</span></label>';
+  }
   function render() {
     if (!SQ() || !SQ().communityUnlocked()) return renderLocked();
     var groups = view.category === 'groups';
     return '<div class="screen cm cm-feed">' +
-      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span><button type="button" class="cm-self-avatar" data-action="go" data-to="me" aria-label="Change your character on the Me page">' + mii(selectedAvatar(), 60) + '</button></header>' +
+      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span></header>' +
       '<div class="cm-categories" role="group" aria-label="Community categories">' + CATEGORIES.map(function (c) {
         return '<button type="button" data-action="category" data-v="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '" class="' + (view.category === c[0] ? 'on' : '') + '"><span aria-hidden="true">' + icon(c[2], 23) + '</span>' + c[1] + '</button>';
       }).join('') + '</div>' +
       (view.category === 'all' ? '<label class="cm-search"><span aria-hidden="true">' + icon('search', 20) + '</span><span class="sr-only">Search all events</span>' +
       '<input id="cm-search" type="search" placeholder="Search events or places…" value="' + esc(view.query) + '" maxlength="120" autocomplete="off"></label>' : '') +
-      '<div class="cm-dates" role="group" aria-label="Event dates"' + (groups ? ' hidden' : '') + '>' + DATE_FILTERS.map(function (d) {
-        return '<button type="button" data-action="date-filter" data-v="' + d[0] + '" aria-pressed="' + (view.when === d[0]) + '" class="' + (view.when === d[0] ? 'on' : '') + '">' + d[1] + '</button>';
-      }).join('') + '</div>' +
+      '<div class="cm-filters">' +
+        (groups ? '' : filterSelect('cm-when', 'When', 'date-filter', view.when, DATE_FILTERS, 'calendar')) +
+        filterSelect('cm-hobby', 'Hobby', 'hobby-filter', view.hobby, hobbyOptions(), 'spark') +
+      '</div>' +
       '<div class="cm-feed-label"><h2>' + (groups ? 'Your circles' : view.category === 'going' ? 'On your calendar' : view.category === 'for-you' ? 'For your hobbies' : 'Around you') + '</h2>' +
       '<span class="small muted" role="status" aria-live="polite" aria-atomic="true" data-feed-status>' + feedStatus() + '</span></div>' +
       '<div data-feed-results>' + feedResults() + '</div><p class="small muted cm-sample">Sample events · Real venues, sample characters</p></div>';
@@ -527,8 +555,18 @@
       host.querySelector("[data-feed-results]").innerHTML = feedResults();
       host.querySelector("[data-feed-status]").textContent = feedStatus();
     });
+    host.addEventListener("change", function (ev) {
+      var t = ev.target, a = t && t.getAttribute && t.getAttribute("data-action");
+      if (a === "date-filter") view.when = t.value;
+      else if (a === "hobby-filter") view.hobby = t.value;
+      else return;
+      SQUI.refresh();
+      var again = document.getElementById(t.id); // keep keyboard focus on the same filter
+      if (again) try { again.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    });
     host.addEventListener("click", function (ev) {
       var el = ev.target.closest ? ev.target.closest("[data-action]") : null;
+      if (el && el.tagName === "SELECT") return; // selects change on "change", not click
       if (!el || !host.contains(el) || el.disabled) return;
       var a = el.getAttribute("data-action");
       var id = el.getAttribute("data-id");
@@ -538,8 +576,9 @@
       else if (a === "open-event") { SQUI.go("event", { id: id }); }
       else if (a === "open-group") { SQUI.go("group", { hobbyId: id }); }
       else if (a === "date-filter") { view.when = el.getAttribute("data-v"); SQUI.refresh(); }
+      else if (a === "hobby-filter") { view.hobby = el.getAttribute("data-v") || ""; SQUI.refresh(); }
       else if (a === "category") { view.category = el.getAttribute("data-v"); SQUI.refresh(); }
-      else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; SQUI.refresh(); }
+      else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; view.hobby = ""; SQUI.refresh(); }
       else if (a === "open-member") { SQUI.go("member", {id:id}); }
       else if (a === "share") {
         if (isTracked(id)) SQUI.go("log", { id: id });

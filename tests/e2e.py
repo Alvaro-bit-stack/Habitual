@@ -100,7 +100,11 @@ AUDIT_JS = r"""
     });
   });
   // images/icons broken
-  document.querySelectorAll('img').forEach(i => { if (!i.complete || !i.naturalWidth) out.problems.push('broken img'); });
+  document.querySelectorAll('img').forEach(i => {
+    const r = i.getBoundingClientRect();
+    if (i.loading === 'lazy' && !i.complete && (r.bottom < 0 || r.top > innerHeight)) return; // not loaded yet: off screen
+    if (!i.complete || !i.naturalWidth) out.problems.push('broken img');
+  });
   return out;
 }
 """
@@ -532,7 +536,9 @@ def flow_demo_community(c):
     c.click("#app-nav [data-nav=community]")
     expect(c.screen() == "community", m, "community", "not on community")
     c.audit("34-community")
-    # RSVP toggle on an upcoming row
+    expect(c.page.locator('[data-action="category"][data-v="going"][aria-pressed="true"]').count() == 1, m, "community", "Going is not the default tab")
+    # RSVP toggle on an upcoming row (All events, so cancelling keeps the card on screen)
+    c.click('[data-action="category"][data-v="all"]')
     btn = c.page.locator(".cm-ev .cm-rsvp").first
     eid = btn.get_attribute("data-id")
     was = c.js(f"() => SQ.state.rsvps.includes('{eid}')")

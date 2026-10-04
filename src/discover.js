@@ -1488,6 +1488,9 @@
     ];
   }
   var sheetLevel = "beginner";
+  // Level picked in a hobby's sheet before it's added; dragging it in later uses this level.
+  var levelPick = {};
+  function pickKey(it) { return it.key || it.id || it.name; }
   function levelPicker(level) {
     return '<div class="plan-level"><span class="small muted">Your level</span><div class="seg" role="radiogroup" aria-label="Your level">' + GUIDE_LEVELS.map(function (l) {
       var on = l[0] === level;
@@ -1499,8 +1502,8 @@
     var it = (key && blobItem(key)) || mineItems().filter(function (m) { return m.id === id; })[0];
     if (!it) return;
     var mine = inMine(it);
-    var have = it.id && SQ.skill && SQ.skill(it.id);
-    if (have) sheetLevel = guideLevel(have.tier);
+    var have = mine && it.id && SQ.skill && SQ.skill(it.id);
+    sheetLevel = have ? guideLevel(have.tier) : (levelPick[pickKey(it)] || "beginner");
     var wrap = document.createElement("div");
     wrap.className = "bl-sheet-wrap";
     wrap.innerHTML = '<div class="cm-sheet-backdrop" data-close></div>' +
@@ -1515,10 +1518,11 @@
         return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + "</span><span>" + e(f) + "</span></li>";
       }).join("") + "</ul></section>" : "") +
       levelPicker(sheetLevel) +
+      (mine ? '<p class="small muted bl-level-note">This is your saved level. Tap another to change it.</p>' : "") +
       '<div class="stack-lg" data-role="guide"></div>' +
       '<div class="bl-sheet-cta">' +
       (mine ? '<button type="button" class="btn primary block" data-sheet="open">' + SQUI.icon("check", 18) + " In My hobbies · Open tracker</button>"
-        : '<p class="bl-drag-tip">' + svgIcon(CAT_ICON.mine, 16, 1.8) + "<span>Drag it into My hobbies to add it</span></p>" +
+        : '<p class="bl-drag-tip">' + svgIcon(CAT_ICON.mine, 16, 1.8) + "<span>Pick your level, then drag it into My hobbies</span></p>" +
           '<button type="button" class="btn ghost block sm" data-sheet="add">Add without dragging</button>') +
       "</div></div>";
     (document.getElementById("overlay-root") || document.body).appendChild(wrap);
@@ -1540,6 +1544,12 @@
       if (lv) {
         sheetLevel = lv.getAttribute("data-level");
         wrap.querySelectorAll("[data-level]").forEach(function (x) { var on = x === lv; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+        // Already in My hobbies: this changes the saved mastery level (and its stars on Me).
+        // Not added yet: remember it, so dragging the hobby in uses this level.
+        if (mine && it.id && SQ.isTracked(it.id)) {
+          var cur = SQ.skill(it.id);
+          if (!cur || guideLevel(cur.tier) !== sheetLevel) { SQ.setSkill(it.id, sheetLevel); SQUI.toast(it.name + " set to " + lv.textContent); }
+        } else levelPick[pickKey(it)] = sheetLevel;
         load();
         return;
       }
@@ -1550,12 +1560,12 @@
       else if (act === "open") { closeBlobSheet(); SQUI.go("hobby", { id: it.id }); }
     });
   }
-  // Adding a hobby saves the level you picked (Beginner when dragged in) and loads that level's tasks.
+  // Adding a hobby saves the level picked in its sheet (Beginner if none) and loads that level's tasks.
   function addBlobHobby(it) {
     var id = it.catalog ? it.id : (it.id || SQ.addCustomHobby(it.name, it.category));
     if (SQ.isTracked(id)) return { id: id, reward: null };
     var reward = SQ.addHobby(id, { goal: 2, viaStarter: !!it.catalog });
-    var level = guideLevel(it.level || "beginner");
+    var level = guideLevel(it.level || levelPick[pickKey(it)] || "beginner");
     if (SQ.setSkill && !(SQ.skill(id) && SQ.skill(id).tier === level)) SQ.setSkill(id, level);
     finishOnboarding();
     return { id: id, reward: reward };

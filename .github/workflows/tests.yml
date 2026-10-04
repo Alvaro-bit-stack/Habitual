@@ -37,11 +37,11 @@ jobs:
       - name: Community tests
         run: node tests/community.test.js
 
-      - name: Backend tests
-        run: node tests/server.test.js
-
       - name: Build
         run: python3 build.py
+
+      - name: Server tests (needs the build)
+        run: node tests/server.test.js
 
       - name: Install Playwright
         run: |

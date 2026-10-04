@@ -245,6 +245,24 @@ function sampleRaw() {
     assert.equal("rawSources" in shoe, false);
   });
 
+  await test("an unavailable or exhausted model falls through to the next one", async () => {
+    const tried = [];
+    const fetchImpl = async (url) => {
+      const m = /models\/([^:]+):generateContent/.exec(url);
+      if (m) {
+        tried.push(decodeURIComponent(m[1]));
+        if (tried.length === 1) return { ok: false, status: 404 };
+        if (tried.length === 2) return { ok: false, status: 429 };
+        return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(sampleRaw()) }] } }] }) };
+      }
+      return { ok: false, status: 404 };
+    };
+    const out = await researchHobby({ hobby: "Running" }, { apiKey: "k", fetchImpl, cache: new Map() });
+    assert.equal(tried.length, 3);
+    assert.equal(new Set(tried).size, 3);
+    assert.equal(out.hobby, "Running");
+  });
+
   await test("character scripts are allowlisted and the Three.js CDN is permitted", async () => {
     const server = createServer();
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));

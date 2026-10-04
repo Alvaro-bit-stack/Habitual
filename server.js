@@ -38,7 +38,11 @@ function getCloudApi() {
 }
 const STATIC = { "auth.html": "text/html; charset=utf-8", "sw.js": "text/javascript; charset=utf-8",
   "manifest.webmanifest": "application/manifest+json", "icon.svg": "image/svg+xml" };
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+// GEMINI_MODEL can list several models, comma-separated. If one is unavailable to the key (404) or out
+// of quota (429), the next is tried, e.g. GEMINI_MODEL=gemini-3.5-flash,gemini-3.8-flash,gemini-flash-latest
+const MODELS = String(process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.8-flash,gemini-3-flash-preview,gemini-flash-latest")
+  .split(",").map((m) => m.trim()).filter(Boolean);
+const MODEL = MODELS[0];
 const CACHE_TTL_MS = integerEnv("RESEARCH_CACHE_TTL_MS", 24 * 60 * 60 * 1000, 60000, 7 * 24 * 60 * 60 * 1000);
 const RATE_LIMIT_MAX = integerEnv("RESEARCH_RATE_LIMIT", 10, 1, 1000);
 const RATE_WINDOW_MS = 10 * 60 * 1000;
@@ -128,6 +132,19 @@ function geminiUrl(model) {
 }
 
 async function callGemini(body, options = {}) {
+  if (options.model) return callGeminiModel(body, options);
+  let lastError;
+  for (const model of MODELS) {
+    try { return await callGeminiModel(body, Object.assign({}, options, { model })); }
+    catch (error) {
+      lastError = error;
+      if (!(error && (error.providerStatus === 404 || error.providerStatus === 429))) throw error;
+    }
+  }
+  throw lastError;
+}
+
+async function callGeminiModel(body, options = {}) {
   const apiKey = options.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const error = new Error("Gemini research is not configured on this server.");
@@ -161,10 +178,11 @@ async function callGemini(body, options = {}) {
     const messages = {
       401: "The Gemini API key was not accepted.",
       403: "This Gemini API key does not have access to the requested service.",
-      404: "The configured Gemini model is unavailable. Update GEMINI_MODEL in .env.",
-      429: "The Gemini quota is currently exhausted. Check the API project's quota or billing, then try again."
+      404: "None of the Gemini models in GEMINI_MODEL are available to this key. Update GEMINI_MODEL in .env.",
+      429: "Every Gemini model in GEMINI_MODEL is out of quota for this key. Check the API project's quota or billing, then try again."
     };
     const error = new Error(messages[response.status] || "Gemini could not complete the research.");
+    error.providerStatus = response.status;
     error.status = response.status === 429 ? 429 : response.status >= 400 && response.status < 500 ? 503 : 502;
     throw error;
   }
@@ -728,7 +746,7 @@ function readJson(req, limit = MAX_BODY_BYTES) {
 async function handler(req, res) {
   const requestUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   if (requestUrl.pathname === "/api/health" && req.method === "GET") {
-    return sendJson(res, 200, { ok: true, geminiConfigured: !!process.env.GEMINI_API_KEY, model: MODEL });
+    return sendJson(res, 200, { ok: true, geminiConfigured: !!process.env.GEMINI_API_KEY, model: MODEL, models: MODELS });
   }
   const isGuide = requestUrl.pathname === "/api/hobby-guide";
   if ((requestUrl.pathname === "/api/hobby-research" || isGuide) && req.method === "POST") {

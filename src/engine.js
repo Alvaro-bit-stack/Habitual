@@ -627,6 +627,16 @@
     var p = plans && plans[id];
     return (p && p.tasks && p.tasks[tier === "new" ? "beginner" : tier]) || [];
   }
+  // The task list for a hobby at its level (your own, else the researched plan) and which one is next.
+  function taskList(id) {
+    ensure();
+    var sk = state.skills[id];
+    if (!sk) return null;
+    var list = sk.tasks && sk.tasks.length ? sk.tasks.map(function (t) { return { label: t.label, minutes: t.minutes, why: t.why || "" }; })
+      : planTasks(id, sk.tier).map(function (t) { return { label: t.title, minutes: t.minutes, why: t.why || "", details: t.details || "" }; });
+    if (!list.length) return null;
+    return { tasks: list, next: sessionsFor(id).length % list.length, own: !!(sk.tasks && sk.tasks.length), tier: sk.tier };
+  }
   function tierTask(h, tier, n, sk) {
     if (sk && sk.tasks && sk.tasks.length) {
       var t = sk.tasks[n % sk.tasks.length];
@@ -932,6 +942,7 @@
     skill: skill,
     setSkillTasks: setSkillTasks,
     clearSkillTasks: clearSkillTasks,
+    taskList: taskList,
     logSession: logSession,
     tickMilestone: tickMilestone,
     events: events,

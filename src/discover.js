@@ -1312,7 +1312,7 @@
     if (!kits.length) return "";
     if (!kits.some(function (t) { return t[0] === guideTier; })) guideTier = kits[0][0];
     function total(t) { var k = g.gear[t[0]]; return k.total || k.products.reduce(function (n, p) { return n + (p.price || 0); }, 0); }
-    return '<section class="stack kit"><div><h3 class="h3">Starter kit</h3><p class="small muted">Gemini read reviews, Reddit threads and forums and picked real products, so you don’t have to.</p></div>' +
+    return '<section class="stack kit"><div><h3 class="h3">Starter kit</h3><p class="small muted">Picked from reviews, Reddit threads and forums, so you don’t have to.</p></div>' +
       '<div class="seg kit-seg kit-seg-2" role="tablist" aria-label="Starter kit">' + kits.map(function (t) {
         var on = t[0] === guideTier;
         return '<button type="button" role="tab" class="' + (on ? "on" : "") + '" aria-selected="' + on + '" data-tier="' + t[0] + '"><span>' + t[1] + "</span>" +
@@ -1441,28 +1441,76 @@
     if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); var inp = form.querySelector("input"); ask(inp.value); inp.value = ""; });
   }
   // The plan for a hobby at a level, plus the assistant. ownTasks: tasks the assistant set for this hobby.
-  function planSection(host, id, name, level, ownTasks, onTasks) {
+  // Plan block: a collapsible crash course and two tiles (Starter kits, Ask Hobitual) that open
+  // bottom sheets over a blurred background, so the page stays short on a phone.
+  // opts.showTasks lists the tasks too (Discover); the hobby screen shows them in "Your tasks".
+  function planSection(host, id, name, level, ownTasks, onTasks, opts) {
+    opts = opts || {};
     var g = planGuide(id, level);
-    var tasksHtml = "";
-    if ((ownTasks || []).length) {
-      tasksHtml = tasksSection({ level: level, tasks: ownTasks.map(function (t) { return { title: t.label, minutes: t.minutes, why: t.why }; }) }, "Your tasks (from the assistant)") +
-        '<button type="button" class="btn ghost sm" data-plan="reset-tasks">Go back to the researched tasks</button>';
-    }
-    var body = g ? (level === "beginner" ? crashCourse(g) + gearTiers(g) : "") + (tasksHtml || tasksSection(g))
-      : tasksHtml + '<div class="card bl-guide-note" role="note"><p class="small muted">A researched plan for ' + e(name) + " is coming soon. Ask the assistant for gear or tasks in the meantime.</p></div>";
-    var ctx = { id: id, name: name, level: level, key: (id || name) + "|" + level, onTasks: onTasks,
+    var beginner = level === "beginner";
+    var ctx = { id: id, name: name, level: level, key: (id || name) + "|" + level,
       context: function () {
         var gg = planGuide(id, level) || {};
-        var kit = level === "beginner" && gg.gear && gg.gear[guideTier] ? gg.gear[guideTier].products.map(function (p) { return p.brand + " " + p.name; }) : [];
+        var kit = beginner && gg.gear && gg.gear[guideTier] ? gg.gear[guideTier].products.map(function (p) { return p.brand + " " + p.name; }) : [];
         var sk = id && SQ.skill && SQ.skill(id);
         var tasks = (sk && sk.tasks && sk.tasks.length ? sk.tasks.map(function (t) { return t.label; }) : (gg.tasks || []).map(function (t) { return t.title; }));
         return { products: kit, tasks: tasks };
       } };
-    host.innerHTML = body + assistantHtml(ctx);
-    bindKitTabs(host);
-    bindAssistant(host, ctx);
+    ctx.onTasks = function () { closePlanSheet(); if (onTasks) onTasks(); };
+    function total(t) { var k = g && g.gear && g.gear[t]; return k ? k.total || k.products.reduce(function (n, p) { return n + (p.price || 0); }, 0) : 0; }
+    var kitTile = beginner && g && g.gear && g.gear.budget
+      ? '<button type="button" class="plan-tile" data-open="kit"><span class="plan-tile-ic kit" aria-hidden="true">' + SQUI.icon("star", 18) + '</span><strong>Starter kits</strong><span class="small muted">Budget ' + e(usd(total("budget"))) + " · Premium " + e(usd(total("premium"))) + "</span></button>" : "";
+    var askTile = '<button type="button" class="plan-tile' + (kitTile ? "" : " wide") + '" data-open="ask"><span class="plan-tile-ic ask" aria-hidden="true">' + SQUI.icon("spark", 18) + '</span><strong>Ask Hobitual</strong><span class="small muted">' + (beginner ? "Cheaper gear, other options, new tasks" : "A different mix of tasks, or anything else") + "</span></button>";
+    var vids = beginner && g ? g.crashCourse || [] : [];
+    var course = vids.length ? '<details class="plan-course"><summary><span class="plan-course-ic" aria-hidden="true">' + SQUI.icon("play", 18) + "</span>" +
+      '<span class="plan-course-t"><strong>Crash course</strong><span class="small muted">' + vids.length + " videos · how to get started</span></span>" +
+      '<span class="plan-course-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 18) + "</span></summary>" +
+      '<div class="stack plan-course-list">' + vids.map(videoCard).join("") + "</div></details>" : "";
+    var tasks = "";
+    if ((ownTasks || []).length) {
+      tasks = (opts.showTasks ? tasksSection({ level: level, tasks: ownTasks.map(function (t) { return { title: t.label, minutes: t.minutes, why: t.why }; }) }, "Your tasks (from the assistant)") : "") +
+        '<button type="button" class="btn ghost sm" data-plan="reset-tasks">Go back to the researched tasks</button>';
+    } else if (opts.showTasks && g) {
+      tasks = '<details class="plan-tasks"><summary><strong>' + e("Tasks for " + (beginner ? "beginners" : level === "intermediate" ? "intermediate players" : "advanced players")) +
+        '</strong><span class="small muted">' + g.tasks.length + " tasks</span></summary>" + tasksSection(g) + "</details>";
+    }
+    var note = g ? "" : '<div class="card bl-guide-note" role="note"><p class="small muted">A researched plan for ' + e(name) + " is coming soon. Ask the assistant for gear or tasks in the meantime.</p></div>";
+    host.innerHTML = '<section class="stack plan-block">' + (opts.title === false ? "" : '<h2 class="h3">' + (beginner ? "Get started" : "Your plan") + "</h2>") +
+      course + '<div class="plan-tiles">' + kitTile + askTile + "</div>" + note + tasks + "</section>";
+    host.querySelectorAll("[data-open]").forEach(function (b) {
+      b.addEventListener("click", function () { openPlanSheet(b.getAttribute("data-open"), g, ctx, b); });
+    });
     var reset = host.querySelector('[data-plan="reset-tasks"]');
     if (reset) reset.addEventListener("click", function () { if (SQ.clearSkillTasks) SQ.clearSkillTasks(id); SQUI.toast("Back to the researched tasks"); if (onTasks) onTasks(); });
+  }
+  var planSheetKeys = null, planSheetReturn = null;
+  function closePlanSheet() {
+    var w = document.querySelector(".plan-sheet-wrap");
+    if (w) w.remove();
+    if (planSheetKeys) { document.removeEventListener("keydown", planSheetKeys, true); planSheetKeys = null; }
+    if (planSheetReturn && planSheetReturn.isConnected) try { planSheetReturn.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+    planSheetReturn = null;
+  }
+  function openPlanSheet(kind, g, ctx, from) {
+    closePlanSheet();
+    planSheetReturn = from || null;
+    var title = kind === "kit" ? "Starter kits" : "Ask Hobitual";
+    var wrap = document.createElement("div");
+    wrap.className = "plan-sheet-wrap";
+    wrap.innerHTML = '<div class="cm-sheet-backdrop" data-close></div>' +
+      '<div class="cm-sheet plan-sheet" role="dialog" aria-modal="true" aria-label="' + e(title + " · " + ctx.name) + '">' +
+      '<div class="cm-sheet-grab" aria-hidden="true"></div>' +
+      '<div class="plan-sheet-head"><div><div class="eyebrow">' + e(ctx.name) + '</div><h2 class="h2">' + e(title) + "</h2></div>" +
+      '<button type="button" class="icon-btn" data-close aria-label="Close">' + SQUI.icon("close", 20) + "</button></div>" +
+      '<div class="stack-lg" data-role="plan-sheet-body">' + (kind === "kit" ? gearTiers(g) : assistantHtml(ctx)) + "</div></div>";
+    (document.getElementById("overlay-root") || document.body).appendChild(wrap);
+    var body = wrap.querySelector('[data-role="plan-sheet-body"]');
+    if (kind === "kit") bindKitTabs(body); else bindAssistant(body, ctx);
+    wrap.addEventListener("click", function (ev) { if (ev.target.closest("[data-close]")) closePlanSheet(); });
+    planSheetKeys = function (ev) { if (ev.key === "Escape") { ev.stopPropagation(); closePlanSheet(); } };
+    document.addEventListener("keydown", planSheetKeys, true);
+    var btn = wrap.querySelector(".icon-btn[data-close]");
+    if (btn) try { btn.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
   }
 
   // The hobby screen (from Today): the plan for the level you track it at.
@@ -1470,7 +1518,7 @@
     var h = SQ.getHobby(id);
     if (!host || !h) return;
     var sk = SQ.skill && SQ.skill(id), level = guideLevel(sk && sk.tier);
-    planSection(host, id, h.name, level, sk && sk.tasks, function () { SQUI.refresh(); });
+    planSection(host, id, h.name, level, sk && sk.tasks, function () { SQUI.refresh(); }, { showTasks: false });
   };
 
   // ---------- hobby info sheet ----------
@@ -1530,7 +1578,7 @@
     function load() {
       var sk = it.id && SQ.skill && SQ.skill(it.id);
       var own = sk && guideLevel(sk.tier) === sheetLevel ? sk.tasks : null;
-      planSection(guideHost, it.id, it.name, sheetLevel, own, function () { load(); });
+      planSection(guideHost, it.id, it.name, sheetLevel, own, function () { load(); }, { showTasks: true, title: false });
     }
     load();
     var focusBtn = wrap.querySelector("[data-close].icon-btn");

@@ -104,6 +104,7 @@ AUDIT_JS = r"""
   document.querySelectorAll('img').forEach(i => {
     const r = i.getBoundingClientRect();
     if (i.loading === 'lazy' && !i.complete && (r.bottom < 0 || r.top > innerHeight)) return; // not loaded yet: off screen
+    if (i.loading === 'lazy' && !i.complete && i.closest('details:not([open])')) return; // in a collapsed section: loads when opened
     if (!i.complete || !i.naturalWidth) out.problems.push('broken img');
   });
   return out;
@@ -534,7 +535,7 @@ def flow_simple_discovery(c, place):
     c.page.locator('.bl-hobby[data-key="crossfit"]').evaluate("el => el.click()")
     expect(c.page.locator(".bl-sheet").count() == 1, m, "discover-sheet", "hobby info sheet did not open")
     c.page.wait_for_selector(".bl-sheet .bl-guide-note")
-    expect(c.page.locator('.bl-sheet [data-role="assistant"]').count() == 1, m, "discover-sheet", "a hobby without a plan should offer the assistant")
+    expect(c.page.locator('.bl-sheet [data-open="ask"]').count() == 1, m, "discover-sheet", "a hobby without a plan should offer the assistant")
     expect(c.page.locator(".bl-sheet [data-level]").count() == 3, m, "discover-sheet", "level picker missing")
     expect(c.page.locator('.bl-sheet a[href*="google.com/search"], .bl-sheet a[href*="youtube.com/results"]').count() == 0,
            m, "discover-sheet", "sheet should not link open searches")

@@ -668,3 +668,34 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .bl-video-thumb.no-thumb { background: linear-gradient(135deg, #ff5f5f, #c8102e); }
 .bl-video-thumb.no-thumb::after { content: attr(data-channel); position: absolute; left: 8px; right: 8px; bottom: 6px; color: #fff; font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bl-video-thumb .bl-video-play { z-index: 1; }
+
+/* Plan block: collapsible crash course + tiles that open sheets (phone-first) */
+.plan-block > .h3 { margin: 0; }
+.plan-course, .plan-tasks { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.plan-course > summary, .plan-tasks > summary { list-style: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; cursor: pointer; }
+.plan-course > summary::-webkit-details-marker, .plan-tasks > summary::-webkit-details-marker { display: none; }
+.plan-tasks > summary { justify-content: space-between; }
+.plan-course-ic { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #ff6b6b, #d62839); }
+.plan-course-t { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.plan-course-chev { color: var(--ink-2); transition: transform .2s ease; }
+.plan-course[open] .plan-course-chev { transform: rotate(90deg); }
+.plan-course-list { padding: 0 10px 10px; }
+.plan-tasks > section { padding: 0 14px 14px; }
+.plan-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.plan-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 112px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 6px 18px -14px rgba(22, 50, 72, .35); }
+.plan-tile.wide { grid-column: 1 / -1; min-height: 0; }
+.plan-tile strong { font-size: 15px; }
+.plan-tile .small { line-height: 1.3; }
+.plan-tile:focus-visible, .plan-course > summary:focus-visible, .plan-tasks > summary:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.plan-tile-ic { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 4px; border-radius: 11px; color: #fff; }
+.plan-tile-ic.kit { background: linear-gradient(135deg, #ffb547, #f07a1e); }
+.plan-tile-ic.ask { background: linear-gradient(135deg, #6f8cff, #b06cff); }
+.plan-sheet-wrap { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.plan-sheet-wrap .cm-sheet-backdrop { background: color-mix(in srgb, var(--ink) 22%, transparent); -webkit-backdrop-filter: blur(10px) saturate(120%); backdrop-filter: blur(10px) saturate(120%); }
+.plan-sheet { display: flex; flex-direction: column; gap: 14px; max-height: calc(100dvh - 56px); padding-top: 8px; }
+.plan-sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.plan-sheet-head .h2 { margin: 2px 0 0; }
+.plan-sheet .kit > div:first-child .h3 { display: none; }
+.plan-sheet .as-card { border: 0; box-shadow: none; padding: 0; background: transparent; }
+.plan-sheet .as-card .as-head { display: none; }
+.plan-sheet .as-log { max-height: none; }

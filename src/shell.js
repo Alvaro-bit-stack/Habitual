@@ -939,7 +939,7 @@
 
   /* Early ladder rungs (10 min or less) are tiny wins; later rungs are real sessions and pay regular XP. */
   function stepSize(tw) { return tw && tw.minutes > 10 ? "regular" : "tiny"; }
-  function stepKind(tw) { return stepSize(tw) === "regular" ? "Next step" : "Tiny win"; }
+  function stepKind(tw) { return tw && tw.researched ? "Task" : stepSize(tw) === "regular" ? "Next step" : "Tiny win"; }
   function doTinyWin(id) {
     var s = stats(id);
     var tw = s && s.nextTinyWin;
@@ -1134,6 +1134,7 @@
     }
     var s = stats(id);
     var tw = s.nextTinyWin;
+    var tl = sq().taskList ? sq().taskList(id) : null;
     var ladder = (h.tinyWins || []).map(function (w, i) {
       var cls = i < s.ladderIndex ? "past" : i === s.ladderIndex ? "cur" : "";
       return '<li class="' + cls + '"' + (i === s.ladderIndex ? ' aria-current="step"' : "") + '><span class="lad-dot">' +
@@ -1180,15 +1181,21 @@
       '<button type="button" class="icon-btn" data-action="goal" data-d="1" aria-label="More sessions per week"' + (s.goal >= 7 ? " disabled" : "") + ">" + icon("plus", 18) + "</button></div></div>" +
 
       '<div class="stack">' +
-      (tw ? '<div class="hb-next stack"><div class="eyebrow" style="color:var(--leaf)">' + (stepSize(tw) === "regular" ? "Next step" : "Next tiny win") + ' · step ' + (s.ladderIndex + 1) + " of 5</div>" +
-        '<div class="h3">' + esc(tw.label) + "</div>" +
-        '<button type="button" class="tiny-btn" data-action="tiny"><span class="tw-ic">' + icon("check", 18) + '</span><span class="tw-l">' + (stepSize(tw) === "regular" ? "Did it, log the session" : "Did it, log a tiny win") + '</span><span class="tw-m">' + esc(tw.minutes) + " min</span></button></div>" : "") +
+      (tw ? '<div class="hb-next stack"><div class="eyebrow" style="color:var(--leaf)">' + (tl ? "Next task · " + (tl.next + 1) + " of " + tl.tasks.length : (stepSize(tw) === "regular" ? "Next step" : "Next tiny win") + " · step " + (s.ladderIndex + 1) + " of 5") + "</div>" +
+        '<div class="h3">' + esc(tw.label) + "</div>" + (tl && tl.tasks[tl.next].details ? '<p class="small muted" style="margin:0">' + esc(tl.tasks[tl.next].details) + "</p>" : "") +
+        '<button type="button" class="tiny-btn" data-action="tiny"><span class="tw-ic">' + icon("check", 18) + '</span><span class="tw-l">' + (tl ? "Did it, log it" : stepSize(tw) === "regular" ? "Did it, log the session" : "Did it, log a tiny win") + '</span><span class="tw-m">' + esc(tw.minutes) + " min</span></button></div>" : "") +
       '<button type="button" class="btn block" data-action="log">' + icon("plus", 18) + "Log a session</button></div>" +
 
       '<div class="stack-lg" data-role="kit"></div>' +
 
-      '<section class="stack"><div><h2 class="h3">Tiny-win ladder</h2><p class="small muted">Each session steps you up the ladder. A week away resets it to the first rung, so coming back is always easy.</p></div>' +
-      '<ol class="ladder">' + ladder + "</ol></section>" +
+      (tl ? '<section class="stack"><div class="sq-section-title"><h2 class="h3">Your tasks</h2><span class="spacer"></span><span class="small muted">' + esc(TIER_NAME[tl.tier] || "") + "</span></div>" +
+        '<p class="small muted" style="margin-top:-4px">' + (tl.own ? "From the assistant. " : "What people at your level say worked. ") + "Each session moves you to the next one.</p>" +
+        '<ol class="ladder hb-tasks">' + tl.tasks.map(function (t, i) {
+          var cur = i === tl.next;
+          return '<li class="' + (cur ? "cur" : "") + '"' + (cur ? ' aria-current="step"' : "") + '><span class="lad-dot">' + (i + 1) + "</span><span>" + esc(t.label) + '</span><span class="lad-min">' + esc(t.minutes) + "m</span></li>";
+        }).join("") + "</ol></section>"
+      : '<section class="stack"><div><h2 class="h3">Tiny-win ladder</h2><p class="small muted">Each session steps you up the ladder. A week away resets it to the first rung, so coming back is always easy.</p></div>' +
+      '<ol class="ladder">' + ladder + "</ol></section>") +
 
       '<section class="stack"><h2 class="h3">Last 12 weeks</h2>' + heatMap(s) +
       '<div class="stats">' +

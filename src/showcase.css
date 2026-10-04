@@ -14,6 +14,7 @@
 .sc-body .progress { display: block; }
 .sc-body .progress-bar { display: block; }
 .sc-stars { display: inline-flex; gap: 0; margin-right: 2px; filter: drop-shadow(0 1px 1.5px rgba(47, 111, 168, .35)); }
+.hb-name .sc-stars { margin-left: 8px; vertical-align: -2px; }
 .sc-stars svg + svg { margin-left: -2px; }
 .sc-lv { font-weight: 700; color: var(--sun-ink); background: var(--sun); border-radius: 999px; padding: 2px 10px; font-size: 13px; }
 .sc-hero .h1 { margin: 4px 0 0; }

@@ -384,8 +384,8 @@ Does re-evaluating award XP or an achievement? Do custom hobbies get a generic c
   user's own answer; it never changes hobby XP or level, which start at 0 for everyone. The
   player's overall level comes only from time spent in the app.
 - Community: highlight events whose `level` matches `eventLevel`.
-- Hobby screen (shell): "Check my level" entry point. Stars show on the Me page only;
-  the hobby screen and Today cards just use the yellow Lv pill.
+- Hobby screen (shell): "Check my level" entry point. Stars show on the Me page cards and beside the
+  name on the hobby screen (`SQUI.skillStars(id)`); the Today list cards don't show them.
 
 ## 6. Me page — `src/showcase.js`, `src/showcase.css`
 

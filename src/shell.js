@@ -1167,7 +1167,7 @@
     return '<div class="screen stack-lg sq-hobby">' +
       '<div class="stack"><div class="screen-head">' + backBtn() + '<span class="eyebrow">' + esc(CAT_LABEL[h.category] || "Hobby") + "</span></div>" +
       '<div class="hb-top">' + glyph(id, 34, true) +
-      '<div style="min-width:0"><h1 class="h1 hb-name">' + esc(h.name) + "</h1>" +
+      '<div style="min-width:0"><h1 class="h1 hb-name">' + esc(h.name) + (SQUI.skillStars ? SQUI.skillStars(id) : "") + "</h1>" +
       '<div class="row" style="gap:10px;margin-top:2px"><span class="hc-lv sc-lv" style="font-size:14px">Lv ' + s.level + '</span><span class="small muted">' + esc(lastText(s.daysSince)) + "</span>" +
       (s.inComeback ? '<span class="pill-warn">' + icon("spark", 14) + "Comeback +20</span>" : "") + "</div></div></div>" +
       '<div><div class="progress xp" role="progressbar" aria-label="' + esc(h.name) + ' level progress" aria-valuemin="0" aria-valuemax="' + s.xpForNext + '" aria-valuenow="' + s.xpIntoLevel + '"><div class="progress-bar" style="width:' + pct(s.xpIntoLevel, s.xpForNext) + '%"></div></div>' +

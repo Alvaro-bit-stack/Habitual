@@ -36,6 +36,7 @@ node tests/community.test.js   # dates, search, RSVPs, groups and character prof
 pip install playwright && python3 -m playwright install chromium
 python3 tests/e2e.py           # browser walkthrough of every flow, phone + desktop, light + dark
 python3 tests/arrival.e2e.py   # Community: character drops in from above the card, lands with sparks
+python3 tests/filters.e2e.py   # Community: Hobby search box, your hobbies vs every hobby
 ```
 
 All checks run automatically on every push and pull request (see `.github/workflows/tests.yml`). Screenshots from the browser tests land in `scratch/qa/` (git-ignored).

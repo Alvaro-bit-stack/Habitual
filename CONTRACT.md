@@ -385,8 +385,11 @@ local to the SVG illustrations. All content stays self-contained, without remote
 
 Header: "Community" centered with the location under it (no avatar button).
 Tabs, in order: Going (default) / For you / All events / Your groups. Below them two dropdowns:
-When (Any day / Today / Tomorrow / This weekend; hidden on Your groups) and Hobby (All hobbies,
-then tracked hobbies, then the rest), which also narrows Your groups. Reset clears both.
+When (Any day / Today / Tomorrow / This weekend; hidden on Your groups) and Hobby, a
+type-to-search combobox (`#cm-hobby`, listbox `#cm-hobby-list`; arrows, Enter, Escape, tap; a clear
+button when set). On Going / For you / Your groups it lists only your tracked hobbies; on All events
+(for discovering new hobbies) your hobbies first, then every other hobby with events. Switching to a
+tab that doesn't offer the picked hobby clears it. Hobby also narrows Your groups. Reset clears both.
 Each event shows who's going as a stack of character heads, host in front: 1 head for 1 person,
 2 for 2-3, 3 for 4-7, 4 for 8-14, 5 for 15+ (your character joins the stack once you RSVP). This weekend means the upcoming Saturday-Sunday, or the remaining
 current weekend. Group listings are independent of date filters. Search is rendered only in All events

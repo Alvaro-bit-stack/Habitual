@@ -123,10 +123,24 @@ test('Search exists only in All events and does not filter other tabs',()=>{
 test('Hobby filter narrows events and groups, and resets with the feed',()=>{
   action('category','all');action('hobby-filter','running');
   assert.deepEqual(ids(),['ev-running-1','ev-running-2']);
-  assert.ok(/<option value="running" selected>Running<\/option>/.test(screens.community.render()));
+  assert.ok(/id="cm-hobby"[^>]*value="Running"/.test(screens.community.render()));
   action('category','groups');const g=screens.community.render();assert.ok(g.includes('Running · Newark area'));assert.ok(!g.includes('Guitar · Newark area'));
   assert.ok(!g.includes('id="cm-when"'));assert.ok(g.includes('id="cm-hobby"'));
   action('reset-feed');assert.equal(ids().length,18);
+});
+test('Your tabs list only your hobbies; All events lists every hobby to discover',()=>{
+  const opts=()=>[...screens.community.render().matchAll(/role="option" data-v="([^"]*)"/g)].map(m=>m[1]);
+  action('category','going');assert.deepEqual(opts(),['','running','drawing','guitar']);
+  action('category','for-you');assert.deepEqual(opts(),['','running','drawing','guitar']);
+  action('category','all');const all=opts();assert.deepEqual(all.slice(0,4),['','running','drawing','guitar']);assert.ok(all.includes('tennis')&&all.includes('chess'));
+  action('hobby-filter','tennis');assert.ok(ids().every(id=>id.startsWith('ev-tennis')));
+  action('category','going');assert.ok(/id="cm-hobby"[^>]*value=""/.test(screens.community.render()),'a hobby you do not track is dropped when switching to Going');
+  action('reset-feed');
+});
+test('Hobby filter is a type-to-search combobox',()=>{
+  const html=screens.community.render();
+  assert.ok(html.includes('role="combobox"'));assert.ok(html.includes('aria-controls="cm-hobby-list"'));
+  assert.ok(html.includes('role="listbox"'));assert.ok(!html.includes('<select id="cm-hobby"'));
 });
 test('Dates are one dropdown, not a row of buttons',()=>{
   const html=screens.community.render();assert.ok(html.includes('<select id="cm-when" data-action="date-filter">'));

@@ -304,14 +304,34 @@
       list.map(groups ? groupCard : eventCard).join('') + '</ul>' +
       '<p class="cm-feed-end">' + (groups ? 'Your hobby groups' : 'You’re all caught up') + '</p>';
   }
-  // Hobbies you track first, then the rest that have events here.
-  function hobbyOptions() {
+  // Going / For you / Your groups filter within your own hobbies; All events is for discovering new
+  // ones, so it lists your hobbies first and then every other hobby with events here.
+  function hobbyIds(category) {
     var ids = [];
-    (SQ().state.tracked || []).forEach(function (t) { if (ids.indexOf(t.hobbyId) < 0 && data().groups.some(function (g) { return g.hobbyId === t.hobbyId; })) ids.push(t.hobbyId); });
-    allEvents().forEach(function (e) { if (ids.indexOf(e.hobbyId) < 0) ids.push(e.hobbyId); });
-    return [['', 'All hobbies']].concat(ids.map(function (id) { return [id, hobbyName(id)]; }));
+    (SQ().state.tracked || []).forEach(function (t) { if (ids.indexOf(t.hobbyId) < 0) ids.push(t.hobbyId); });
+    if (category === 'all') allEvents().forEach(function (e) { if (ids.indexOf(e.hobbyId) < 0) ids.push(e.hobbyId); });
+    return ids;
   }
-  function filterSelect(id, label, action, value, options, ic) {
+  function hobbyOptions() {
+    return [['', 'All hobbies']].concat(hobbyIds(view.category).map(function (id) { return [id, hobbyName(id)]; }));
+  }
+  // Type-to-narrow hobby picker (combobox): the field shows the chosen hobby; typing filters the list.
+  function hobbyCombo() {
+    var opts = hobbyOptions(), cur = view.hobby ? hobbyName(view.hobby) : '';
+    var mine = view.category === 'all' ? 'Every hobby' : 'Your hobbies';
+    return '<div class="cm-filter cm-combo' + (view.hobby ? ' on' : '') + '">' +
+      '<span aria-hidden="true">' + icon('spark', 16) + '</span>' +
+      '<label class="sr-only" for="cm-hobby">Hobby</label>' +
+      '<input id="cm-hobby" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cm-hobby-list"' +
+      ' autocomplete="off" spellcheck="false" placeholder="All hobbies" value="' + esc(cur) + '">' +
+      (view.hobby ? '<button type="button" class="cm-combo-clear" data-action="hobby-filter" data-v="" aria-label="Show all hobbies">' + icon('close', 14) + '</button>'
+                  : '<span class="cm-filter-caret" aria-hidden="true">' + icon('chevron-right', 14) + '</span>') +
+      '<ul id="cm-hobby-list" class="cm-combo-list" role="listbox" aria-label="' + mine + '" hidden>' + opts.map(function (o, i) {
+        return '<li id="cm-hobby-opt-' + i + '" role="option" data-v="' + esc(o[0]) + '" aria-selected="' + (o[0] === view.hobby) + '">' +
+          (o[0] ? glyph(o[0], 16) : icon('compass', 16)) + '<span>' + esc(o[1]) + '</span></li>';
+      }).join('') + '<li class="cm-combo-none" role="presentation" hidden>No matching hobby</li></ul></div>';
+  }
+  function filterSelect(id, label, action, value, options, ic) { // the When dropdown
     var on = options.some(function (o) { return o[0] === value && o[0] !== options[0][0]; });
     return '<label class="cm-filter' + (on ? ' on' : '') + '" for="' + id + '"><span aria-hidden="true">' + icon(ic, 16) + '</span>' +
       '<span class="sr-only">' + label + '</span>' +
@@ -331,7 +351,7 @@
       '<input id="cm-search" type="search" placeholder="Search events or places…" value="' + esc(view.query) + '" maxlength="120" autocomplete="off"></label>' : '') +
       '<div class="cm-filters">' +
         (groups ? '' : filterSelect('cm-when', 'When', 'date-filter', view.when, DATE_FILTERS, 'calendar')) +
-        filterSelect('cm-hobby', 'Hobby', 'hobby-filter', view.hobby, hobbyOptions(), 'spark') +
+        hobbyCombo() +
       '</div>' +
       '<div class="cm-feed-label"><h2>' + (groups ? 'Your circles' : view.category === 'going' ? 'On your calendar' : view.category === 'for-you' ? 'For your hobbies' : 'Around you') + '</h2>' +
       '<span class="small muted" role="status" aria-live="polite" aria-atomic="true" data-feed-status>' + feedStatus() + '</span></div>' +
@@ -535,6 +555,54 @@
     if (!took) drop2d(slot, onLand, onDone);
   }
 
+  var comboQuietUntil = 0; // focus returned after a pick (by us or by SQUI.refresh) shouldn't reopen the list
+  function bindHobbyCombo(host) {
+    var input = host.querySelector && host.querySelector("#cm-hobby");
+    var list = host.querySelector && host.querySelector("#cm-hobby-list");
+    if (!input || !list) return;
+    var items = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var none = list.querySelector(".cm-combo-none"), active = -1, label = input.value;
+    function visible() { return items.filter(function (li) { return !li.hidden; }); }
+    function setActive(i) {
+      var vis = visible();
+      active = vis.length ? (i + vis.length) % vis.length : -1;
+      items.forEach(function (li) { li.classList.remove("on"); });
+      if (active >= 0) { vis[active].classList.add("on"); input.setAttribute("aria-activedescendant", vis[active].id); vis[active].scrollIntoView({ block: "nearest" }); }
+      else input.removeAttribute("aria-activedescendant");
+    }
+    function filter(q) {
+      q = q.trim().toLowerCase();
+      items.forEach(function (li) { li.hidden = !!q && li.getAttribute("data-v") !== "" ? li.textContent.toLowerCase().indexOf(q) < 0 : !!q && li.getAttribute("data-v") === ""; });
+      none.hidden = visible().length > 0;
+      setActive(q ? 0 : -1);
+    }
+    function open(q) { list.hidden = false; input.setAttribute("aria-expanded", "true"); filter(q || ""); }
+    function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant"); input.value = label; }
+    function choose(li) {
+      if (!li) return;
+      view.hobby = li.getAttribute("data-v") || "";
+      comboQuietUntil = Date.now() + 400; // set first: SQUI.refresh restores focus while it renders
+      SQUI.refresh();
+      var again = document.getElementById("cm-hobby");
+      if (again) try { again.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    }
+    input.addEventListener("focus", function () { if (Date.now() < comboQuietUntil) return; input.select(); open(""); });
+    input.addEventListener("click", function () { if (list.hidden) open(""); });
+    input.addEventListener("input", function () { open(input.value); });
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "ArrowDown") { ev.preventDefault(); if (list.hidden) open(""); else setActive(active + 1); }
+      else if (ev.key === "ArrowUp") { ev.preventDefault(); if (list.hidden) open(""); else setActive(active - 1); }
+      else if (ev.key === "Enter") { var vis = visible(); if (!list.hidden && vis.length) { ev.preventDefault(); choose(vis[Math.max(0, active)]); } }
+      else if (ev.key === "Escape") { if (!list.hidden) { ev.preventDefault(); close(); } }
+    });
+    input.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== input) close(); }, 0); });
+    list.addEventListener("mousedown", function (ev) { ev.preventDefault(); }); // keep focus in the field while picking
+    list.addEventListener("click", function (ev) {
+      var li = ev.target.closest && ev.target.closest('[role="option"]');
+      if (li) choose(li);
+    });
+  }
+
   /* ---------------- shared actions ---------------- */
   function mount(root) {
     // Bind to this screen's own wrapper (replaced on every render) so the listener never
@@ -558,12 +626,12 @@
     host.addEventListener("change", function (ev) {
       var t = ev.target, a = t && t.getAttribute && t.getAttribute("data-action");
       if (a === "date-filter") view.when = t.value;
-      else if (a === "hobby-filter") view.hobby = t.value;
       else return;
       SQUI.refresh();
       var again = document.getElementById(t.id); // keep keyboard focus on the same filter
       if (again) try { again.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     });
+    bindHobbyCombo(host);
     host.addEventListener("click", function (ev) {
       var el = ev.target.closest ? ev.target.closest("[data-action]") : null;
       if (el && el.tagName === "SELECT") return; // selects change on "change", not click
@@ -577,7 +645,11 @@
       else if (a === "open-group") { SQUI.go("group", { hobbyId: id }); }
       else if (a === "date-filter") { view.when = el.getAttribute("data-v"); SQUI.refresh(); }
       else if (a === "hobby-filter") { view.hobby = el.getAttribute("data-v") || ""; SQUI.refresh(); }
-      else if (a === "category") { view.category = el.getAttribute("data-v"); SQUI.refresh(); }
+      else if (a === "category") {
+        view.category = el.getAttribute("data-v");
+        if (view.hobby && hobbyIds(view.category).indexOf(view.hobby) < 0) view.hobby = "";
+        SQUI.refresh();
+      }
       else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; view.hobby = ""; SQUI.refresh(); }
       else if (a === "open-member") { SQUI.go("member", {id:id}); }
       else if (a === "share") {

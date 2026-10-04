@@ -71,6 +71,37 @@
   }
   var still = G.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /* ------------------------------------------------------------------ props */
+  // Props on the ground around the Me character: a parked bike plus gear for up to three of the player's top
+  // hobbies. They're modelled in Blender (tools/build_props.py -> assets/models/props.glb, one object per
+  // prop named prop_<hobbyId>); hobbies without a model get a simple tote bag. Units are metres next to the
+  // 1.8 m character at the origin, feet at y = 0.
+  function buildProps(THREE, kit, hobbyIds) {
+    var group = new THREE.Group();
+    function shadow(r, x, z, sx) { // soft blob on the street
+      var o = new THREE.Mesh(new THREE.CircleGeometry(r, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.16, depthWrite: false }));
+      o.position.set(x, 0.003, z); o.rotation.x = -Math.PI / 2; o.scale.x = sx || 1; group.add(o);
+    }
+    function place(o, x, z, ry, s) { o.position.set(x, 0, z); o.rotation.y = ry || 0; o.scale.setScalar(s || 1); group.add(o); return o; }
+    function tote() {
+      var g = new THREE.Group(), m = function (c) { return new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }); };
+      var bag = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.1), m(0x3e8fd8)); bag.position.y = 0.15; g.add(bag);
+      var h = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 6, 20, Math.PI), m(0x22262b)); h.position.y = 0.3; g.add(h);
+      return g;
+    }
+    function prop(id) { var o = kit && kit.getObjectByName("prop_" + id); return o ? o.clone() : null; }
+    var bike = prop("bike");
+    if (bike) { place(bike, -0.85, -1.1, 0.65, 0.78); shadow(0.42, -0.85, -1.1, 1.35); }
+    // x, z, turn. Long items (guitar, racket) turn so they point away from the camera.
+    var SLOTS = [[0.58, 0.18, -0.7], [-0.55, 0.28, 0.5], [0.8, -0.55, 1.1]];
+    hobbyIds.slice(0, SLOTS.length).forEach(function (id, i) {
+      var sl = SLOTS[i], long = id === "guitar" || id === "tennis";
+      place(prop(id) || tote(), sl[0], sl[1], sl[2] + (long ? (sl[0] > 0 ? 1.1 : -1.1) : 0), long ? 0.8 : 1.1);
+      shadow(long ? 0.2 : 0.15, sl[0], sl[1], 1.5);
+    });
+    return group;
+  }
+
   /* ------------------------------------------------------------------ 3D stage */
   // Renders gltf into wrap until wrap leaves the page. opts.controls: drag to turn + tap to cheer.
   // opts.intro: "wave" | "jump" | "jump-spin" | "drop". opts.onMove(name): called when a tap starts a move.
@@ -106,6 +137,7 @@
     var c = box.getCenter(new THREE.Vector3());
     model.position.set(-c.x, -box.min.y, -c.z);
     var rig = new THREE.Group(); rig.add(model); scene.add(rig);
+    if (opts.props) scene.add(buildProps(THREE, opts.kit, opts.props)); // Me only: bike + hobby gear on the ground
 
     var camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50), controls = null;
     if (opts.controls) {
@@ -185,10 +217,13 @@
 
   function mountStage(wrap, id) {
     var status = wrap.querySelector(".sc-status");
-    loadModel(id).then(function (gltf) {
+    // The character and the props file load together; if the props fail, the character still shows.
+    Promise.all([loadModel(id), loadModel("props").catch(function () { return null; })]).then(function (res) {
+      var gltf = res[0], kit = res[1] && res[1].scene;
       if (!wrap.isConnected) return;
       status.hidden = true;
-      stage(wrap, gltf, { controls: true, intro: "wave", onMove: function (m) {
+      var S = sq(), top = S.state.tracked.slice().sort(function (a, b) { return (b.xp || 0) - (a.xp || 0); }).map(function (t) { return t.hobbyId; });
+      stage(wrap, gltf, { controls: true, intro: "wave", props: top, kit: kit, onMove: function (m) {
         var cap = document.querySelector(".sc-move");
         if (cap) cap.textContent = m.replace(/([a-z])([A-Z])/g, "$1 $2"); // SillyDance -> Silly Dance
       } });

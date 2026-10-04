@@ -391,7 +391,7 @@ async function handler(req, res) {
     return fs.createReadStream(fullAsset).pipe(res);
   }
 
-  const modelMatch = /^\/models\/(neo|adrian|alvaro|avatar[123])\.js$/.exec(requestUrl.pathname);
+  const modelMatch = /^\/models\/(neo|adrian|alvaro|avatar[123]|props)\.js$/.exec(requestUrl.pathname);
   if (modelMatch) {
     const fullModel = path.join(DIST, "models", `${modelMatch[1]}.js`);
     if (!fs.existsSync(fullModel)) return sendJson(res, 503, { error: "Build the app first with: python build.py" });

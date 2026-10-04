@@ -29,6 +29,15 @@ def venue_script():
     return '<script data-src="venues">globalThis.SQ_VENUES=' + payload + ';</script>'
 
 
+def me_background():
+    # The Me stage's city-street-at-night backdrop (src/assets/me-street.jpg), embedded once like the sprites.
+    image = (SRC / "assets" / "me-street.jpg").read_bytes()
+    if not image.startswith(b"\xff\xd8\xff"):
+        raise ValueError("Me background must be a JPEG")
+    return ('<style data-src="me-background">.sc-stage{background-image:url("data:image/jpeg;base64,'
+            + base64.b64encode(image).decode("ascii") + '")}</style>')
+
+
 def avatar_styles():
     # Each character's two sprites are embedded once, rather than once per event/person.
     parts = []
@@ -52,6 +61,7 @@ def render(venues):
     for name in CSS:
         parts.append(f'<style data-src="{name}">\n{(SRC / name).read_text(encoding="utf-8-sig")}\n</style>')
     parts.append(avatar_styles())
+    parts.append(me_background())
     parts.append('<div id="app"><main id="app-main"></main><nav id="app-nav" aria-label="Main"></nav></div>')
     parts.append('<div id="overlay-root"></div><div id="toast-root" aria-live="polite"></div>')
     parts.append(venues)

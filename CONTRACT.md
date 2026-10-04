@@ -379,6 +379,14 @@ showing "11 of 16" that opens `achievements`); every tracked hobby with
 level, XP bar, sessions and streak (tap to open it); a share button; and Settings (nudge time,
 appearance, sample data, two-step reset). Character customization is paused until new models exist.
 
+- **Backdrop:** the Me stage shows a city street at night (`src/assets/me-street.jpg`, portrait),
+  embedded by `build.py` (`me_background`) as a data URI. It is width-fitted and positioned so the
+  road sits under the character's feet (see `.sc-stage` in showcase.css).
+- **Props:** the Me stage also has 3D props on the ground: a parked bike plus gear for the top three
+  hobbies by XP. They're modelled in Blender by `tools/build_props.py` into `assets/models/props.glb`
+  (one object per prop, `prop_<hobbyId>`; served as `/models/props.js`), placed by `buildProps` in
+  showcase.js; hobbies without a model get a simple tote bag. Only the Me stage shows props.
+  New prop → add a function to build_props.py named after the hobby id and re-run it.
 - **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, `avatar1`, `avatar2`, `avatar3`, built by
   `tools/mixamo_merge.py` from Neo's Mixamo downloads (Adrian and Alvaro get a fitted copy of Neo's
   Mixamo skeleton and its skin weights). Clips (all kept in place): `SadIdle` and `HappyIdle`, plus

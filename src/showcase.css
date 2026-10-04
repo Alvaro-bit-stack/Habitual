@@ -42,3 +42,9 @@
   background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .sc-pick.on { border-color: var(--leaf); box-shadow: inset 0 0 0 1px var(--leaf); }
 .sc-pick .cm-mii { flex: none; }
+/* Me: city street at night (portrait image, embedded by build.py). Width-fit cover; positioned so the road at
+   y 770 of 1024 lands under the character's feet (85.7% of the stage height):
+   top = 85.7%·H − (770/576)·W  →  75.2% of the free space + 10.5% of H (H = min(42vh, 340px)). */
+.sc-stage { background-color: #142046; background-size: cover; background-repeat: no-repeat;
+  background-position: 50% calc(75.2% + min(4.41vh, 35.7px)); }
+.sc-stage .sc-status { color: #f4ecd8; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }

@@ -1259,7 +1259,7 @@
     if (!blobOpen) return "Tap a blob to explore";
     if (blobOpen === "mine") return "My hobbies";
     if (blobOpen === "search") return "Search results";
-    return "Drag a hobby into My hobbies";
+    return "Tap for more info. Drag to add";
   }
   function stageHtml() {
     return '<div class="bl-stage' + (blobOpen ? " has-open open-" + blobOpen : "") + '" data-role="stage">' +

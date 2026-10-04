@@ -149,13 +149,66 @@
     var cat = h && h.category;
     return svgWrap(ICONS[cat] || ICONS.leaf, size);
   }
-  var HOBBY_PHOTOS = {
-    guitar: 1, soccer: 1, tennis: 1, painting: 1, photography: 1,
-    running: 1, sewing: 1, journaling: 1, piano: 1, basketball: 1
+  /* ------------------------------------------------------------------ hobby badges
+     Glossy app-style icons: a frosted white tile with a soft tinted glow, and a candy-colored glyph
+     with a highlight. Each call gets its own gradient ids so many can share a page. */
+  var BADGE_SEQ = 0;
+  var BADGES = {
+    guitar: { c: ["#FFD36E", "#F5901E"], g:
+      '<path F d="M41.6 14.2l3.2-3.2 3.2 3.2-3.2 3.2-1.2.2-8.1 8.1c1.5 2.6 1.2 5.9-.9 7.9-1 1-2.3 1.6-3.6 1.8-.3 1.4-.9 2.7-2 3.8-3.3 3.3-8.9 3-12.4-.6s-3.9-9.1-.6-12.4c1.1-1.1 2.4-1.7 3.8-2 .2-1.3.8-2.6 1.8-3.6 2-2 5.3-2.4 7.9-.9l8.1-8.1z"/>' +
+      '<circle cx="28.3" cy="35.7" r="2.6" fill="#8A4A0E" opacity=".55"/><path d="M33.8 30.2l9.6-9.6" stroke="#fff" stroke-width="1.2" opacity=".7"/>' },
+    soccer: { c: ["#6FF0A0", "#12B85C"], g:
+      '<circle F cx="32" cy="33" r="14"/><path d="M32 27.5l4.8 3.5-1.8 5.6h-6l-1.8-5.6z" fill="#fff" opacity=".95"/>' +
+      '<path d="M32 27.5V22.4M36.8 31l4.8-1.6M35 36.6l3 4M29 36.6l-3 4M27.2 31l-4.8-1.6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>' +
+      '<path d="M28.6 19.6L32 22.4l3.4-2.8M45.6 28.2l-4 1.2.2 4.4M39.6 45.2l-1.6-4.6 4.2-1.4M24.4 45.2l1.6-4.6-4.2-1.4M18.4 28.2l4 1.2-.2 4.4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/>' },
+    tennis: { c: ["#F1FF6A", "#A6D814"], g:
+      '<circle F cx="32" cy="33" r="14"/><path d="M20.6 25c4.6 2.6 6.8 7 6.2 13.2M43.4 41c-4.6-2.6-6.8-7-6.2-13.2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" fill="none"/>' },
+    painting: { c: ["#FF8FE0", "#E02BC0"], g:
+      '<path F d="M32 18c9.4 0 16 6 16 13.4 0 4.4-3.4 6.6-7 6.2-2.6-.3-4.4 1-4 3.4.4 2.6-1.2 4.8-5 4.8-9 0-16-6.4-16-14S22.6 18 32 18z"/>' +
+      '<circle cx="25.5" cy="29" r="2.6" fill="#fff"/><circle cx="31.5" cy="25" r="2.6" fill="#FFE45C"/><circle cx="38.5" cy="26.5" r="2.6" fill="#5CD3FF"/><circle cx="25.5" cy="36.5" r="2.6" fill="#7CF2A0"/>' },
+    photography: { c: ["#6EC3FF", "#2468F0"], g:
+      '<path F d="M22 23h4.4l2-3.4h7.2l2 3.4H42a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V27a4 4 0 0 1 4-4z"/>' +
+      '<circle cx="32" cy="33.4" r="6.6" fill="#fff"/><circle cx="32" cy="33.4" r="3.8" fill="#1B4FC4"/><circle cx="30.6" cy="32" r="1.2" fill="#fff"/><circle cx="41.4" cy="27.4" r="1.3" fill="#fff" opacity=".85"/>' },
+    running: { c: ["#FF9A8A", "#F0344C"], g:
+      '<path F d="M17 39.5c0-4 1-9.6 3.2-14.3.6-1.2 2-1.6 3.1-.9 2.4 1.6 4.3 2 6.2.9l1.6-1c1.4 3.6 4.6 6.2 9.4 7.4l4.6 1.2c2.4.6 3.9 2.6 3.9 5v1.7z"/>' +
+      '<path d="M17 39.5h32V42a2 2 0 0 1-2 2H19a2 2 0 0 1-2-2z" fill="#fff"/><path d="M30.6 29l3-1.6M32.8 31.6l3-1.6M35.4 33.6l2.8-1.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>' },
+    sewing: { c: ["#CFA0FF", "#8638F0"], g:
+      '<rect x="22" y="17.5" width="20" height="5" rx="2.5" fill="#E9DDFF"/><rect x="22" y="43.5" width="20" height="5" rx="2.5" fill="#E9DDFF"/>' +
+      '<rect F x="24.5" y="22" width="15" height="22" rx="2"/><path d="M24.5 27h15M24.5 31.5h15M24.5 36h15M24.5 40.5h15" stroke="#fff" stroke-width="1.1" opacity=".55"/>' +
+      '<path d="M46.5 16.5L39 46" stroke="#C9CFDA" stroke-width="2" stroke-linecap="round"/><ellipse cx="46" cy="18.6" rx=".7" ry="1.6" fill="#fff" transform="rotate(14 46 18.6)"/>' },
+    journaling: { c: ["#6FF0E0", "#10A6B8"], g:
+      '<path F d="M21 18h18a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H21a2 2 0 0 1-2-2V20a2 2 0 0 1 2-2z"/><path d="M24 18v28" stroke="#0A7F8E" stroke-width="1.6" opacity=".45"/>' +
+      '<path d="M28 25.5h10M28 30.5h10M28 35.5h6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M47.6 30.4l2 2-9.8 9.8-3 1 1-3z" fill="#FFD36E" stroke="#fff" stroke-width="1"/>' },
+    piano: { c: ["#8E9BFF", "#4B4EE6"], g:
+      '<rect F x="16" y="20" width="32" height="25" rx="4"/><rect x="19" y="25" width="26" height="17" rx="1.6" fill="#fff"/>' +
+      '<path d="M25.5 25v17M32 25v17M38.5 25v17" stroke="#C7CCF5" stroke-width="1"/>' +
+      '<rect x="23.6" y="25" width="3.6" height="9.6" rx=".8" fill="#2D2F8F"/><rect x="30.2" y="25" width="3.6" height="9.6" rx=".8" fill="#2D2F8F"/><rect x="36.8" y="25" width="3.6" height="9.6" rx=".8" fill="#2D2F8F"/>' },
+    basketball: { c: ["#FFA866", "#EE5A1C"], g:
+      '<circle F cx="32" cy="33" r="14"/><path d="M18 33h28M32 19v28M22.2 23c3.6 2.8 5.6 6.4 5.6 10s-2 7.2-5.6 10M41.8 23c-3.6 2.8-5.6 6.4-5.6 10s2 7.2 5.6 10" stroke="#9E2F05" stroke-width="1.5" fill="none" opacity=".6"/>' }
   };
+  function hobbyBadge(id) {
+    var b = BADGES[id];
+    if (!b) {
+      var h = hobby(id), cat = h && h.category;
+      b = { c: cat === "active" ? ["#6FF0A0", "#12B85C"] : cat === "relaxing" ? ["#6FF0E0", "#10A6B8"] : ["#FF8FE0", "#E02BC0"], g: '<g F transform="translate(20 21)">' + (ICONS[cat] || ICONS.leaf).replace(/<path /g, '<path stroke="#fff" fill="none" stroke-width="2" ') + "</g>" };
+    }
+    var n = ++BADGE_SEQ, gid = "hb" + n;
+    var glyph = b.g.replace(/ F /g, ' fill="url(#' + gid + 'g)" ').replace(/<g F /g, '<g fill="url(#' + gid + 'g)" ');
+    return '<svg class="sq-badge" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs>' +
+      '<linearGradient id="' + gid + 't" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="' + b.c[0] + '" stop-opacity=".14"/></linearGradient>' +
+      '<radialGradient id="' + gid + 'w" cx=".5" cy=".55" r=".5"><stop offset="0" stop-color="' + b.c[0] + '" stop-opacity=".45"/><stop offset="1" stop-color="' + b.c[0] + '" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="' + gid + 'g" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="' + b.c[0] + '"/><stop offset="1" stop-color="' + b.c[1] + '"/></linearGradient>' +
+      '<filter id="' + gid + 's" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="' + b.c[1] + '" flood-opacity=".22"/></filter>' +
+      '<filter id="' + gid + 'd" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="' + b.c[1] + '" flood-opacity=".45"/></filter></defs>' +
+      '<rect x="5" y="4" width="54" height="54" rx="16" fill="url(#' + gid + 't)" filter="url(#' + gid + 's)"/>' +
+      '<rect x="5.5" y="4.5" width="53" height="53" rx="15.5" fill="none" stroke="#fff" stroke-opacity=".9"/>' +
+      '<circle cx="32" cy="33" r="20" fill="url(#' + gid + 'w)"/>' +
+      '<g filter="url(#' + gid + 'd)">' + glyph + "</g>" +
+      '<ellipse cx="26" cy="22.5" rx="6" ry="2.6" fill="#fff" opacity=".5" transform="rotate(-20 26 22.5)"/></svg>';
+  }
   function hobbyPicture(id, alt, className) {
-    if (!HOBBY_PHOTOS[id]) return '<span class="sq-photo-fallback" aria-hidden="true">' + hobbyIcon(id, 28) + "</span>";
-    return '<img class="' + esc(className || "sq-hobby-photo") + '" src="../assets/hobbies/' + esc(id) + '.jpg" alt="' + esc(alt || "") + '" loading="lazy">';
+    return '<span class="sq-badge-wrap ' + esc(className || "sq-hobby-photo") + '"' + (alt ? ' role="img" aria-label="' + esc(alt) + '"' : "") + ">" + hobbyBadge(id) + "</span>";
   }
 
   /* ------------------------------------------------------------------ mascot */
@@ -1134,6 +1187,7 @@
   SQUI.icon = icon;
   SQUI.hobbyIcon = hobbyIcon;
   SQUI.hobbyPicture = hobbyPicture;
+  SQUI.hobbyBadge = hobbyBadge;
   SQUI.mascot = mascot;
   SQUI.money = money;
   SQUI.setTheme = setTheme;

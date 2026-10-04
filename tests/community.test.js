@@ -74,7 +74,7 @@ test('Removing RSVP updates Going',()=>assert.equal(ids().length,0));
 action('category','groups');
 test('Group listings ignore the All events search',()=>{
   const html=screens.community.render();assert.ok(html.includes('Painting · Newark area'));
-  assert.ok(html.includes('Guitar Playing · Newark area'));assert.ok(!html.includes('id="cm-search"'));
+  assert.ok(html.includes('Guitar · Newark area'));assert.ok(!html.includes('id="cm-search"'));
 });
 action('open-member',null,'ev-guitar-1');
 test('Host action opens the character profile',()=>{assert.equal(lastRoute.name,'member');assert.equal(lastRoute.params.id,'ev-guitar-1');const html=screens.member.render(lastRoute.params);assert.ok(html.includes('Ray D.'));assert.ok(html.includes('cm-mii'));assert.ok(html.includes('data-action="open-group"'));});

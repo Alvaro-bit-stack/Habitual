@@ -69,7 +69,7 @@
 
   var hobbies = [
     hobby({
-      id: "guitar", name: "Guitar Playing", category: "creative", place: "indoor", social: "solo", related: ["piano", "journaling"],
+      id: "guitar", name: "Guitar", category: "creative", place: "indoor", social: "solo", related: ["piano", "journaling"],
       free: ["Borrow a guitar", "Use a free tuner app"], gear: [["Beginner acoustic guitar", [90, 180]], ["Picks and tuner", [10, 25]]],
       tutorials: [["Hold and tune a guitar", "beginner guitar how to hold and tune guitar"], ["First three guitar chords", "beginner guitar first three chords lesson"], ["Play a first easy song", "beginner guitar first easy song tutorial"]]
     }),
@@ -109,7 +109,7 @@
       tutorials: [["Start a journaling habit", "how to start journaling for beginners"], ["Five-minute journal prompt", "five minute journaling prompts beginner"], ["Weekly reflection", "weekly reflection journaling tutorial"]]
     }),
     hobby({
-      id: "piano", name: "Playing Piano", category: "creative", place: "indoor", social: "solo", related: ["guitar", "journaling"],
+      id: "piano", name: "Piano", category: "creative", place: "indoor", social: "solo", related: ["guitar", "journaling"],
       free: ["Use a library or community piano", "Use a free keyboard-learning app"], gear: [["Used beginner keyboard", [70, 180]], ["Keyboard stand", [20, 45]]],
       tutorials: [["Keyboard layout and posture", "beginner piano keyboard layout posture"], ["First five notes", "beginner piano first five notes tutorial"], ["First easy melody", "beginner piano first easy melody tutorial"]]
     }),

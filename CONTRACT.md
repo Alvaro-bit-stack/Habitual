@@ -241,7 +241,8 @@ SQUI.icon(name, size=20)              // inline SVG: categories ("creative","act
                                       //  "spark","calendar","pin","users","lock","star","clock","close",
                                       //  "search","leaf","trophy","sun","compass","user"
 SQUI.hobbyIcon(hobbyId, size=24)      // per-hobby glyph (custom → its category icon)
-SQUI.hobbyPicture(hobbyId, alt, className) // local hobby photo, or icon fallback for custom hobbies
+SQUI.hobbyPicture(hobbyId, alt, className) // glossy hobby icon tile (SVG, sized to its container)
+SQUI.hobbyBadge(hobbyId)                  // the raw icon SVG; add new hobbies to BADGES in shell.js
 SQUI.mascot(stage 0..4, {mood, size, accessories})  // 2D Sprout SVG
 SQUI.money([lo,hi]) -> "$25–60" / "Free"
 SQUI.setTheme("system"|"light"|"dark")

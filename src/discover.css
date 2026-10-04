@@ -230,20 +230,20 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .dc-tree-item::before { content: ""; position: absolute; width: 11px; border-top: 2px solid var(--line); left: -12px; top: 50%; }
 .dc-tree-item.on { border-color: var(--leaf); background: var(--surface-2); }
 .dc-tree-item.is-tracked { opacity: .58; cursor: default; }
-.dc-tree-photo { width: 100%; height: 82px; display: block; overflow: hidden; background: var(--surface-2); }
-.dc-tree-photo-img, .dc-match-photo-img, .dc-pack-photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dc-tree-photo { width: 100%; height: 82px; display: grid; place-items: center; padding: 6px; background: transparent; }
+.dc-tree-photo-img, .dc-match-photo-img, .dc-pack-photo-img { width: 100%; height: 100%; }
 .dc-tree-name { min-width: 0; padding: 10px 34px 10px 10px; font-size: 14px; line-height: 1.1; }
 .dc-tree-check { position: absolute; right: 8px; bottom: 8px; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--line); border-radius: 50%; background: var(--surface); }
 .dc-tree-item.on .dc-tree-check { background: var(--leaf); border-color: var(--leaf); color: var(--leaf-ink); }
 .dc-simple-match-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .dc-simple-match { min-height: 218px; padding: 0 0 14px; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; color: var(--ink); font: inherit; text-align: left; }
-.dc-match-photo { width: auto; height: 124px; align-self: stretch; display: block; overflow: hidden; background: var(--surface-2); }
+.dc-match-photo { width: auto; height: 124px; align-self: stretch; display: grid; place-items: center; padding: 10px; background: transparent; }
 .dc-simple-match > span:not(.dc-match-photo) { max-width: calc(100% - 28px); overflow-wrap: anywhere; }
 .dc-simple-match .dc-cube-name, .dc-simple-match .small, .dc-simple-match .dc-simple-cost { margin-left: 14px; margin-right: 14px; }
 .dc-simple-cost { margin-top: auto; color: var(--leaf); font-weight: 700; }
 .dc-simple-pack-head { display: flex; flex-direction: column; gap: 14px; }
-.dc-pack-photo { width: 100%; height: 210px; overflow: hidden; display: block; border-radius: var(--radius); background: var(--surface-2); }
+.dc-pack-photo { width: 100%; height: 150px; display: grid; place-items: center; padding: 8px; border-radius: var(--radius); background: transparent; }
 .dc-cost-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .dc-cost-cards .card { padding: 16px; display: flex; flex-direction: column; gap: 7px; }
 .dc-cost-cards strong { font-family: var(--font-display); font-size: 24px; }

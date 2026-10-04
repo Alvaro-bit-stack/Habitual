@@ -45,7 +45,7 @@ def main():
 
         page.click("#cm-hobby")
         check(is_open(), "tapping the Hobby field opens the list")
-        check(shown() == ["All hobbies", "Running", "Painting", "Guitar Playing"], "Going lists only your hobbies")
+        check(shown() == ["All hobbies", "Running", "Painting", "Guitar"], "Going lists only your hobbies")
         page.keyboard.press("Escape")
         check(not is_open(), "Escape closes the list")
 

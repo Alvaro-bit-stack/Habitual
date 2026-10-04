@@ -819,7 +819,7 @@
         '<button type="button" class="hc-body" data-action="open" data-id="' + esc(t.hobbyId) + '">' +
         '<span class="hc-photo-wrap">' + hobbyPicture(t.hobbyId, "", "hc-photo") + "</span>" +
         '<span style="min-width:0"><span class="hc-name">' + esc(h.name) + "</span>" +
-        '<span class="hc-meta"><span class="hc-lv">Lv ' + s.level + '</span><span class="small muted">' + esc(lastText(s.daysSince)) + "</span></span>" +
+        '<span class="hc-meta"><span class="hc-lv sc-lv">Lv ' + s.level + '</span><span class="small muted">' + esc(lastText(s.daysSince)) + "</span></span>" +
         '<span class="hc-progress">' + dotsMeter(s.sessionsThisWeek, s.goal) +
         '<span class="small"><span class="num">' + s.sessionsThisWeek + "</span> of <span class=\"num\">" + s.goal + "</span> this week</span>" +
         (met ? '<span class="pill-good">' + icon("check", 14) + "Goal met</span>" : "") + "</span>" +

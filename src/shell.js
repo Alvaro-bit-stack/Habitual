@@ -208,14 +208,20 @@
     basketball: { c: ["#FFA866", "#EE5A1C"], g:
       '<circle F cx="32" cy="33" r="14"/><path d="M18 33h28M32 19v28M22.2 23c3.6 2.8 5.6 6.4 5.6 10s-2 7.2-5.6 10M41.8 23c-3.6 2.8-5.6 6.4-5.6 10s2 7.2 5.6 10" stroke="#9E2F05" stroke-width="1.5" fill="none" opacity=".6"/>' }
   };
-  function hobbyBadge(id) {
+  var BADGE_TINTS = { active: ["#6FF0A0", "#12B85C"], relaxing: ["#6FF0E0", "#10A6B8"], technical: ["#6EC3FF", "#2468F0"], social: ["#FFD36E", "#F5901E"], creative: ["#FF8FE0", "#E02BC0"] };
+  // fallback: { name, category } for a hobby that is not saved yet (e.g. typed during onboarding).
+  function hobbyBadge(id, fallback) {
     var b = BADGES[id];
     if (!b) {
-      var h = hobby(id), cat = h && h.category;
-      b = { c: cat === "active" ? ["#6FF0A0", "#12B85C"] : cat === "relaxing" ? ["#6FF0E0", "#10A6B8"] : ["#FF8FE0", "#E02BC0"], g: '<g F transform="translate(20 21)">' + (ICONS[cat] || ICONS.leaf).replace(/<path /g, '<path stroke="#fff" fill="none" stroke-width="2" ') + "</g>" };
+      var h = hobby(id) || fallback || {}, cat = h.category;
+      var key = h.name && HOBBY_NAME_ICONS[String(h.name).toLowerCase()];
+      var line = (key && HOBBY_ICONS[key]) || ICONS[cat] || ICONS.leaf;
+      // Line icons are drawn as a thick candy-coloured stroke so they read on the frosted tile.
+      b = { c: BADGE_TINTS[cat] || BADGE_TINTS.creative,
+        g: '<g transform="translate(14 15) scale(1.5)" fill="none" stroke="GRAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + line + "</g>" };
     }
     var n = ++BADGE_SEQ, gid = "hb" + n;
-    var glyph = b.g.replace(/ F /g, ' fill="url(#' + gid + 'g)" ').replace(/<g F /g, '<g fill="url(#' + gid + 'g)" ');
+    var glyph = b.g.replace(/ F /g, ' fill="url(#' + gid + 'g)" ').replace(/<g F /g, '<g fill="url(#' + gid + 'g)" ').replace(/GRAD/g, "url(#" + gid + "g)");
     return '<svg class="sq-badge" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs>' +
       '<linearGradient id="' + gid + 't" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="' + b.c[0] + '" stop-opacity=".14"/></linearGradient>' +
       '<radialGradient id="' + gid + 'w" cx=".5" cy=".55" r=".5"><stop offset="0" stop-color="' + b.c[0] + '" stop-opacity=".45"/><stop offset="1" stop-color="' + b.c[0] + '" stop-opacity="0"/></radialGradient>' +
@@ -802,6 +808,13 @@
   /* ------------------------------------------------------------------ TODAY */
   var TIER_NAME = { "new": "Just starting", beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
   function greeting() {
+    var base = greetingBase(), name = "";
+    try { name = String((sq().state.user || {}).name || "").trim(); } catch (e) { /* ignore */ }
+    if (!name || name === "You") return base;
+    name = name.split(" ")[0];
+    return /\?$/.test(base) ? base.slice(0, -1) + ", " + name + "?" : base + ", " + name;
+  }
+  function greetingBase() {
     var h = new Date().getHours();
     try { if (sq()._now) h = new Date(sq()._now).getHours(); } catch (e) { /* ignore */ }
     if (h < 5) return "Still up?";

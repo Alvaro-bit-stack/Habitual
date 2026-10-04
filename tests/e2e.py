@@ -418,6 +418,28 @@ def flow_pick_today(c):
     c.audit("20-discover-pairs")
 
 
+def ob_profile(c, name="Sam Rivera", email="sam@example.com", city="Newark", country="United States"):
+    m = c.mode
+    expect("What should we call you?" in c.page.locator("#app-main").inner_text(), m, "profile", "first run should ask for a name first")
+    c.click("[data-role=ob-q] button[type=submit]")
+    expect(c.page.locator("[data-role=ob-err]").is_visible(), m, "profile", "empty name accepted")
+    c.page.fill("input[name=name]", name)
+    c.click("[data-role=ob-q] button[type=submit]")
+    expect("What’s your email?" in c.page.locator("#app-main").inner_text(), m, "profile", "email question missing")
+    c.page.fill("input[name=email]", "not-an-email")
+    c.click("[data-role=ob-q] button[type=submit]")
+    expect(c.page.locator("[data-role=ob-err]").is_visible(), m, "profile", "invalid email accepted")
+    c.page.fill("input[name=email]", email)
+    c.click("[data-role=ob-q] button[type=submit]")
+    expect("Where are you based?" in c.page.locator("#app-main").inner_text(), m, "profile", "location question missing")
+    c.page.fill("input[name=city]", city)
+    c.page.fill("input[name=country]", country)
+    c.click("[data-role=ob-q] button[type=submit]")
+    u = c.js("() => SQ.state.user")
+    expect(u.get("name") == name and u.get("email") == email and u.get("location") == {"city": city, "country": country},
+           m, "profile", f"profile not saved: {u}")
+
+
 def ob_add(c, name, tier):
     c.page.fill("[data-role=ob-name]", name)
     c.click(f".ob-level[data-tier={tier}]")
@@ -427,17 +449,20 @@ def ob_add(c, name, tier):
 def flow_skip_onboarding(c):
     m = c.mode
     c.fresh()
+    ob_profile(c)
     c.click("[data-action=ob-continue]")
     expect("Want to start a new hobby?" in c.page.locator("#app-main").inner_text(), m, "skip", "skip did not ask about new hobbies")
     c.click("[data-action=ob-yes]")
     expect(c.screen() == "discover", m, "skip", "Yes did not open Discover")
     expect(c.js("() => SQ.state.onboarded") is True, m, "skip", "skipping should finish onboarding")
     c.fresh()
+    ob_profile(c, name="Jo")
     ob_add(c, "Tennis", "advanced")
     c.click("[data-action=ob-continue]")
     c.close_any_overlay()
     c.click("[data-action=ob-no]")
     expect(c.screen() == "today", m, "level-task", "No did not open Today")
+    expect("Jo" in c.page.locator(".td-greet").inner_text(), m, "level-task", "Today should greet the user by name")
     nxt = c.page.locator(".td-next").inner_text()
     expect("advanced task" in nxt.lower() and "30" in nxt, m, "level-task", f"Up next should be an advanced task: {nxt!r}")
     expect(c.page.locator(".hc-tier").first.inner_text().strip() == "Advanced", m, "level-task", "tier badge missing on Today")
@@ -449,6 +474,8 @@ def flow_simple_discovery(c, place):
     c.fresh()
     expect(c.screen() == "pick", m, "first-run", "fresh start should ask for current hobbies")
     expect(c.js("() => document.getElementById('app-nav').hidden"), m, "first-run", "navigation should stay hidden during first-run selection")
+    ob_profile(c)
+    c.audit("00-profile-done", nav_check=False)
     expect("What hobbies do you already do?" in c.page.locator("#app-main").inner_text(), m, "first-run", "first-run question missing")
     expect(c.page.locator(".dc-tree-item, .dc-tile").count() == 0, m, "first-run", "first run should ask, not list hobby options")
     ob_add(c, "Guitar", "beginner")
@@ -457,7 +484,7 @@ def flow_simple_discovery(c, place):
     expect(c.screen() == "pick" and "Want to start a new hobby?" in c.page.locator("#app-main").inner_text(), m, "first-run", "new-hobby question missing")
     c.click("[data-action=ob-no]")
     expect(c.screen() == "today", m, "first-run", "selection did not open Today")
-    expect(c.page.locator(".hc .hc-name").all_inner_texts() == ["Guitar Playing"], m, "first-run", "selected hobby missing from Today")
+    expect(c.page.locator(".hc .hc-name").all_inner_texts() == ["Guitar"], m, "first-run", "selected hobby missing from Today")
     c.audit("01-today-with-hobby")
     c.click("#app-nav [data-nav=discover]")
     expect(c.screen() == "discover", m, "discover-tree", "Discover tab did not open")
@@ -528,12 +555,14 @@ def flow_simple_pick_today(c):
     m = c.mode
     c.fresh()
     expect(c.screen() == "pick", m, "simple-pick", "fresh start did not ask for current hobbies")
+    ob_profile(c, name="Alex")
     c.audit("12-pick-question", nav_check=False)
     for name in ["Running", "Journaling", "Sewing"]:
         ob_add(c, name, "new")
-    expect(c.page.locator(".ob-item").count() == 3, m, "simple-pick", "added hobbies not listed")
-    c.click(".ob-item [data-action=ob-remove]", nth=2)
-    expect(c.page.locator(".ob-item").count() == 2, m, "simple-pick", "remove did not work")
+    expect(c.page.locator(".ob-bubble .ob-badge").count() == 3, m, "simple-pick", "added hobbies not shown on the My hobbies bubble")
+    expect(c.page.locator(".ob-bubble .ob-badge .sq-badge").count() == 3, m, "simple-pick", "hobby badges missing")
+    c.click(".ob-badge [data-action=ob-remove]", nth=2)
+    expect(c.page.locator(".ob-bubble .ob-badge").count() == 2, m, "simple-pick", "remove did not work")
     ob_add(c, "Sewing", "new")
     c.audit("13-pick-selected", nav_check=False)
     c.click("[data-action=ob-continue]")

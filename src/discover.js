@@ -708,36 +708,98 @@
         '<span class="ob-level-t">' + l[1] + '</span><span class="ob-level-s">' + l[2] + "</span></button>";
     }).join("") + "</div>";
   }
-  function obList() {
-    if (!OB.list.length) return "";
-    return '<ul class="ob-list" aria-label="Hobbies you added">' + OB.list.map(function (it, i) {
-      var lv = LEVELS.filter(function (l) { return l[0] === it.tier; })[0];
-      return '<li class="ob-item"><span class="ob-item-name">' + e(it.name) + '</span><span class="ob-item-lv">' + e(lv ? lv[1] : "") + "</span>" +
-        '<button type="button" class="icon-btn" data-action="ob-remove" data-i="' + i + '" aria-label="Remove ' + e(it.name) + '">' + SQUI.icon("close", 18) + "</button></li>";
-    }).join("") + "</ul>";
+  // Which built-in or known hobby a typed name means, without creating anything yet.
+  function previewHobby(name) {
+    var q = name.toLowerCase().replace(/\s+/g, " ").trim();
+    var hit = catalog().filter(function (h) { return h.name.toLowerCase() === q || h.id === q; })[0] ||
+      catalog().filter(function (h) { return q.indexOf(h.id) >= 0 || h.name.toLowerCase().indexOf(q) >= 0 && q.length >= 4; })[0];
+    if (hit) return { id: hit.id, name: hit.name, category: hit.category };
+    for (var k in EXTRA) if (EXTRA[k].name.toLowerCase() === q || k === q) return { id: null, name: EXTRA[k].name, category: EXTRA[k].category };
+    return { id: null, name: titleCase(name.replace(/\s+/g, " ").trim()).slice(0, 40), category: "creative" };
+  }
+  var FIRST_RUN_STEPS = ["name", "email", "location", "hobbies", "next"];
+  function stepEyebrow(step) {
+    if (onboarded() && step === "hobbies") return "Your hobbies";
+    return "Step " + (FIRST_RUN_STEPS.indexOf(step) + 1) + " of " + FIRST_RUN_STEPS.length;
+  }
+  function obShell(step, inner, cta) {
+    var canBack = onboarded() || FIRST_RUN_STEPS.indexOf(step) > 0;
+    return '<div class="screen ob" data-dc="onboard" data-step="' + step + '"><div class="stack-lg">' +
+      (canBack ? '<div class="screen-head">' + backBtn() + "</div>" : "") + inner + "</div>" +
+      (cta ? '<div class="dc-cta ob-cta">' + cta + "</div>" : "") + "</div>";
+  }
+  function obQuestion(step, title, sub, fields, cta) {
+    return obShell(step, '<header class="ob-head"><div class="eyebrow">' + stepEyebrow(step) + '</div><h1 class="h1">' + title + "</h1>" +
+      (sub ? '<p class="muted">' + sub + "</p>" : "") + "</header>" +
+      '<form class="stack ob-q" data-role="ob-q" novalidate>' + fields + '<p class="small dc-err" data-role="ob-err" hidden></p>' +
+      '<button type="submit" class="btn primary block">' + (cta || "Continue") + "</button></form>", "");
+  }
+  function profileStep(step) {
+    var u = (SQ.state && SQ.state.user) || {};
+    if (step === "name") {
+      var nm = u.name && u.name !== "You" ? u.name : "";
+      return obQuestion(step, "What should we call you?", "This is the name you’ll see on Today and in Community.",
+        '<label class="dc-field"><span class="small muted">Name</span><input class="dc-input" name="name" maxlength="40" autocomplete="name" placeholder="Your name" value="' + e(nm) + '"></label>');
+    }
+    if (step === "email") {
+      return obQuestion(step, "What’s your email?", "We use it for your account. It’s never shown to other people.",
+        '<label class="dc-field"><span class="small muted">Email</span><input class="dc-input" name="email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="you@example.com" value="' + e(u.email || "") + '"></label>');
+    }
+    var loc = u.location || {};
+    return obQuestion(step, "Where are you based?", "We use your city to suggest local events and groups.",
+      '<div class="ob-two"><label class="dc-field"><span class="small muted">City</span><input class="dc-input" name="city" maxlength="60" autocomplete="address-level2" placeholder="e.g. Newark" value="' + e(loc.city || "") + '"></label>' +
+      '<label class="dc-field"><span class="small muted">Country</span><input class="dc-input" name="country" maxlength="60" autocomplete="country-name" placeholder="e.g. United States" value="' + e(loc.country || "") + '"></label></div>');
+  }
+  function saveProfile(step, form) {
+    var f = new FormData(form), u = SQ.state.user;
+    function clean(v, n) { return String(v || "").replace(/\s+/g, " ").trim().slice(0, n); }
+    if (step === "name") {
+      var name = clean(f.get("name"), 40);
+      if (!name) return "Type your name to continue.";
+      u.name = name;
+    } else if (step === "email") {
+      var email = clean(f.get("email"), 120).toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "Enter a valid email, like you@example.com.";
+      u.email = email;
+    } else {
+      var city = clean(f.get("city"), 60), country = clean(f.get("country"), 60);
+      if (!city || !country) return "Add both your city and country.";
+      u.location = { city: city, country: country };
+    }
+    SQ.save();
+    return "";
+  }
+  // Hobbies the user adds sit as glossy icons on top of the My hobbies bubble.
+  function obBubble() {
+    var n = OB.list.length, spots = bubbleSpots(n);
+    var badges = OB.list.map(function (it, i) {
+      var p = previewHobby(it.name), lv = LEVELS.filter(function (l) { return l[0] === it.tier; })[0];
+      return '<div class="ob-badge' + (i === OB.fresh ? " is-new" : "") + '" style="--hx:' + spots[i].x.toFixed(1) + "%;--hy:" + spots[i].y.toFixed(1) + '%">' +
+        '<span class="ob-badge-icon">' + SQUI.hobbyBadge(p.id, p) + "</span>" +
+        '<span class="ob-badge-name">' + e(p.name) + '</span><span class="ob-badge-lv">' + e(lv ? lv[1] : "") + "</span>" +
+        '<button type="button" class="ob-badge-x" data-action="ob-remove" data-i="' + i + '" aria-label="Remove ' + e(p.name) + '">' + SQUI.icon("close", 14) + "</button></div>";
+    }).join("");
+    return '<div class="ob-stage"><div class="bl-backdrop" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
+      '<div class="ob-bubble' + (n ? " has-items" : "") + '" aria-label="My hobbies, ' + n + '"><span class="ob-bubble-label">' + svgIcon(CAT_ICON.mine, 18, 1.8) + "<span>My hobbies</span></span>" +
+      (n ? "" : '<span class="ob-bubble-empty">Add a hobby below and it lands here</span>') + badges + "</div></div>";
   }
   function obHobbiesStep() {
-    var first = !onboarded();
-    var n = OB.list.length;
-    return '<div class="screen ob" data-dc="onboard"><div class="stack-lg">' +
-      (first ? "" : '<div class="screen-head">' + backBtn() + "</div>") +
-      '<header class="ob-head"><div class="eyebrow">' + (first ? "Step 1 of 2" : "Your hobbies") + '</div><h1 class="h1">What hobbies do you already do?</h1>' +
+    var first = !onboarded(), n = OB.list.length;
+    var inner = '<header class="ob-head"><div class="eyebrow">' + stepEyebrow("hobbies") + '</div><h1 class="h1">What hobbies do you already do?</h1>' +
       '<p class="muted">Type one in and tell us how far along you are. We’ll set up your first tasks to match.</p></header>' +
+      obBubble() +
       '<form class="card ob-form stack" data-role="ob-form" novalidate>' +
       '<label class="dc-field"><span class="small muted">Hobby</span><input class="dc-input" data-role="ob-name" maxlength="40" placeholder="e.g. Guitar" autocomplete="off" enterkeyhint="done"></label>' +
       '<div class="stack"><span class="small muted">Your level</span>' + obLevelSeg(OB.tier) + "</div>" +
       '<p class="small dc-err" data-role="ob-err" hidden></p>' +
-      '<button type="submit" class="btn block">' + SQUI.icon("plus", 18) + (n ? "Add another hobby" : "Add hobby") + "</button></form>" +
-      '<div data-role="ob-list">' + obList() + "</div></div>" +
-      '<div class="dc-cta ob-cta">' +
-      (n ? '<button type="button" class="btn primary block" data-action="ob-continue">Continue with ' + n + " " + (n === 1 ? "hobby" : "hobbies") + "</button>"
-        : '<button type="button" class="btn block" data-action="ob-continue">' + (first ? "I don’t have any yet, skip" : "Cancel") + "</button>") +
-      "</div></div>";
+      '<button type="submit" class="btn block">' + SQUI.icon("plus", 18) + (n ? "Add another hobby" : "Add hobby") + "</button></form>";
+    var cta = n ? '<button type="button" class="btn primary block" data-action="ob-continue">Continue with ' + n + " " + (n === 1 ? "hobby" : "hobbies") + "</button>"
+      : '<button type="button" class="btn block" data-action="ob-continue">' + (first ? "I don’t have any yet, skip" : "Cancel") + "</button>";
+    return obShell("hobbies", inner, cta);
   }
   function obNextStep() {
     var n = ((SQ.state && SQ.state.tracked) || []).length;
-    return '<div class="screen ob" data-dc="onboard"><div class="stack-lg">' +
-      '<header class="ob-head"><div class="eyebrow">Step 2 of 2</div><h1 class="h1">Want to start a new hobby?</h1>' +
+    return obShell("next", '<header class="ob-head"><div class="eyebrow">' + stepEyebrow("next") + '</div><h1 class="h1">Want to start a new hobby?</h1>' +
       '<p class="muted">' + (n ? "Your hobbies are set up. You can also explore something new." : "No problem. Let’s find one you’ll enjoy.") + "</p></header>" +
       '<div class="stack ob-choices">' +
       '<button type="button" class="card tap dc-choice" data-action="ob-yes"><span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("compass", 26) + "</span>" +
@@ -745,24 +807,30 @@
       '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
       '<button type="button" class="card tap dc-choice" data-action="ob-no"><span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("sun", 26) + "</span>" +
       '<span class="dc-choice-text"><span class="dc-choice-title">Not now</span><span class="dc-choice-sub">' + (n ? "Go to Today and start on your tasks" : "Go to Today") + "</span></span>" +
-      '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
-      "</div></div></div>";
+      '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button></div>", "");
   }
   SQUI.register("pick", {
     get tab() { return null; }, title: "Your hobbies",
     render: function (params) {
-      if (params && params.step === "next") return obNextStep();
-      if (!OB) OB = { list: [], tier: "beginner" };
+      var step = (params && params.step) || (onboarded() ? "hobbies" : "name");
+      if (step === "next") return obNextStep();
+      if (step !== "hobbies") return profileStep(step);
+      if (!OB) OB = { list: [], tier: "beginner", fresh: -1 };
       return obHobbiesStep();
     },
-    mount: function (root) {
+    mount: function (root, params) {
+      var step = (params && params.step) || (onboarded() ? "hobbies" : "name");
+      var idx = FIRST_RUN_STEPS.indexOf(step);
       var host = bind(root, "[data-dc]", common({
-        back: function () { OB = null; SQUI.back(); },
+        back: function () {
+          if (!onboarded() && idx > 0) { SQUI.go("pick", { step: FIRST_RUN_STEPS[idx - 1] }, { replace: true }); return; }
+          OB = null; SQUI.back();
+        },
         "ob-level": function (t) {
           OB.tier = t.getAttribute("data-tier");
           host.querySelectorAll(".ob-level").forEach(function (b) { var on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
         },
-        "ob-remove": function (t) { OB.list.splice(Number(t.getAttribute("data-i")), 1); SQUI.refresh(); },
+        "ob-remove": function (t) { OB.list.splice(Number(t.getAttribute("data-i")), 1); OB.fresh = -1; SQUI.refresh(); },
         "ob-continue": function () {
           var first = !onboarded();
           var rewards = [];
@@ -782,6 +850,18 @@
         "ob-yes": function () { OB = null; SQUI.go("discover", {}, { reset: true }); },
         "ob-no": function () { OB = null; SQUI.go("today", {}, { reset: true }); }
       }));
+      var q = host.querySelector('[data-role="ob-q"]');
+      if (q) {
+        var firstInput = q.querySelector("input");
+        if (firstInput) try { firstInput.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+        q.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var msg = saveProfile(step, q), err = q.querySelector('[data-role="ob-err"]');
+          if (msg) { err.hidden = false; err.textContent = msg; return; }
+          SQUI.go("pick", { step: FIRST_RUN_STEPS[idx + 1] }, { replace: true });
+        });
+        return;
+      }
       var form = host.querySelector('[data-role="ob-form"]');
       if (!form) return;
       var input = form.querySelector('[data-role="ob-name"]');
@@ -790,11 +870,13 @@
         var name = (input.value || "").replace(/\s+/g, " ").trim().slice(0, 40);
         var err = form.querySelector('[data-role="ob-err"]');
         if (!name) { err.hidden = false; err.textContent = "Type a hobby first."; input.focus(); return; }
-        if (OB.list.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { err.hidden = false; err.textContent = "You already added " + name + "."; return; }
+        var label = previewHobby(name).name.toLowerCase();
+        if (OB.list.some(function (x) { return previewHobby(x.name).name.toLowerCase() === label; })) { err.hidden = false; err.textContent = "You already added " + name + "."; return; }
         OB.list.push({ name: name, tier: OB.tier });
+        OB.fresh = OB.list.length - 1;
         SQUI.refresh();
         var again = document.querySelector('[data-role="ob-name"]');
-        if (again) try { again.focus(); } catch (x) { /* ignore */ }
+        if (again) try { again.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
       });
     }
   });

@@ -278,10 +278,12 @@ Gray when there's no streak. The Today screen refreshes --heat every minute.
 Community shows a lock until the user tracks a hobby.
 
 **Onboarding and discovery:** a fresh app opens `pick`, a single pipeline with navigation hidden.
-Step 1 asks "What hobbies do you already do?": the user types each hobby (no option list) and picks a
+It first asks one question per screen for the profile: name, email, then location (city and country),
+saved on `state.user` as `name`, `email` and `location: {city, country}` (`pick` {step:"name"|"email"|"location"}).
+Today greets the user by first name. The hobbies step then asks "What hobbies do you already do?": the user types each hobby (no option list) and picks a
 level (`new`, `beginner`, `intermediate`, `advanced`), or skips. Typed names map to a catalog hobby when
 they match, otherwise to a custom hobby (`SQ.addCustomHobby`). Each is tracked and its level saved with
-`SQ.setSkill`. Step 2 (`pick` {step:"next"}) asks "Want to start a new hobby?": yes opens `discover`,
+`SQ.setSkill`. Added hobbies appear as glossy badges (`SQUI.hobbyBadge`) on a My hobbies bubble. The last step (`pick` {step:"next"}) asks "Want to start a new hobby?": yes opens `discover`,
 no opens `today`. Today's "Up next" and each hobby's next step use a task matched to that level.
 Discover shows glass category blobs around a My hobbies blob; dragging a hobby into My hobbies adds it.
 

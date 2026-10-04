@@ -131,7 +131,26 @@
     sewing: '<path d="M4 19L19 4M15 4h4v4"/><path d="M5 15l4 4"/><circle cx="6" cy="6" r="2.5"/><path d="M8 8l3 3"/>',
     journaling: '<path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M8 4.5V20M11 9h5M11 13h5"/>',
     piano: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v9M11 5v9M15 5v9M19 5v9M8.5 5v6M12.5 5v6M16.5 5v6"/>',
-    basketball: '<circle cx="12" cy="12" r="8.5"/><path d="M4 9c5 1 9 5 11 10M9 4c1 5 5 9 10 11M3.5 13h17M13 3.5v17"/>'
+    basketball: '<circle cx="12" cy="12" r="8.5"/><path d="M4 9c5 1 9 5 11 10M9 4c1 5 5 9 10 11M3.5 13h17M13 3.5v17"/>',
+    crossfit: '<path d="M8.5 9.5a3.5 3.5 0 1 1 7 0"/><path d="M8.5 9.5h7"/><path d="M7 11.5h10l-1 8.5H8z"/><path d="M10 15.5h4"/>',
+    pilates: '<circle cx="17" cy="6.5" r="2"/><path d="M3 19.5h18"/><path d="M5 17.5l5-4.5 3.5 2 3-5.5"/><path d="M10 13l-1-4.5 4.5-1"/>',
+    yoga: '<circle cx="12" cy="5" r="2"/><path d="M12 8v6"/><path d="M5.5 9.5L12 11l6.5-1.5"/><path d="M4.5 18.5c2.5-2 5-3.5 7.5-4.5 2.5 1 5 2.5 7.5 4.5"/><path d="M7 20h10"/>',
+    swimming: '<circle cx="16.5" cy="6.5" r="2"/><path d="M4 11.5l5-3 3 2.5 4-1.5"/><path d="M2.5 16c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/><path d="M2.5 20c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/>',
+    cycling: '<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5.5L18 16"/><path d="M10 9l2.5 7H6"/><path d="M9 6.5h3M15.5 9l-1-3H17"/>',
+    pottery: '<path d="M9 3.5h6"/><path d="M10 3.5c0 2-3.5 3.5-3.5 7.5 0 4.5 2.5 8.5 5.5 8.5s5.5-4 5.5-8.5c0-4-3.5-5.5-3.5-7.5"/><path d="M7 12h10"/>',
+    drums: '<ellipse cx="12" cy="10" rx="8" ry="3"/><path d="M4 10v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V10"/><path d="M8 12.6l2.5 6.6M16 12.6l-2.5 6.6"/><path d="M14 2.5l-3 6M19 3.5l-5 5.5"/>',
+    singing: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4M8.5 21h7"/>',
+    ukulele: '<path d="M14 10l5.5-5.5"/><path d="M18 3l3 3"/><path d="M12.5 8.8c-1.3-.7-3-.6-4.2.5-.5.5-.8 1.1-.9 1.8-.7 0-1.3.3-1.8.8-1.4 1.4-1.1 3.8.6 5.4 1.7 1.7 4 2 5.4.6.5-.5.8-1.1.8-1.8.7-.1 1.3-.4 1.8-.9 1.1-1.2 1.2-2.9.5-4.2"/><circle cx="10" cy="14" r="1"/>',
+    reading: '<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/>',
+    writing: '<path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/><path d="M5 19l4-4"/>',
+    language: '<path d="M3.5 5.5h10v7h-5l-3 3v-3h-2z"/><path d="M13.5 9.5h7v7h-2v3l-3-3h-4v-3.5"/><path d="M6.5 9h4"/>',
+    climbing: '<path d="M2.5 20.5l7-12 3.5 5.5 2.5-3.5 6 10z"/><path d="M12.5 4v6"/><path d="M12.5 4l3.5 1.3-3.5 1.4"/>'
+  };
+  var HOBBY_NAME_ICONS = {
+    "crossfit": "crossfit", "rock climbing": "climbing", "pilates": "pilates", "yoga": "yoga", "swimming": "swimming",
+    "cycling": "cycling", "drawing": "drawing", "pottery": "pottery", "knitting": "knitting", "drums": "drums",
+    "singing": "singing", "ukulele": "ukulele", "reading": "reading", "creative writing": "writing", "chess": "chess",
+    "learning a language": "language", "hiking": "hiking", "cooking": "cooking", "gardening": "gardening"
   };
   function svgWrap(inner, size, sw) {
     size = size || 20;
@@ -146,6 +165,8 @@
     size = size || 24;
     if (HOBBY_ICONS[id]) return svgWrap(HOBBY_ICONS[id], size);
     var h = hobby(id);
+    var named = h && h.name && HOBBY_NAME_ICONS[String(h.name).toLowerCase()];
+    if (named && HOBBY_ICONS[named]) return svgWrap(HOBBY_ICONS[named], size);
     var cat = h && h.category;
     return svgWrap(ICONS[cat] || ICONS.leaf, size);
   }
@@ -1186,6 +1207,7 @@
   SQUI.esc = esc;
   SQUI.icon = icon;
   SQUI.hobbyIcon = hobbyIcon;
+  SQUI.iconSvg = function (key, size, sw) { return HOBBY_ICONS[key] ? svgWrap(HOBBY_ICONS[key], size, sw) : (ICONS[key] ? svgWrap(ICONS[key], size, sw) : ""); };
   SQUI.hobbyPicture = hobbyPicture;
   SQUI.hobbyBadge = hobbyBadge;
   SQUI.mascot = mascot;

@@ -7,9 +7,10 @@ A mobile-first app that helps people trade scrolling for hobbies. It gets you st
 ## What the MVP does
 
 - **First run:** choose the hobbies you already do, then land on Today with those hobbies ready to track.
-- **Discover:** search hobbies or explore an emoji-node network grouped into sports, music, art/making, and writing/reflection clusters.
+- **Discover:** glass hobby blobs (Athletic, Mind & words, Art, Music) around a central My hobbies blob. Open a blob, then drag a hobby into My hobbies to add it, or tap it for a Gemini guide.
 - **Starter packs** for 10 built-in hobbies, with free options, equipment costs, and introductory tutorial searches.
 - **Gemini research:** securely research and add hobbies beyond the built-in catalog through the optional same-origin backend.
+- **Gemini hobby guide** (`POST /api/hobby-guide`): searches Reddit threads, hobby forums and reviews for beginner advice, real products at entry, mid and high-end prices, and real YouTube tutorials. The server checks every video with YouTube oEmbed and fetches every product or thread link; unverified links are dropped.
 - **Tracker:** weekly goals, one-tap tiny wins on a 5-rung ladder, comeback mode after 7+ days away, a 12-week activity map, skill milestones and a session log.
 - **Rewards:** XP, hobby and player levels, the Sprout mascot (5 growth stages, accessories), achievements and a celebration screen.
 - **Community (sample data):** a venue-photo event feed with character profiles, live search, date filters, groups and RSVPs. Character profiles use inline SVG. Licensed venue photos are bundled in the standalone page; no remote image requests.

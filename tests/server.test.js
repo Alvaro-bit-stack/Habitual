@@ -3,7 +3,8 @@
 
 const assert = require("node:assert/strict");
 const {
-  createServer, normalizeRequest, extractText, extractSources, validateResearch, researchHobby
+  createServer, normalizeRequest, extractText, extractSources, validateResearch, researchHobby,
+  hobbyGuide, youtubeId
 } = require("../server.js");
 
 let passed = 0;
@@ -89,6 +90,67 @@ function sampleRaw() {
     assert.equal(calls, 2);
     assert.equal(out.grounded, false);
     assert.deepEqual(out.sources, []);
+  });
+
+  await test("YouTube ids are parsed only from real YouTube URLs", () => {
+    assert.equal(youtubeId("https://www.youtube.com/watch?v=abcdefghijk&t=3"), "abcdefghijk");
+    assert.equal(youtubeId("https://youtu.be/abcdefghijk"), "abcdefghijk");
+    assert.equal(youtubeId("https://m.youtube.com/shorts/abcdefghijk"), "abcdefghijk");
+    assert.equal(youtubeId("https://evil.example/watch?v=abcdefghijk"), null);
+    assert.equal(youtubeId("http://www.youtube.com/watch?v=abcdefghijk"), null);
+    assert.equal(youtubeId("https://www.youtube.com/watch?v=short"), null);
+  });
+
+  await test("hobby guide keeps verified videos and links, drops the rest", async () => {
+    const raw = {
+      hobby: "Bouldering", overview: "Start at a gym.",
+      community: [
+        { insight: "Footwork matters more than arm strength.", source: "r/bouldering", url: "https://www.reddit.com/r/bouldering/comments/real" },
+        { insight: "Rent shoes first.", source: "Forum", url: "https://forum.example/fake" }
+      ],
+      gear: {
+        entry: { label: "Entry level", products: [{ name: "Tarantulace", brand: "La Sportiva", price: 89, retailer: "REI", url: "https://shop.example/tarantulace", why: "Comfortable." }] },
+        mid: { label: "Mid tier", products: [{ name: "Momentum", brand: "Black Diamond", price: 99, retailer: "", url: "https://made-up.example/x", why: "Popular." }] },
+        high: { label: "High end", products: [] }
+      },
+      videos: [
+        { title: "Model title", channel: "Model channel", url: "https://www.youtube.com/watch?v=AAAAAAAAAAA" },
+        { title: "Hallucinated", channel: "Nobody", url: "https://www.youtube.com/watch?v=BBBBBBBBBBB" },
+        { title: "Duplicate", channel: "X", url: "https://youtu.be/AAAAAAAAAAA" },
+        { title: "Not YouTube", channel: "X", url: "https://vimeo.com/123" }
+      ],
+      firstSteps: [{ title: "Book an intro", details: "Most gyms run one." }]
+    };
+    let geminiCalls = 0;
+    const fetchImpl = async (url, init) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        geminiCalls++;
+        const body = JSON.parse(init.body);
+        assert.deepEqual(body.tools, [{ google_search: {} }]);
+        assert.match(body.contents[0].parts[0].text, /Reddit/);
+        return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "Here you go:\n```json\n" + JSON.stringify(raw) + "\n```" }] },
+          groundingMetadata: { groundingChunks: [{ web: { title: "reddit.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc" } }] } }] }) };
+      }
+      if (url.startsWith("https://www.youtube.com/oembed")) {
+        const ok = url.includes("AAAAAAAAAAA");
+        return { ok, status: ok ? 200 : 404, json: async () => ({ title: "Real video title", author_name: "Real channel" }) };
+      }
+      if (url === "https://www.reddit.com/r/bouldering/comments/real" || url === "https://shop.example/tarantulace") return { ok: true, status: 200 };
+      return { ok: false, status: 404 };
+    };
+    const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
+    assert.equal(geminiCalls, 1);
+    assert.equal(out.videos.length, 1);
+    assert.equal(out.videos[0].url, "https://www.youtube.com/watch?v=AAAAAAAAAAA");
+    assert.equal(out.videos[0].title, "Real video title");
+    assert.equal(out.videos[0].channel, "Real channel");
+    assert.equal(out.gear.entry.products[0].url, "https://shop.example/tarantulace");
+    assert.equal(out.gear.mid.products[0].url, null);
+    assert.equal(out.gear.mid.products[0].name, "Momentum");
+    assert.equal(out.community[0].url, "https://www.reddit.com/r/bouldering/comments/real");
+    assert.equal(out.community[1].url, null);
+    assert.equal(out.grounded, true);
+    assert.equal("rawUrl" in out.gear.entry.products[0], false);
   });
 
   await test("character scripts are allowlisted and the Three.js CDN is permitted", async () => {

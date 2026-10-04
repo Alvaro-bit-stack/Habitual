@@ -806,91 +806,86 @@
   });
 
   // ---------- discover: hobby blobs ----------
-  // Overview: a small "My hobbies" blob in the middle, ringed by category blobs.
-  // Tapping a category grows it to fill the map and pops out its hobbies; tapping a hobby
-  // opens its info with an "Add to My hobbies" button that drops it into the centre blob.
-  var HOBBY_EMOJI = {
-    guitar: "🎸", soccer: "⚽", tennis: "🎾", painting: "🎨", photography: "📷",
-    running: "👟", sewing: "🧵", journaling: "📓", piano: "🎹", basketball: "🏀"
-  };
-  // Hobbies outside the built-in catalog. Adding one creates a custom hobby with the same name.
+  // Overview: a small "My hobbies" blob in the middle, ringed by glassy category blobs.
+  // Tapping a category grows it to fill the screen and pops out its hobbies. Drag a hobby
+  // into My hobbies to add it; tap it for a Gemini guide (real gear, videos, community tips).
   var EXTRA = {
-    crossfit: { name: "CrossFit", emoji: "🏋️", category: "active", place: "indoor", social: "group",
+    crossfit: { name: "CrossFit", category: "active", place: "indoor", social: "group",
       blurb: "Short, varied full-body workouts, usually done in a class with a coach.",
       free: ["Try a free intro class at a local box", "Follow a bodyweight WOD at home"],
       gear: [["Cross-training shoes", [60, 120]], ["Jump rope", [10, 25]], ["Wrist wraps", [10, 20]]],
       tutorials: [["CrossFit for beginners", "crossfit for complete beginners"], ["Scaling workouts", "how to scale crossfit workouts beginner"], ["Air squat form", "crossfit air squat form tutorial"]] },
-    climbing: { name: "Rock Climbing", emoji: "🧗", category: "active", place: "either", social: "either",
+    climbing: { name: "Rock Climbing", category: "active", place: "either", social: "either",
       blurb: "Problem-solving on a wall. Bouldering gyms make it easy to start without a partner.",
       free: ["Look for a free first-visit pass at a climbing gym", "Rent shoes before buying"],
       gear: [["Climbing shoes", [70, 130]], ["Chalk bag and chalk", [15, 30]], ["Gym day pass", [18, 30]]],
       tutorials: [["Bouldering basics", "bouldering for beginners first session"], ["Footwork drills", "beginner climbing footwork technique"], ["How to fall safely", "bouldering how to fall safely"]] },
-    pilates: { name: "Pilates", emoji: "🤸", category: "active", place: "indoor", social: "either",
+    pilates: { name: "Pilates", category: "active", place: "indoor", social: "either",
       blurb: "Slow, controlled core and posture work you can do on a mat at home.",
       free: ["Follow a free mat class online", "Use a towel or rug as a mat"],
       gear: [["Exercise mat", [20, 40]], ["Resistance band set", [10, 25]]],
       tutorials: [["Pilates for beginners", "20 minute beginner mat pilates"], ["The pilates hundred", "pilates hundred tutorial beginner"], ["Core breathing", "pilates breathing technique beginner"]] },
-    yoga: { name: "Yoga", emoji: "🧘", category: "relaxing", place: "indoor", social: "either",
+    yoga: { name: "Yoga", category: "relaxing", place: "indoor", social: "either",
       blurb: "Stretching, strength and breathing in one practice. Ten minutes counts.",
       free: ["Follow a free beginner video", "Try a community class in a park"],
       gear: [["Yoga mat", [20, 45]], ["Yoga block", [8, 15]]],
       tutorials: [["Yoga for complete beginners", "yoga for complete beginners 20 minutes"], ["Sun salutation", "sun salutation step by step beginner"], ["Morning stretch", "10 minute morning yoga beginner"]] },
-    swimming: { name: "Swimming", emoji: "🏊", category: "active", place: "either", social: "solo",
+    swimming: { name: "Swimming", category: "active", place: "either", social: "solo",
       blurb: "Low-impact cardio that works your whole body. Most towns have a public pool.",
       free: ["Use a public pool's open swim hours", "Borrow goggles"],
       gear: [["Swim goggles", [10, 25]], ["Swimsuit", [25, 50]], ["Pool day pass", [3, 10]]],
       tutorials: [["Freestyle breathing", "freestyle swimming breathing beginner"], ["Floating and kicking", "adult beginner swimming kick and float"], ["First lap", "how to swim your first lap beginner"]] },
-    cycling: { name: "Cycling", emoji: "🚲", category: "active", place: "outdoor", social: "either",
+    cycling: { name: "Cycling", category: "active", place: "outdoor", social: "either",
       blurb: "Explore your area on two wheels. Any working bike is enough to start.",
       free: ["Borrow a bike or use a bike share", "Ride a quiet park loop"],
       gear: [["Helmet", [30, 60]], ["Bike lights", [15, 35]], ["Used bike", [100, 250]]],
       tutorials: [["Bike safety check", "bike safety check before ride beginner"], ["Shifting gears", "how to shift gears on a bike beginner"], ["Riding in traffic", "beginner cycling road safety tips"]] },
-    drawing: { name: "Drawing", emoji: "✏️", category: "creative", place: "indoor", social: "solo",
+    drawing: { name: "Drawing", category: "creative", place: "indoor", social: "solo",
       blurb: "A pencil and paper are all you need. Sketch what's in front of you.",
       free: ["Use printer paper and any pencil", "Draw objects around the house"],
       gear: [["Sketchbook", [8, 18]], ["Graphite pencil set", [8, 15]], ["Eraser", [2, 5]]],
       tutorials: [["Drawing basic shapes", "drawing basics shapes beginner"], ["Shading", "pencil shading techniques beginner"], ["Draw what you see", "observational drawing for beginners"]] },
-    pottery: { name: "Pottery", emoji: "🏺", category: "creative", place: "indoor", social: "either",
+    pottery: { name: "Pottery", category: "creative", place: "indoor", social: "either",
       blurb: "Shape clay by hand or on a wheel. A drop-in studio class is the easiest way in.",
       free: ["Try air-dry clay at home", "Look for a library or community maker night"],
       gear: [["Air-dry clay", [10, 20]], ["Basic sculpting tools", [8, 15]], ["Intro studio class", [35, 60]]],
       tutorials: [["Pinch pot", "how to make a pinch pot beginner"], ["Coil building", "pottery coil building beginner"], ["Wheel centering", "pottery wheel centering clay beginner"]] },
-    knitting: { name: "Knitting", emoji: "🧶", category: "creative", place: "indoor", social: "either",
+    knitting: { name: "Knitting", category: "creative", place: "indoor", social: "either",
       blurb: "Two needles and some yarn. Easy to pick up for five minutes at a time.",
       free: ["Borrow needles from a friend or library kit", "Practise with leftover yarn"],
       gear: [["Knitting needles (size 8)", [5, 12]], ["Worsted yarn", [6, 15]]],
       tutorials: [["Cast on", "how to cast on knitting beginner"], ["Knit stitch", "knit stitch for beginners"], ["First scarf", "easy first knitting project scarf"]] },
-    drums: { name: "Drums", emoji: "🥁", category: "creative", place: "indoor", social: "either",
+    drums: { name: "Drums", category: "creative", place: "indoor", social: "either",
       blurb: "Rhythm first. A practice pad and sticks let you start quietly at home.",
       free: ["Tap rhythms on a pillow or book", "Use a free metronome app"],
       gear: [["Drumsticks", [10, 15]], ["Practice pad", [20, 35]]],
       tutorials: [["Hold drumsticks", "how to hold drumsticks beginner"], ["Single stroke roll", "single stroke roll beginner drum lesson"], ["First rock beat", "first rock beat drum lesson beginner"]] },
-    singing: { name: "Singing", emoji: "🎤", category: "creative", place: "indoor", social: "either",
+    singing: { name: "Singing", category: "creative", place: "indoor", social: "either",
       blurb: "Your voice is the instrument. Warm-ups and simple songs get you started.",
       free: ["Sing along to songs you know", "Join a community choir open night"],
       gear: [["Basic USB microphone", [30, 60]], ["Headphones", [15, 30]]],
       tutorials: [["Vocal warm-ups", "vocal warm ups for beginners"], ["Breath support", "singing breath support beginner"], ["Find your range", "how to find your vocal range"]] },
-    ukulele: { name: "Ukulele", emoji: "🪕", category: "creative", place: "indoor", social: "solo",
+    ukulele: { name: "Ukulele", category: "creative", place: "indoor", social: "solo",
       blurb: "Four strings, small hands-friendly chords, and songs within your first week.",
       free: ["Borrow a ukulele", "Use a free tuner app"],
       gear: [["Soprano ukulele", [35, 70]], ["Clip-on tuner", [8, 15]]],
       tutorials: [["Tune a ukulele", "how to tune a ukulele beginner"], ["First four chords", "ukulele four chords beginner lesson"], ["Strumming pattern", "easy ukulele strumming pattern beginner"]] },
-    reading: { name: "Reading", emoji: "📚", category: "relaxing", place: "either", social: "solo",
+    reading: { name: "Reading", category: "relaxing", place: "either", social: "solo",
       blurb: "Trade a scroll session for a chapter. Libraries make it free.",
       free: ["Get a free library card", "Borrow ebooks with a library app"],
       gear: [["Paperback book", [8, 18]], ["Book light", [10, 20]]],
       tutorials: [["Build a reading habit", "how to build a reading habit"], ["Pick your next book", "how to choose books you'll enjoy"], ["Join a book club", "how to join a book club beginner"]] },
-    writing: { name: "Creative Writing", emoji: "✍️", category: "creative", place: "either", social: "solo",
+    writing: { name: "Creative Writing", category: "creative", place: "either", social: "solo",
       blurb: "Short stories, poems or scenes. Start with a five-minute prompt.",
       free: ["Write in a notes app", "Try a daily writing prompt"],
       gear: [["Notebook", [5, 15]], ["Craft book", [12, 20]]],
       tutorials: [["Story basics", "creative writing for beginners short story"], ["Writing prompts", "creative writing prompts beginner"], ["Show, don't tell", "show don't tell writing tips"]] },
-    chess: { name: "Chess", emoji: "♟️", category: "technical", place: "indoor", social: "either",
+    chess: { name: "Chess", category: "technical", place: "indoor", social: "either",
       blurb: "A strategy game you can play online in minutes or at a park table.",
       free: ["Play free online games", "Find a library or park chess club"],
       gear: [["Chess set", [15, 35]], ["Beginner chess book", [10, 20]]],
       tutorials: [["How the pieces move", "how chess pieces move beginner"], ["Opening principles", "chess opening principles beginner"], ["Checkmate patterns", "basic checkmate patterns beginner"]] },
-    language: { name: "Learning a Language", emoji: "🗣️", category: "technical", place: "either", social: "either",
+    language: { name: "Learning a Language", category: "technical", place: "either", social: "either",
       blurb: "A few minutes a day adds up. Pick a language you'd love to hear in real life.",
       free: ["Use a free language app", "Watch shows with subtitles"],
       gear: [["Phrasebook", [8, 15]], ["Flashcards", [5, 12]]],
@@ -908,32 +903,50 @@
     piano: "Learn notes and melodies on any keyboard, even a used one.",
     basketball: "Shoot around at a public court or join a pickup game."
   };
+  var ICON_KEY = {};
+  var CAT_ICON = {
+    athletic: '<path d="M13 2.5L5.5 13.5H11l-1 8 7.5-11H12z"/>',
+    mind: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+    art: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 2-2 0-.6-.3-1-.6-1.4-.3-.4-.6-.8-.6-1.4 0-1.1.9-1.7 2-1.7h2.2A4 4 0 0 0 21 11c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
+    music: '<path d="M9 18V5.5l11-2.5v12.5"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/>',
+    mine: '<path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'
+  };
+  function svgIcon(inner, size, sw) {
+    return '<svg class="sq-ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.7) +
+      '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + inner + "</svg>";
+  }
+  function itemIcon(it, size) {
+    if (it.own || !it.key) return SQUI.hobbyIcon(it.id, size);
+    var k = ICON_KEY[it.key] || it.key;
+    return (SQUI.iconSvg && SQUI.iconSvg(k, size, 1.6)) || SQUI.hobbyIcon(it.id || it.key, size);
+  }
+
   var BLOB_CATS = [
-    { id: "athletic", label: "Athletic", emoji: "🏃", hint: "Move and sweat",
+    { id: "athletic", label: "Athletic",
       ids: ["running", "soccer", "basketball", "tennis", "crossfit", "climbing", "pilates", "swimming", "cycling"],
-      x: 30, y: 20, w: 50, h: 30 },
-    { id: "mind", label: "Mind & words", emoji: "📖", hint: "Read, write, think",
+      x: 30, y: 19, w: 58, h: 35 },
+    { id: "mind", label: "Mind & words",
       ids: ["journaling", "reading", "writing", "chess", "language", "yoga"],
-      x: 75, y: 28, w: 42, h: 26 },
-    { id: "art", label: "Art", emoji: "🎨", hint: "Make something",
+      x: 77, y: 30, w: 46, h: 30 },
+    { id: "art", label: "Art",
       ids: ["painting", "drawing", "photography", "sewing", "pottery", "knitting"],
-      x: 27, y: 73, w: 48, h: 31 },
-    { id: "music", label: "Music", emoji: "🎵", hint: "Play and sing",
+      x: 25, y: 77, w: 52, h: 34 },
+    { id: "music", label: "Music",
       ids: ["guitar", "piano", "drums", "singing", "ukulele"],
-      x: 73, y: 79, w: 48, h: 29 }
+      x: 75, y: 81, w: 50, h: 33 }
   ];
-  var MINE = { x: 51, y: 49, w: 26, h: 16 };
-  var blobOpen = null; // null | category id | "mine"
+  var MINE = { x: 52, y: 50, w: 33, h: 21 };
+  var blobOpen = null; // null | category id | "mine" | "search"
   var blobSearch = "";
 
   function blobItem(key) {
     var h = SQ.getHobby(key);
     if (h && !h.custom) {
       var gear = (h.starterPack && h.starterPack.tiers.budget.items) || [];
-      return { key: key, id: key, catalog: true, name: h.name, emoji: HOBBY_EMOJI[key] || "✨", category: h.category,
+      return { key: key, id: key, catalog: true, name: h.name, category: h.category,
         place: h.place, social: h.social, blurb: CAT_BLURB[key] || h.blurb || "",
-        free: (h.starterPack && h.starterPack.tryFirst) || [], gear: gear.map(function (g) { return [g.name, g.price || [0, 0]]; }),
-        tutorials: (h.tutorials || []).map(function (t) { return [t.title, t.searchQuery || t.title]; }) };
+        free: (h.starterPack && h.starterPack.tryFirst) || [], gear: gear.map(function (g) { return [g.name, g.price || [0, 0]]; }) };
     }
     var x = EXTRA[key];
     if (!x) return null;
@@ -948,10 +961,10 @@
     return ((SQ.state && SQ.state.tracked) || []).map(function (t) {
       var h = SQ.getHobby(t.hobbyId);
       if (!h) return null;
-      var key = HOBBY_EMOJI[h.id] ? h.id : null;
+      var key = CAT_BLURB[h.id] ? h.id : null;
       if (!key) for (var k in EXTRA) if (EXTRA[k].name.toLowerCase() === h.name.toLowerCase()) key = k;
       var item = key ? blobItem(key) : null;
-      if (!item) item = { key: h.id, id: h.id, catalog: false, own: true, name: h.name, emoji: "✨", category: h.category };
+      if (!item) item = { key: null, id: h.id, catalog: false, own: true, name: h.name, category: h.category };
       item.id = h.id;
       return item;
     }).filter(Boolean);
@@ -970,12 +983,11 @@
     var cat = BLOB_CATS.filter(function (c) { return c.id === view; })[0];
     return cat ? cat.ids.map(blobItem).filter(Boolean) : [];
   }
-  // Honeycomb rows (3, 2, 3, 2...) with a little wobble, so the hobbies read as loose bubbles.
   var ROWS = { 1: [1], 2: [2], 3: [3], 4: [2, 2], 5: [2, 3], 6: [3, 3], 7: [2, 3, 2], 8: [3, 2, 3], 9: [2, 3, 2, 2], 10: [2, 3, 3, 2] };
   function bubbleSpots(n) {
-    var rows = ROWS[n] || [];
+    var rows = ROWS[n] ? ROWS[n].slice() : [];
     if (!rows.length) { for (var left = n; left > 0; left -= 3) rows.push(Math.min(3, left)); }
-    var out = [], top = rows.length > 3 ? 26 : rows.length > 2 ? 30 : 38, bottom = rows.length > 3 ? 86 : rows.length > 2 ? 80 : 72;
+    var out = [], top = rows.length > 3 ? 27 : rows.length > 2 ? 31 : 38, bottom = rows.length > 3 ? 85 : rows.length > 2 ? 79 : 70;
     rows.forEach(function (count, r) {
       var y = rows.length === 1 ? 54 : top + (bottom - top) * r / (rows.length - 1);
       var xs = count === 3 ? [21, 50, 79] : count === 2 ? [33, 67] : [50];
@@ -988,10 +1000,12 @@
   }
   function hobbyBubble(item, spot, i, view) {
     var mine = inMine(item);
-    return '<button type="button" class="bl-hobby' + (mine ? " is-mine" : "") + '" data-action="blob-hobby" data-key="' + e(item.key) + '"' +
+    var canDrag = view !== "mine" && !mine;
+    return '<button type="button" class="bl-hobby' + (mine ? " is-mine" : "") + (canDrag ? " can-drag" : "") + '" data-action="blob-hobby" data-key="' + e(item.key || "") + '"' +
       (item.id ? ' data-id="' + e(item.id) + '"' : "") + (view === "mine" ? ' data-mine="1"' : "") +
-      ' style="--hx:' + spot.x.toFixed(1) + '%;--hy:' + spot.y.toFixed(1) + '%;--i:' + i + '" aria-label="' + e(item.name + (mine ? ", in My hobbies" : "")) + '">' +
-      '<span class="bl-hobby-dot" aria-hidden="true">' + e(item.emoji) + (mine ? '<span class="bl-hobby-check">' + SQUI.icon("check", 12) + "</span>" : "") + "</span>" +
+      ' style="--hx:' + spot.x.toFixed(1) + '%;--hy:' + spot.y.toFixed(1) + '%;--i:' + i + '" aria-label="' +
+      e(item.name + (mine ? ", in My hobbies" : canDrag ? ". Drag into My hobbies to add, or open for details" : "")) + '">' +
+      '<span class="bl-orb bl-hobby-dot" aria-hidden="true">' + itemIcon(item, 28) + (mine ? '<span class="bl-hobby-check">' + SQUI.icon("check", 12) + "</span>" : "") + "</span>" +
       '<span class="bl-hobby-name">' + e(item.name) + "</span></button>";
   }
   function bubblesFor(view) {
@@ -1000,53 +1014,155 @@
     var html = items.map(function (it, i) { return hobbyBubble(it, spots[i], i, view); }).join("");
     if (view === "search" && !items.length) {
       html = '<button type="button" class="bl-hobby bl-research" data-action="research" data-hobby="' + e(titleCase(blobSearch)) + '" data-auto="1" style="--hx:50%;--hy:52%;--i:0">' +
-        '<span class="bl-hobby-dot" aria-hidden="true">' + SQUI.icon("search", 26) + '</span><span class="bl-hobby-name">Research “' + e(titleCase(blobSearch)) + '”</span></button>';
+        '<span class="bl-orb bl-hobby-dot" aria-hidden="true">' + svgIcon(CAT_ICON.search, 26) + '</span><span class="bl-hobby-name">Research “' + e(titleCase(blobSearch)) + '”</span></button>';
     }
-    if (view === "mine" && !items.length) {
-      html = '<p class="bl-empty">Nothing here yet. Open a blob and add a hobby.</p>';
-    }
+    if (view === "mine" && !items.length) html = '<p class="bl-empty">Nothing here yet. Open a blob and drag a hobby in.</p>';
     return html;
   }
-  function seedEmojis(cat) {
-    return cat.ids.slice(0, 4).map(function (k, i) {
-      var it = blobItem(k);
-      return it ? '<span class="bl-seed" style="--s:' + i + '">' + e(it.emoji) + "</span>" : "";
+  function seedIcons(items) {
+    return items.slice(0, 4).map(function (it, i) {
+      return it ? '<span class="bl-orb bl-seed" style="--s:' + i + '">' + itemIcon(it, 18) + "</span>" : "";
     }).join("");
   }
-  function catBlob(cat) {
+  function catBlob(cat, n) {
     var open = blobOpen === cat.id;
-    var count = cat.ids.length;
-    return '<div class="bl-blob bl-cat' + (open ? " is-open" : "") + '" data-cat="' + e(cat.id) + '" style="--x:' + cat.x + '%;--y:' + cat.y + '%;--w:' + cat.w + '%;--h:' + cat.h + '%">' +
-      '<button type="button" class="bl-face" data-action="blob-open" data-cat="' + e(cat.id) + '" aria-expanded="' + open + '" aria-label="' + e(cat.label + ", " + count + " hobbies") + '">' +
-      '<span class="bl-seeds" aria-hidden="true">' + seedEmojis(cat) + "</span>" +
-      '<span class="bl-label">' + e(cat.label) + '</span><span class="bl-hint">' + count + " hobbies</span></button>" +
+    return '<div class="bl-blob bl-cat' + (open ? " is-open" : "") + '" data-cat="' + e(cat.id) + '" style="--x:' + cat.x + '%;--y:' + cat.y + '%;--w:' + cat.w + '%;--h:' + cat.h + '%;--n:' + n + '">' +
+      '<button type="button" class="bl-face" data-action="blob-open" data-cat="' + e(cat.id) + '" aria-expanded="' + open + '" aria-label="' + e(cat.label + ", " + cat.ids.length + " hobbies") + '">' +
+      '<span class="bl-cat-ic" aria-hidden="true">' + svgIcon(CAT_ICON[cat.id], 22, 1.8) + "</span>" +
+      '<span class="bl-label">' + e(cat.label) + '</span><span class="bl-hint">' + cat.ids.length + " hobbies</span>" +
+      '<span class="bl-seeds" aria-hidden="true">' + seedIcons(cat.ids.map(blobItem)) + "</span></button>" +
       '<div class="bl-inner" data-role="bubbles">' + (open ? bubblesFor(cat.id) : "") + "</div></div>";
   }
   function mineBlob() {
     var items = mineItems(), open = blobOpen === "mine";
-    var seeds = items.slice(0, 3).map(function (it, i) { return '<span class="bl-seed" style="--s:' + i + '">' + e(it.emoji) + "</span>"; }).join("");
     return '<div class="bl-blob bl-mine' + (open ? " is-open" : "") + (items.length ? "" : " is-empty") + '" data-cat="mine" style="--x:' + MINE.x + '%;--y:' + MINE.y + '%;--w:' + MINE.w + '%;--h:' + MINE.h + '%">' +
       '<button type="button" class="bl-face" data-action="blob-open" data-cat="mine" aria-expanded="' + open + '" aria-label="My hobbies, ' + items.length + '">' +
-      '<span class="bl-seeds" aria-hidden="true">' + seeds + "</span>" +
-      '<span class="bl-label">My hobbies</span><span class="bl-hint" data-role="mine-count">' + (items.length ? items.length : "Empty") + "</span></button>" +
+      '<span class="bl-cat-ic" aria-hidden="true">' + svgIcon(CAT_ICON.mine, 18, 1.8) + "</span>" +
+      '<span class="bl-label">My hobbies</span><span class="bl-hint" data-role="mine-count">' + (items.length ? items.length : "Empty") + "</span>" +
+      '<span class="bl-seeds" aria-hidden="true">' + seedIcons(items) + "</span></button>" +
+      '<span class="bl-drop-hint" aria-hidden="true">Drop to add</span>' +
       '<div class="bl-inner" data-role="bubbles">' + (open ? bubblesFor("mine") : "") + "</div></div>";
   }
   function searchBlob() {
     var open = blobOpen === "search";
     return '<div class="bl-blob bl-search' + (open ? " is-open" : "") + '" data-cat="search" style="--x:50%;--y:46%;--w:10%;--h:8%">' +
-      '<div class="bl-face" aria-hidden="true"><span class="bl-label">“' + e(blobSearch) + '”</span><span class="bl-hint">Search results</span></div>' +
+      '<div class="bl-face" aria-hidden="true"><span class="bl-label">“' + e(blobSearch) + '”</span></div>' +
       '<div class="bl-inner" data-role="bubbles">' + (open ? bubblesFor("search") : "") + "</div></div>";
   }
   function blobTitle() {
     if (!blobOpen) return "Tap a blob to explore";
     if (blobOpen === "mine") return "My hobbies";
     if (blobOpen === "search") return "Search results";
-    var c = BLOB_CATS.filter(function (x) { return x.id === blobOpen; })[0];
-    return c ? c.label + " hobbies" : "";
+    return "Drag a hobby into My hobbies";
   }
   function stageHtml() {
     return '<div class="bl-stage' + (blobOpen ? " has-open open-" + blobOpen : "") + '" data-role="stage">' +
-      BLOB_CATS.map(catBlob).join("") + searchBlob() + mineBlob() + "</div>";
+      '<div class="bl-backdrop" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
+      '<div class="bl-field">' + BLOB_CATS.map(catBlob).join("") + searchBlob() + mineBlob() + "</div></div>";
+  }
+
+  // ---------- Gemini hobby guide (real products, real videos, community tips) ----------
+  var GUIDE_KEY = "habitual.hobbyGuides.v1", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
+  var guidePending = {};
+  function guideStore() {
+    try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; } catch (x) { return {}; }
+  }
+  function cachedGuide(name) {
+    var row = guideStore()[name.toLowerCase()];
+    return row && row.at && Date.now() - row.at < GUIDE_TTL ? row.guide : null;
+  }
+  function saveGuide(name, guide) {
+    try {
+      var all = guideStore(), keys = Object.keys(all);
+      if (keys.length > 30) keys.sort(function (a, b) { return all[a].at - all[b].at; }).slice(0, keys.length - 30).forEach(function (k) { delete all[k]; });
+      all[name.toLowerCase()] = { at: Date.now(), guide: guide };
+      localStorage.setItem(GUIDE_KEY, JSON.stringify(all));
+    } catch (x) { /* storage optional */ }
+  }
+  function fetchGuide(name) {
+    var hit = cachedGuide(name);
+    if (hit) return Promise.resolve(hit);
+    if (location.protocol === "file:" || location.hostname.indexOf("claude") >= 0) {
+      var off = new Error("offline"); off.offline = true; return Promise.reject(off);
+    }
+    var k = name.toLowerCase();
+    if (!guidePending[k]) {
+      guidePending[k] = fetch("/api/hobby-guide", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hobby: name, location: "United States", currency: "USD" }) })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (body) {
+            if (!res.ok) { var err = new Error(body.error || "Guide request failed."); err.offline = res.status === 404 || res.status === 503; throw err; }
+            return body;
+          });
+        }, function () { var err = new Error("offline"); err.offline = true; throw err; })
+        .then(function (g) { saveGuide(name, g); return g; })
+        .finally(function () { delete guidePending[k]; });
+    }
+    return guidePending[k];
+  }
+  var guideTier = "entry";
+  function usd(n) { return n ? "$" + Number(n).toLocaleString() : ""; }
+  function productCard(p) {
+    var inner = '<span class="bl-prod-main"><strong>' + e((p.brand && p.name.indexOf(p.brand) < 0 ? p.brand + " " : "") + p.name) + "</strong>" +
+      (p.why ? '<span class="small muted">' + e(p.why) + "</span>" : "") +
+      '<span class="bl-prod-meta">' + (p.price ? '<span class="num bl-prod-price">' + e(usd(p.price)) + "</span>" : "") +
+      (p.retailer ? '<span class="small">' + e(p.retailer) + "</span>" : "") + "</span></span>";
+    return p.url
+      ? '<a class="card tap bl-prod" href="' + e(p.url) + '" target="_blank" rel="noopener noreferrer">' + inner + SQUI.icon("chevron-right", 18) + "</a>"
+      : '<div class="card bl-prod">' + inner + "</div>";
+  }
+  function gearTiers(g) {
+    var tiers = [["entry", "Entry level"], ["mid", "Mid tier"], ["high", "High end"]].filter(function (t) { return g.gear && g.gear[t[0]] && g.gear[t[0]].products.length; });
+    if (!tiers.length) return "";
+    if (!tiers.some(function (t) { return t[0] === guideTier; })) guideTier = tiers[0][0];
+    return '<section class="stack"><h3 class="h3">Gear people recommend</h3>' +
+      '<div class="seg bl-tier-seg" role="tablist" aria-label="Price range">' + tiers.map(function (t) {
+        var on = t[0] === guideTier;
+        return '<button type="button" role="tab" class="' + (on ? "on" : "") + '" aria-selected="' + on + '" data-tier="' + t[0] + '">' + t[1] + "</button>";
+      }).join("") + "</div>" +
+      tiers.map(function (t) {
+        return '<div class="stack bl-tier" data-tier-panel="' + t[0] + '"' + (t[0] === guideTier ? "" : " hidden") + ">" + g.gear[t[0]].products.map(productCard).join("") + "</div>";
+      }).join("") +
+      '<p class="small muted">Picked by Gemini from hobbyist threads and reviews. Prices change, so check before you buy.</p></section>';
+  }
+  function videoCard(v) {
+    return '<a class="card tap bl-video" href="' + e(v.url) + '" target="_blank" rel="noopener noreferrer">' +
+      '<span class="bl-video-thumb"><img src="' + e(v.thumbnail) + '" alt="" loading="lazy"><span class="bl-video-play">' + SQUI.icon("play", 22) + "</span></span>" +
+      '<span class="bl-video-text"><strong>' + e(v.title) + '</strong><span class="small muted">' + e(v.channel) + "</span>" +
+      (v.whatYouLearn ? '<span class="small">' + e(v.whatYouLearn) + "</span>" : "") + "</span></a>";
+  }
+  function renderGuide(g) {
+    var community = (g.community || []).map(function (c) {
+      return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + '</span><span>' + e(c.insight) +
+        (c.source ? ' <span class="small muted">— ' + (c.url ? '<a href="' + e(c.url) + '" target="_blank" rel="noopener noreferrer">' + e(c.source) + "</a>" : e(c.source)) + "</span>" : "") + "</span></li>";
+    }).join("");
+    var steps = (g.firstSteps || []).map(function (s, i) {
+      return '<li class="dc-session"><span class="dc-session-n num" aria-hidden="true">' + (i + 1) + '</span><div class="dc-session-body"><div class="dc-row-name">' + e(s.title) + "</div><p>" + e(s.details) + "</p></div></li>";
+    }).join("");
+    var sources = (g.sources || []).slice(0, 8).map(function (s) {
+      return '<li><a href="' + e(s.url) + '" target="_blank" rel="noopener noreferrer">' + e(s.title || s.publisher) + "</a></li>";
+    }).join("");
+    return (g.overview ? '<p class="bl-sheet-blurb">' + e(g.overview) + "</p>" : "") +
+      (community ? '<section class="stack"><h3 class="h3">What hobbyists tell beginners</h3><ul class="dc-tips">' + community + "</ul></section>" : "") +
+      gearTiers(g) +
+      ((g.videos || []).length ? '<section class="stack"><h3 class="h3">Tutorial videos</h3><div class="stack">' + g.videos.map(videoCard).join("") + "</div></section>" : "") +
+      (steps ? '<section class="stack"><h3 class="h3">Your first week</h3><ol class="dc-sessions">' + steps + "</ol></section>" : "") +
+      (sources ? '<details class="bl-sources"><summary class="small">Sources Gemini read</summary><ul>' + sources + "</ul></details>" : "");
+  }
+  function guideLoading() {
+    return '<div class="card dc-ai-loading" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span><div><div class="h3">Researching with Gemini</div>' +
+      '<p class="small muted">Reading Reddit threads, forums and reviews for real gear picks and tutorial videos. This can take up to a minute.</p></div></div>';
+  }
+  function guideFallback(it, err) {
+    var lo = 0, hi = 0;
+    (it.gear || []).forEach(function (g) { lo += g[1][0]; hi += g[1][1]; });
+    var msg = err && err.offline
+      ? "Real product picks and tutorial videos come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them."
+      : (err && err.message) || "Gemini could not finish the research. Try again in a moment.";
+    return '<div class="card bl-guide-note" role="note"><div class="h3">Live guide unavailable</div><p class="small muted">' + e(msg) + "</p>" +
+      (err && !err.offline ? '<button type="button" class="btn sm" data-sheet="retry">Try again</button>' : "") + "</div>" +
+      ((it.gear || []).length ? '<section class="stack"><h3 class="h3">What you need</h3><ul class="list bl-basics">' + it.gear.map(function (g) {
+        return '<li class="list-row"><span class="dc-row-name">' + e(g[0]) + '</span><span class="spacer"></span><span class="num small muted">' + e(money(g[1])) + "</span></li>";
+      }).join("") + '</ul><p class="small muted">Typical US prices, about ' + e(money([lo, hi])) + " in total.</p></section>" : "");
   }
 
   // ---------- hobby info sheet ----------
@@ -1063,49 +1179,60 @@
       it.category === "active" ? "Active" : "Low-key"
     ];
   }
-  function openBlobSheet(key, onAdd) {
+  function openBlobSheet(key, id, onAdd) {
     closeBlobSheet();
-    var it = blobItem(key) || mineItems().filter(function (m) { return m.key === key || m.id === key; })[0];
+    var it = (key && blobItem(key)) || mineItems().filter(function (m) { return m.id === id; })[0];
     if (!it) return;
     var mine = inMine(it);
-    var lo = 0, hi = 0;
-    (it.gear || []).forEach(function (g) { lo += g[1][0]; hi += g[1][1]; });
     var wrap = document.createElement("div");
     wrap.className = "bl-sheet-wrap";
     wrap.innerHTML = '<div class="cm-sheet-backdrop" data-close></div>' +
       '<div class="cm-sheet bl-sheet" role="dialog" aria-modal="true" aria-labelledby="bl-sheet-title">' +
       '<div class="cm-sheet-grab" aria-hidden="true"></div>' +
-      '<div class="bl-sheet-head"><span class="bl-sheet-emoji" aria-hidden="true">' + e(it.emoji) + '</span>' +
+      '<div class="bl-sheet-head"><span class="bl-orb bl-sheet-icon" aria-hidden="true">' + itemIcon(it, 30) + "</span>" +
       '<div class="bl-sheet-titles"><h2 id="bl-sheet-title" class="h2">' + e(it.name) + "</h2>" +
       (it.own ? "" : '<div class="bl-tags">' + blobTags(it).map(function (t) { return '<span class="bl-tag">' + e(t) + "</span>"; }).join("") + "</div>") + "</div>" +
       '<button type="button" class="icon-btn" data-close aria-label="Close">' + SQUI.icon("close", 20) + "</button></div>" +
       (it.blurb ? '<p class="bl-sheet-blurb">' + e(it.blurb) + "</p>" : "") +
-      (it.own ? '<p class="small muted">One of your own hobbies.</p>' :
-        '<div class="dc-cost-cards"><div class="card"><span class="eyebrow">Try it free</span><strong>Yes</strong><span class="small muted">' + e((it.free || [])[0] || "Use what you have") + "</span></div>" +
-        '<div class="card"><span class="eyebrow">Basic setup</span><strong class="num">' + e(money([lo, hi])) + '</strong><span class="small muted">Typical US prices</span></div></div>' +
-        ((it.free || []).length ? '<section class="stack"><h3 class="h3">Free ways to start</h3><ul class="dc-tips">' + it.free.map(function (f) {
-          return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + "</span><span>" + e(f) + "</span></li>";
-        }).join("") + "</ul></section>" : "") +
-        '<section class="stack"><h3 class="h3">Gear</h3><div class="stack">' + (it.gear || []).map(function (g) { return gearLink({ name: g[0], price: g[1] }); }).join("") + "</div></section>" +
-        '<section class="stack"><h3 class="h3">Intro tutorials</h3><div class="stack">' + (it.tutorials || []).map(function (t) { return tutorialLink({ title: t[0], searchQuery: t[1] }); }).join("") + "</div></section>") +
+      ((it.free || []).length ? '<section class="stack"><h3 class="h3">Free ways to start</h3><ul class="dc-tips">' + it.free.map(function (f) {
+        return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + "</span><span>" + e(f) + "</span></li>";
+      }).join("") + "</ul></section>" : "") +
+      '<div class="stack-lg" data-role="guide">' + guideLoading() + "</div>" +
       '<div class="bl-sheet-cta">' +
       (mine ? '<button type="button" class="btn primary block" data-sheet="open">' + SQUI.icon("check", 18) + " In My hobbies · Open tracker</button>"
-        : '<button type="button" class="btn primary block" data-sheet="add">Add to My hobbies</button>') +
-      (it.catalog ? '<button type="button" class="btn ghost block" data-sheet="pack">Full starter pack</button>' : "") +
+        : '<p class="bl-drag-tip">' + svgIcon(CAT_ICON.mine, 16, 1.8) + "<span>Drag it into My hobbies to add it</span></p>" +
+          '<button type="button" class="btn ghost block sm" data-sheet="add">Add without dragging</button>') +
       "</div></div>";
     (document.getElementById("overlay-root") || document.body).appendChild(wrap);
-    var focusBtn = wrap.querySelector("[data-sheet]");
+    var guideHost = wrap.querySelector('[data-role="guide"]');
+    function load() {
+      guideHost.innerHTML = guideLoading();
+      fetchGuide(it.name).then(function (g) {
+        if (wrap.isConnected) guideHost.innerHTML = renderGuide(g);
+      }, function (err) {
+        if (wrap.isConnected) guideHost.innerHTML = guideFallback(it, err);
+      });
+    }
+    if (!it.own) load(); else guideHost.innerHTML = "";
+    var focusBtn = wrap.querySelector("[data-close].icon-btn");
     if (focusBtn) try { focusBtn.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
     sheetKeys = function (ev) { if (ev.key === "Escape") { ev.stopPropagation(); closeBlobSheet(); } };
     document.addEventListener("keydown", sheetKeys, true);
     wrap.addEventListener("click", function (ev) {
       if (ev.target.closest("[data-close]")) { closeBlobSheet(); return; }
+      var tier = ev.target.closest("[data-tier]");
+      if (tier) {
+        guideTier = tier.getAttribute("data-tier");
+        wrap.querySelectorAll("[data-tier]").forEach(function (b) { var on = b === tier; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+        wrap.querySelectorAll("[data-tier-panel]").forEach(function (p) { p.hidden = p.getAttribute("data-tier-panel") !== guideTier; });
+        return;
+      }
       var b = ev.target.closest("[data-sheet]");
       if (!b) return;
       var act = b.getAttribute("data-sheet");
       if (act === "add") { closeBlobSheet(); onAdd(it); }
+      else if (act === "retry") load();
       else if (act === "open") { closeBlobSheet(); SQUI.go("hobby", { id: it.id }); }
-      else if (act === "pack") { closeBlobSheet(); SQUI.go("pack", { id: it.id }); }
     });
   }
   function addBlobHobby(it) {
@@ -1120,16 +1247,17 @@
     tab: "discover", title: "Discover",
     render: function () {
       if (blobOpen === "search" && !blobSearch) blobOpen = null;
-      return '<div class="screen dc-discover-home bl-discover" data-dc="discover-blobs"><div class="stack-lg">' +
-        '<header class="dc-disc-head"><div class="eyebrow">Discover</div><h1 class="h1">Find a new hobby</h1></header>' +
-        '<label class="dc-search"><span class="dc-search-ic" aria-hidden="true">' + SQUI.icon("search", 18) + "</span>" +
-        '<input type="search" class="dc-input" data-role="discover-search" placeholder="Search hobbies" aria-label="Search hobbies" autocomplete="off" value="' + e(blobSearch) + '"></label>' +
+      return '<div class="screen dc-discover-home bl-discover" data-dc="discover-blobs">' +
+        '<header class="bl-head"><h1 class="h2">Discover</h1>' +
+        '<label class="dc-search bl-searchbox"><span class="dc-search-ic" aria-hidden="true">' + SQUI.icon("search", 18) + "</span>" +
+        '<input type="search" class="dc-input" data-role="discover-search" placeholder="Search hobbies" aria-label="Search hobbies" autocomplete="off" value="' + e(blobSearch) + '"></label></header>' +
         '<div class="bl-bar"><button type="button" class="btn ghost sm bl-back" data-action="blob-close"' + (blobOpen ? "" : " hidden") + ">" +
         SQUI.icon("chevron-left", 18) + "<span>All blobs</span></button>" +
         '<span class="bl-title" data-role="blob-title" aria-live="polite">' + e(blobTitle()) + "</span></div>" +
-        '<div data-role="stage-host">' + stageHtml() + "</div></div></div>";
+        stageHtml() + "</div>";
     },
     mount: function (root) {
+      var justDragged = false;
       var host = bind(root, "[data-dc]", common({
         "blob-open": function (t) {
           var cat = t.getAttribute("data-cat");
@@ -1137,12 +1265,10 @@
         },
         "blob-close": function () { if (blobSearch) { blobSearch = ""; search.value = ""; } setOpen(null); },
         "blob-hobby": function (t) {
-          var key = t.getAttribute("data-key");
-          if (t.getAttribute("data-mine") === "1") {
-            var it = blobItem(key);
-            if (!it || it.own) { SQUI.go("hobby", { id: t.getAttribute("data-id") }); return; }
-          }
-          openBlobSheet(key, function (item) { dropIntoMine(t, item); });
+          if (justDragged) { justDragged = false; return; }
+          var key = t.getAttribute("data-key"), id = t.getAttribute("data-id");
+          if (t.getAttribute("data-mine") === "1" && (!key || !blobItem(key))) { SQUI.go("hobby", { id: id }); return; }
+          openBlobSheet(key, id, function (item) { dropIntoMine(t, item, null); });
         }
       }));
       var search = host.querySelector('[data-role="discover-search"]');
@@ -1158,9 +1284,9 @@
           if (face) face.setAttribute("aria-expanded", on);
           var inner = b.querySelector('[data-role="bubbles"]');
           if (on) inner.innerHTML = bubblesFor(id);
-          else if (inner.innerHTML) setTimeout(function () { if (!b.classList.contains("is-open")) inner.innerHTML = ""; }, 380);
+          else if (inner.innerHTML) setTimeout(function () { if (!b.classList.contains("is-open")) inner.innerHTML = ""; }, 420);
         });
-        if (view === "search") st.querySelector('.bl-search .bl-label').textContent = "“" + blobSearch + "”";
+        if (view === "search") st.querySelector(".bl-search .bl-label").textContent = "“" + blobSearch + "”";
         host.querySelector(".bl-back").hidden = !view;
         host.querySelector('[data-role="blob-title"]').textContent = blobTitle();
       }
@@ -1168,33 +1294,105 @@
         var items = mineItems(), m = stage().querySelector(".bl-mine");
         m.classList.toggle("is-empty", !items.length);
         m.querySelector('[data-role="mine-count"]').textContent = items.length ? items.length : "Empty";
-        m.querySelector(".bl-seeds").innerHTML = items.slice(0, 3).map(function (it, i) { return '<span class="bl-seed" style="--s:' + i + '">' + e(it.emoji) + "</span>"; }).join("");
+        m.querySelector(".bl-seeds").innerHTML = seedIcons(items);
         m.querySelector("button.bl-face").setAttribute("aria-label", "My hobbies, " + items.length);
       }
+      function gulp() {
+        var m = stage().querySelector(".bl-mine");
+        m.classList.remove("got-one"); void m.offsetWidth; m.classList.add("got-one");
+      }
+      function afterAdd(item, res) {
+        refreshMine(); gulp();
+        var open = stage().querySelector(".bl-blob.is-open [data-role=bubbles]");
+        if (open && blobOpen) open.innerHTML = bubblesFor(blobOpen);
+        SQUI.toast(item.name + " added to My hobbies");
+        if (res.reward && res.reward.newAchievements && res.reward.newAchievements.length) SQUI.showReward(res.reward, { title: item.name + " is in your blob" });
+      }
+      // Button path (no drag): fly a copy of the bubble into the blob.
       function dropIntoMine(bubble, item) {
         var res = addBlobHobby(item);
         var target = stage().querySelector(".bl-mine .bl-face");
-        var dot = bubble.querySelector(".bl-hobby-dot");
+        var dot = bubble && bubble.isConnected && bubble.querySelector(".bl-hobby-dot");
         var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        function finish() {
-          refreshMine();
-          var mineBlobEl = stage().querySelector(".bl-mine");
-          mineBlobEl.classList.remove("got-one"); void mineBlobEl.offsetWidth; mineBlobEl.classList.add("got-one");
-          var open = stage().querySelector(".bl-blob.is-open [data-role=bubbles]");
-          if (open && blobOpen) open.innerHTML = bubblesFor(blobOpen);
-          SQUI.toast(item.name + " added to My hobbies");
-          if (res.reward && res.reward.newAchievements && res.reward.newAchievements.length) SQUI.showReward(res.reward, { title: item.name + " is in your blob" });
-        }
-        if (reduce || !dot || !target || !dot.getBoundingClientRect) { finish(); return; }
+        if (reduce || !dot || !target) { afterAdd(item, res); return; }
         var a = dot.getBoundingClientRect(), b = target.getBoundingClientRect();
-        var fly = document.createElement("span");
-        fly.className = "bl-fly"; fly.textContent = item.emoji;
-        fly.style.left = a.left + "px"; fly.style.top = a.top + "px"; fly.style.width = a.width + "px"; fly.style.height = a.height + "px";
-        document.body.appendChild(fly);
-        var dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
-        requestAnimationFrame(function () { fly.style.transform = "translate(" + dx + "px," + dy + "px) scale(.45)"; fly.style.opacity = ".2"; });
-        setTimeout(function () { fly.remove(); finish(); }, 560);
+        var fly = ghostFor(item, a);
+        requestAnimationFrame(function () {
+          fly.style.transition = "transform .55s cubic-bezier(.5,0,.3,1), opacity .55s ease-in";
+          fly.style.transform = "translate(" + (b.left + b.width / 2 - a.left - a.width / 2) + "px," + (b.top + b.height / 2 - a.top - a.height / 2) + "px) scale(.4)";
+          fly.style.opacity = ".15";
+        });
+        setTimeout(function () { fly.remove(); afterAdd(item, res); }, 560);
       }
+      function ghostFor(item, rect) {
+        var g = document.createElement("span");
+        g.className = "bl-orb bl-ghost";
+        g.innerHTML = itemIcon(item, 28);
+        g.style.left = rect.left + "px"; g.style.top = rect.top + "px"; g.style.width = rect.width + "px"; g.style.height = rect.height + "px";
+        var src = stage().querySelector(".bl-blob.is-open");
+        if (src) g.style.setProperty("--tint", getComputedStyle(src).getPropertyValue("--tint"));
+        document.body.appendChild(g);
+        return g;
+      }
+      // Drag a hobby bubble into the My hobbies blob to add it.
+      var drag = null;
+      function overMine(x, y) {
+        var r = stage().querySelector(".bl-mine").getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var nx = (x - cx) / (r.width / 2 + 28), ny = (y - cy) / (r.height / 2 + 28);
+        return nx * nx + ny * ny <= 1;
+      }
+      host.addEventListener("pointerdown", function (ev) {
+        var t = ev.target.closest(".bl-hobby.can-drag");
+        if (!t || ev.button > 0) return;
+        drag = { el: t, id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, on: false, ghost: null };
+      });
+      host.addEventListener("pointermove", function (ev) {
+        if (!drag || ev.pointerId !== drag.id) return;
+        var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+        if (!drag.on) {
+          if (dx * dx + dy * dy < 64) return;
+          drag.on = true;
+          var item = blobItem(drag.el.getAttribute("data-key"));
+          if (!item) { drag = null; return; }
+          drag.item = item;
+          drag.rect = drag.el.querySelector(".bl-hobby-dot").getBoundingClientRect();
+          drag.ghost = ghostFor(item, drag.rect);
+          drag.ghost.classList.add("is-dragging");
+          drag.el.classList.add("is-lifted");
+          stage().classList.add("is-dragging");
+          try { drag.el.setPointerCapture(ev.pointerId); } catch (x) { /* ignore */ }
+        }
+        ev.preventDefault();
+        drag.ghost.style.transform = "translate(" + dx + "px," + dy + "px) scale(1.12)";
+        var hot = overMine(ev.clientX, ev.clientY);
+        if (hot !== drag.hot) { drag.hot = hot; stage().querySelector(".bl-mine").classList.toggle("is-target", hot); }
+      });
+      function endDrag(ev, cancelled) {
+        if (!drag || ev.pointerId !== drag.id) return;
+        var d = drag; drag = null;
+        if (!d.on) return;
+        justDragged = true; setTimeout(function () { justDragged = false; }, 50);
+        stage().classList.remove("is-dragging");
+        var mineEl = stage().querySelector(".bl-mine");
+        mineEl.classList.remove("is-target");
+        if (!cancelled && overMine(ev.clientX, ev.clientY)) {
+          var res = addBlobHobby(d.item);
+          var r = mineEl.querySelector(".bl-face").getBoundingClientRect();
+          d.ghost.style.transition = "transform .3s cubic-bezier(.5,0,.3,1), opacity .3s ease-in";
+          d.ghost.style.transform = "translate(" + (r.left + r.width / 2 - d.rect.left - d.rect.width / 2) + "px," + (r.top + r.height / 2 - d.rect.top - d.rect.height / 2) + "px) scale(.3)";
+          d.ghost.style.opacity = "0";
+          setTimeout(function () { d.ghost.remove(); afterAdd(d.item, res); }, 300);
+        } else {
+          d.ghost.style.transition = "transform .35s cubic-bezier(.3,1.4,.5,1)";
+          d.ghost.style.transform = "translate(0,0) scale(1)";
+          setTimeout(function () { d.ghost.remove(); d.el.classList.remove("is-lifted"); }, 350);
+        }
+      }
+      host.addEventListener("pointerup", function (ev) { endDrag(ev, false); });
+      host.addEventListener("pointercancel", function (ev) { endDrag(ev, true); });
+      host.addEventListener("dragstart", function (ev) { if (ev.target.closest && ev.target.closest(".bl-hobby")) ev.preventDefault(); });
+
       search.addEventListener("input", function () {
         blobSearch = search.value.replace(/\s+/g, " ").trim().slice(0, 60);
         if (blobSearch) {

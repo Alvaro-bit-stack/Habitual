@@ -349,7 +349,7 @@ SkillQuestion = { id, prompt, options: [{ value, label, points: 0..3 }] }
 
 **State** (new top-level field; add it to `fresh()` and `normalize()`):
 ```
-skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced",
+skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced"|"expert",
                        score: 0..100, answers: { [questionId]: value }, evaluatedAt: "YYYY-MM-DD" } }
 ```
 
@@ -357,7 +357,7 @@ skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced",
 ```
 SQ.evaluateSkill(hobbyId, answers) -> { tier, score, reasons: string[], eventLevel }
    // saves to state.skills, then returns. eventLevel maps tier to EventDef.level:
-   //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced → "Experienced"
+   //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced/expert → "Experienced"
 SQ.skill(hobbyId) -> state.skills[hobbyId] | null
 ```
 Open questions for the owner: does a tier change the tiny-win ladder start or the milestones?
@@ -367,7 +367,10 @@ Does re-evaluating award XP or an achievement? Do custom hobbies get a generic c
 ("Check my level"). Shows the result and a "Back to hobby" button.
 
 **Who reads it:**
-- Me page: tier badge on each hobby card (`SQ.skill(id)`, hidden when null).
+- Me page (built): stars beside each hobby's `Lv` pill from `SQ.skill(id).tier` (falls back to
+  `state.skills[id]`): new/beginner none, intermediate 1, advanced 2, expert 3. The tier is the
+  user's own answer; it never changes hobby XP or level, which start at 0 for everyone. The
+  player's overall level comes only from time spent in the app.
 - Community: highlight events whose `level` matches `eventLevel`.
 - Hobby screen (shell): "Check my level" entry point and the current tier.
 

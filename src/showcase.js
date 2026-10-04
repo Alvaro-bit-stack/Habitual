@@ -6,6 +6,16 @@
   var G = typeof globalThis !== "undefined" ? globalThis : window;
   if (typeof document === "undefined") return;
   var SQUI = G.SQUI, esc = SQUI.esc, icon = SQUI.icon;
+  // Self-rated skill tier (from the skill check) -> stars beside the hobby level. Levels start at 0 for everyone.
+  var TIER_STARS = { intermediate: 1, advanced: 2, expert: 3 };
+  function stars(id) {
+    var sk = null;
+    try { sk = sq().skill ? sq().skill(id) : (sq().state.skills || {})[id]; } catch (x) {}
+    var n = (sk && TIER_STARS[String(sk.tier).toLowerCase()]) || 0;
+    if (!n) return "";
+    return '<span class="sc-stars" role="img" aria-label="' + sk.tier.charAt(0).toUpperCase() + sk.tier.slice(1) + ", " + n + (n === 1 ? " star" : " stars") + '">' +
+      new Array(n + 1).join(icon("star", 15)) + "</span>";
+  }
 
   // ponytail: everyone picks any character for now; map character to the signed-in teammate once accounts exist.
   var CHARACTERS = [
@@ -342,7 +352,7 @@
       (shelf.length ? '<div class="stack">' + shelf.map(function (x) {
         return '<button type="button" class="card tap sc-trophy" data-action="hobby" data-id="' + esc(x.h.id) + '">' +
           '<span class="sc-ic">' + SQUI.hobbyIcon(x.h.id, 26) + "</span>" +
-          '<span class="sc-body"><span class="row"><span class="h3">' + esc(x.h.name) + '</span><span class="spacer"></span><span class="sc-lv num">Lv ' + x.s.level + "</span></span>" +
+          '<span class="sc-body"><span class="row"><span class="h3">' + esc(x.h.name) + '</span><span class="spacer"></span>' + stars(x.h.id) + '<span class="sc-lv num">Lv ' + x.s.level + "</span></span>" +
           '<span class="progress xp" role="progressbar" aria-label="' + esc(x.h.name) + ' level progress" aria-valuemin="0" aria-valuemax="' + x.s.xpForNext + '" aria-valuenow="' + x.s.xpIntoLevel + '">' +
           '<span class="progress-bar" style="width:' + pct(x.s.xpIntoLevel, x.s.xpForNext) + '%"></span></span>' +
           '<span class="small muted"><span class="num">' + x.s.totalSessions + "</span> sessions · <span class=\"num\">" + x.s.weeklyStreak + "</span>-week streak</span></span></button>";

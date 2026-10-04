@@ -89,7 +89,8 @@
       sessions: [],
       achievements: {},
       rsvps: [],
-      checkins: []
+      checkins: [],
+      skills: {}
     };
   }
 
@@ -127,9 +128,25 @@
       }) : [],
       achievements: (s.achievements && typeof s.achievements === "object" && !Array.isArray(s.achievements)) ? s.achievements : {},
       rsvps: Array.isArray(s.rsvps) ? s.rsvps.filter(function (x) { return typeof x === "string"; }) : [],
-      checkins: Array.isArray(s.checkins) ? s.checkins.filter(function (x) { return typeof x === "string"; }) : []
+      checkins: Array.isArray(s.checkins) ? s.checkins.filter(function (x) { return typeof x === "string"; }) : [],
+      skills: normalizeSkills(s.skills)
     };
     if (typeof out.user.xp !== "number" || !isFinite(out.user.xp)) out.user.xp = 0;
+    return out;
+  }
+
+  // Self-reported (or evaluated) expertise per hobby. See CONTRACT.md section 5.
+  var TIERS = ["new", "beginner", "intermediate", "advanced"];
+  function normalizeSkills(raw) {
+    var out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      var v = raw[id];
+      if (!v || TIERS.indexOf(v.tier) < 0) return;
+      out[id] = { tier: v.tier, score: typeof v.score === "number" && isFinite(v.score) ? v.score : TIERS.indexOf(v.tier) * 33,
+        answers: v.answers && typeof v.answers === "object" ? v.answers : {}, evaluatedAt: isDateStr(v.evaluatedAt) ? v.evaluatedAt : today(),
+        source: v.source === "check" ? "check" : "self" };
+    });
     return out;
   }
 
@@ -335,7 +352,8 @@
       daysSince: cb.daysSince,
       inComeback: cb.inComeback,
       ladderIndex: ladder,
-      nextTinyWin: tw[Math.min(ladder, tw.length - 1)] || null,
+      nextTinyWin: (state.skills[id] && !cb.inComeback) ? tierTask(h, state.skills[id].tier, list.length) : (tw[Math.min(ladder, tw.length - 1)] || null),
+      skillTier: state.skills[id] ? state.skills[id].tier : null,
       heat: heat,
       recent: list.slice().reverse().slice(0, 20)
     };
@@ -529,6 +547,42 @@
     ensure();
     state.tracked = state.tracked.filter(function (t) { return t.hobbyId !== id; });
     save();
+  }
+
+  function setSkill(id, tier) {
+    ensure();
+    if (!getHobby(id) || TIERS.indexOf(tier) < 0) return null;
+    state.skills[id] = { tier: tier, score: TIERS.indexOf(tier) * 33, answers: {}, evaluatedAt: today(), source: "self" };
+    save();
+    return state.skills[id];
+  }
+  function skill(id) { ensure(); return state.skills[id] || null; }
+
+  // Today's task for a hobby at a given expertise. Hobby-specific where we have one, otherwise a
+  // generic task for the tier; the two alternate so the suggestion changes from day to day.
+  var TIER_MINUTES = { "new": 5, beginner: 10, intermediate: 20, advanced: 30 };
+  var TIER_TASKS = {
+    guitar: { "new": "Learn to hold the guitar and tune it", beginner: "Switch between G, C and D chords slowly", intermediate: "Learn the next section of a song you like", advanced: "Practise a solo or fingerstyle piece at full speed" },
+    piano: { "new": "Find middle C and play five notes up and down", beginner: "Play a simple melody with your right hand", intermediate: "Practise both hands together on one piece", advanced: "Work on dynamics and tempo in a harder piece" },
+    soccer: { "new": "Juggle or tap the ball between your feet", beginner: "Practise passing against a wall with both feet", intermediate: "Run a dribbling drill through cones", advanced: "Do a finishing drill: 30 shots from different angles" },
+    tennis: { "new": "Bounce the ball on your racket 20 times", beginner: "Practise forehands against a wall", intermediate: "Work on your backhand cross-court", advanced: "Practise first and second serves with targets" },
+    basketball: { "new": "Practise dribbling with each hand", beginner: "Shoot 25 free throws and count makes", intermediate: "Do a crossover and layup drill", advanced: "Run a shooting drill from five spots beyond the arc" },
+    running: { "new": "Walk briskly with one-minute easy jogs", beginner: "Do a walk-run: 2 minutes running, 1 walking", intermediate: "Run an easy, steady pace you could talk at", advanced: "Do intervals: 6 x 400m fast with easy recoveries" },
+    painting: { "new": "Mix three colours from the primaries", beginner: "Paint a simple object from life", intermediate: "Do a quick study focusing on light and shadow", advanced: "Work on a larger piece with a limited palette" },
+    photography: { "new": "Take 10 photos of one object from different angles", beginner: "Shoot using the rule of thirds on a walk", intermediate: "Try a photo series in golden-hour light", advanced: "Shoot and edit a five-photo story" },
+    sewing: { "new": "Thread a needle and sew a straight running stitch", beginner: "Sew on a button or fix a small hem", intermediate: "Cut and sew a simple tote bag", advanced: "Work on a garment from a pattern" },
+    journaling: { "new": "Write three lines about your day", beginner: "Answer one journaling prompt", intermediate: "Write a page reflecting on your week", advanced: "Review last month's entries and note patterns" }
+  };
+  var GENERIC_TASKS = {
+    "new": "Watch a short intro to {h} and try the very first step",
+    beginner: "Practise the basics of {h}",
+    intermediate: "Work on one weak spot in {h}",
+    advanced: "Do a focused {h} session on a hard skill"
+  };
+  function tierTask(h, tier, n) {
+    var own = TIER_TASKS[h.id] && TIER_TASKS[h.id][tier];
+    var generic = GENERIC_TASKS[tier].replace("{h}", h.name.toLowerCase());
+    return { label: own && n % 2 === 0 ? own : generic, minutes: TIER_MINUTES[tier] };
   }
 
   function setGoal(id, n) {
@@ -814,6 +868,8 @@
     addHobby: addHobby,
     removeHobby: removeHobby,
     setGoal: setGoal,
+    setSkill: setSkill,
+    skill: skill,
     logSession: logSession,
     tickMilestone: tickMilestone,
     events: events,

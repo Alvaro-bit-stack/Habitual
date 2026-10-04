@@ -277,11 +277,13 @@ haven't logged yet it dwindles with the clock (to 30% of peak by midnight); logg
 Gray when there's no streak. The Today screen refreshes --heat every minute.
 Community shows a lock until the user tracks a hobby.
 
-**Onboarding and discovery:** a fresh app opens `pick`; navigation stays hidden until the user
-selects at least one current hobby. Discover shows those hobbies as emphasized emoji nodes and
-similar hobbies as muted nodes, grouped into topic bubbles such as sports, music, art/making, and
-writing/reflection. Search can isolate any built-in hobby. Selecting a suggestion opens `pack`;
-Gemini research can create a custom hobby through `SQ.addCustomHobby` and then track it.
+**Onboarding and discovery:** a fresh app opens `pick`, a single pipeline with navigation hidden.
+Step 1 asks "What hobbies do you already do?": the user types each hobby (no option list) and picks a
+level (`new`, `beginner`, `intermediate`, `advanced`), or skips. Typed names map to a catalog hobby when
+they match, otherwise to a custom hobby (`SQ.addCustomHobby`). Each is tracked and its level saved with
+`SQ.setSkill`. Step 2 (`pick` {step:"next"}) asks "Want to start a new hobby?": yes opens `discover`,
+no opens `today`. Today's "Up next" and each hobby's next step use a task matched to that level.
+Discover shows glass category blobs around a My hobbies blob; dragging a hobby into My hobbies adds it.
 
 ### Secure Gemini research API (`server.js`)
 
@@ -359,6 +361,9 @@ SQ.evaluateSkill(hobbyId, answers) -> { tier, score, reasons: string[], eventLev
    // saves to state.skills, then returns. eventLevel maps tier to EventDef.level:
    //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced/expert → "Experienced"
 SQ.skill(hobbyId) -> state.skills[hobbyId] | null
+SQ.setSkill(hobbyId, tier) -> saves a self-reported tier (source: "self") from onboarding
+   // Implemented: state.skills, SQ.skill, SQ.setSkill and level-matched tasks (hobbyStats().nextTinyWin,
+   // hobbyStats().skillTier). The evaluate screen and SQ.evaluateSkill are still to do.
 ```
 Open questions for the owner: does a tier change the tiny-win ladder start or the milestones?
 Does re-evaluating award XP or an achievement? Do custom hobbies get a generic check?

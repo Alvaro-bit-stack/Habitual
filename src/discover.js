@@ -679,69 +679,122 @@
   });
 
   // ---------- focused, low-clutter discovery experience ----------
-  var SIMPLE_TREE = [
-    { label: "Music", ids: ["guitar", "piano"] },
-    { label: "Sports", ids: ["soccer", "tennis", "running", "basketball"] },
-    { label: "Creative", ids: ["painting", "photography", "sewing", "journaling"] }
+  // ---------- current hobbies: one question at a time ----------
+  // 1. "What hobbies do you already do?" Type a hobby, pick your level, add another or skip.
+  // 2. First run only: "Want to start a new hobby?" Yes opens Discover, No opens Today.
+  var LEVELS = [
+    ["new", "Just starting", "Tried it a few times"],
+    ["beginner", "Beginner", "Know the basics"],
+    ["intermediate", "Intermediate", "Comfortable, still improving"],
+    ["advanced", "Advanced", "Years in, chasing hard skills"]
   ];
-  var simplePick = [];
-  function simpleTreeItem(id) {
-    var h = SQ.getHobby(id), on = simplePick.indexOf(id) >= 0, isT = tracked(id);
-    if (!h) return "";
-    return '<button type="button" class="dc-tree-item' + (on ? " on" : "") + (isT ? " is-tracked" : "") + '" data-action="simple-toggle" data-id="' + e(id) + '" data-name="' + e(h.name.toLowerCase()) + '"' +
-      (isT ? " disabled" : ' aria-pressed="' + on + '"') + '><span class="dc-tree-photo">' + picture(id, "", "dc-tree-photo-img") + "</span>" +
-      '<span class="dc-tree-name">' + e(h.name) + '</span><span class="dc-tree-check" aria-hidden="true">' + (on ? SQUI.icon("check", 15) : "") + "</span></button>";
+  var OB = null; // { list: [{name, tier}], tier, step }
+  function resolveHobby(name) {
+    var q = name.toLowerCase().replace(/\s+/g, " ").trim();
+    var list = catalog();
+    var hit = list.filter(function (h) { return h.name.toLowerCase() === q || h.id === q; })[0] ||
+      list.filter(function (h) { return q.indexOf(h.id) >= 0 || h.name.toLowerCase().indexOf(q) >= 0 && q.length >= 4; })[0];
+    if (hit) return hit.id;
+    var extraKey = null;
+    for (var k in EXTRA) if (EXTRA[k].name.toLowerCase() === q || k === q) extraKey = k;
+    var label = extraKey ? EXTRA[extraKey].name : titleCase(name.replace(/\s+/g, " ").trim()).slice(0, 40);
+    var cat = extraKey ? EXTRA[extraKey].category : "creative";
+    return SQ.addCustomHobby(label, cat);
   }
-  function simplePickButton() {
-    var n = simplePick.length;
-    return '<button type="button" class="btn primary block" data-action="simple-start"' + (n ? "" : " disabled") + ">" +
-      (n ? "Continue with " + n + " " + (n === 1 ? "hobby" : "hobbies") : "Choose a hobby") + "</button>";
+  function obLevelSeg(sel) {
+    return '<div class="ob-levels" role="radiogroup" aria-label="Your level">' + LEVELS.map(function (l) {
+      var on = l[0] === sel;
+      return '<button type="button" role="radio" class="ob-level' + (on ? " on" : "") + '" aria-checked="' + on + '" data-action="ob-level" data-tier="' + l[0] + '">' +
+        '<span class="ob-level-t">' + l[1] + '</span><span class="ob-level-s">' + l[2] + "</span></button>";
+    }).join("") + "</div>";
+  }
+  function obList() {
+    if (!OB.list.length) return "";
+    return '<ul class="ob-list" aria-label="Hobbies you added">' + OB.list.map(function (it, i) {
+      var lv = LEVELS.filter(function (l) { return l[0] === it.tier; })[0];
+      return '<li class="ob-item"><span class="ob-item-name">' + e(it.name) + '</span><span class="ob-item-lv">' + e(lv ? lv[1] : "") + "</span>" +
+        '<button type="button" class="icon-btn" data-action="ob-remove" data-i="' + i + '" aria-label="Remove ' + e(it.name) + '">' + SQUI.icon("close", 18) + "</button></li>";
+    }).join("") + "</ul>";
+  }
+  function obHobbiesStep() {
+    var first = !onboarded();
+    var n = OB.list.length;
+    return '<div class="screen ob" data-dc="onboard"><div class="stack-lg">' +
+      (first ? "" : '<div class="screen-head">' + backBtn() + "</div>") +
+      '<header class="ob-head"><div class="eyebrow">' + (first ? "Step 1 of 2" : "Your hobbies") + '</div><h1 class="h1">What hobbies do you already do?</h1>' +
+      '<p class="muted">Type one in and tell us how far along you are. We’ll set up your first tasks to match.</p></header>' +
+      '<form class="card ob-form stack" data-role="ob-form" novalidate>' +
+      '<label class="dc-field"><span class="small muted">Hobby</span><input class="dc-input" data-role="ob-name" maxlength="40" placeholder="e.g. Guitar" autocomplete="off" enterkeyhint="done"></label>' +
+      '<div class="stack"><span class="small muted">Your level</span>' + obLevelSeg(OB.tier) + "</div>" +
+      '<p class="small dc-err" data-role="ob-err" hidden></p>' +
+      '<button type="submit" class="btn block">' + SQUI.icon("plus", 18) + (n ? "Add another hobby" : "Add hobby") + "</button></form>" +
+      '<div data-role="ob-list">' + obList() + "</div></div>" +
+      '<div class="dc-cta ob-cta">' +
+      (n ? '<button type="button" class="btn primary block" data-action="ob-continue">Continue with ' + n + " " + (n === 1 ? "hobby" : "hobbies") + "</button>"
+        : '<button type="button" class="btn block" data-action="ob-continue">' + (first ? "I don’t have any yet, skip" : "Cancel") + "</button>") +
+      "</div></div>";
+  }
+  function obNextStep() {
+    var n = ((SQ.state && SQ.state.tracked) || []).length;
+    return '<div class="screen ob" data-dc="onboard"><div class="stack-lg">' +
+      '<header class="ob-head"><div class="eyebrow">Step 2 of 2</div><h1 class="h1">Want to start a new hobby?</h1>' +
+      '<p class="muted">' + (n ? "Your hobbies are set up. You can also explore something new." : "No problem. Let’s find one you’ll enjoy.") + "</p></header>" +
+      '<div class="stack ob-choices">' +
+      '<button type="button" class="card tap dc-choice" data-action="ob-yes"><span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("compass", 26) + "</span>" +
+      '<span class="dc-choice-text"><span class="dc-choice-title">Yes, show me hobbies</span><span class="dc-choice-sub">Explore by category in Discover</span></span>' +
+      '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
+      '<button type="button" class="card tap dc-choice" data-action="ob-no"><span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("sun", 26) + "</span>" +
+      '<span class="dc-choice-text"><span class="dc-choice-title">Not now</span><span class="dc-choice-sub">' + (n ? "Go to Today and start on your tasks" : "Go to Today") + "</span></span>" +
+      '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
+      "</div></div></div>";
   }
   SQUI.register("pick", {
-    get tab() { return onboarded() ? "discover" : null; }, title: "Current hobbies",
-    render: function () {
-      simplePick = [];
-      var firstRun = !onboarded();
-      var pickHead = firstRun
-        ? '<header class="dc-disc-head"><div class="eyebrow">First, tell us what you do</div><h1 class="h1">List your current hobbies</h1></header>'
-        : head("Add current hobbies", "Your hobbies");
-      return '<div class="screen dc-simple-pick" data-dc="simple-pick"><div class="stack-lg">' +
-        pickHead +
-        '<label class="dc-search"><span class="dc-search-ic" aria-hidden="true">' + SQUI.icon("search", 18) + '</span><input type="search" class="dc-input" data-role="simple-search" placeholder="Search available hobbies" aria-label="Search available hobbies" autocomplete="off"></label>' +
-        '<div class="dc-hobby-tree">' + SIMPLE_TREE.map(function (branch) {
-          return '<section class="dc-tree-branch" data-tree-branch><h2 class="eyebrow">' + e(branch.label) + '</h2><div class="dc-tree-line">' +
-            branch.ids.map(simpleTreeItem).join("") + "</div></section>";
-        }).join("") + '</div><p class="small muted dc-nores" data-role="simple-nores" hidden>No available hobby matches that search.</p></div><div class="dc-cta" data-role="simple-cta">' + simplePickButton() + "</div></div>";
+    get tab() { return null; }, title: "Your hobbies",
+    render: function (params) {
+      if (params && params.step === "next") return obNextStep();
+      if (!OB) OB = { list: [], tier: "beginner" };
+      return obHobbiesStep();
     },
     mount: function (root) {
       var host = bind(root, "[data-dc]", common({
-        "simple-toggle": function (t) {
-          var id = t.getAttribute("data-id"), i = simplePick.indexOf(id);
-          if (i >= 0) simplePick.splice(i, 1); else simplePick.push(id);
-          var on = simplePick.indexOf(id) >= 0;
-          t.classList.toggle("on", on); t.setAttribute("aria-pressed", on);
-          t.querySelector(".dc-tree-check").innerHTML = on ? SQUI.icon("check", 15) : "";
-          host.querySelector('[data-role="simple-cta"]').innerHTML = simplePickButton();
+        back: function () { OB = null; SQUI.back(); },
+        "ob-level": function (t) {
+          OB.tier = t.getAttribute("data-tier");
+          host.querySelectorAll(".ob-level").forEach(function (b) { var on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
         },
-        "simple-start": function () {
-          if (!simplePick.length) return;
-          var rewards = simplePick.map(function (id) { return SQ.isTracked(id) ? null : SQ.addHobby(id, { goal: 2 }); }).filter(Boolean);
-          var wasOnboarded = onboarded(); finishOnboarding();
-          SQUI.go("today", {}, wasOnboarded ? { replace: true } : { reset: true });
-          var reward = mergeRewards(rewards); if (reward) SQUI.showReward(reward, { title: "You're ready" });
-        }
+        "ob-remove": function (t) { OB.list.splice(Number(t.getAttribute("data-i")), 1); SQUI.refresh(); },
+        "ob-continue": function () {
+          var first = !onboarded();
+          var rewards = [];
+          OB.list.forEach(function (it) {
+            var id = resolveHobby(it.name);
+            if (!id) return;
+            if (!SQ.isTracked(id)) rewards.push(SQ.addHobby(id, { goal: it.tier === "advanced" ? 4 : it.tier === "intermediate" ? 3 : 2 }));
+            SQ.setSkill(id, it.tier);
+          });
+          finishOnboarding();
+          OB = null;
+          var r = mergeRewards(rewards.filter(Boolean));
+          if (first) SQUI.go("pick", { step: "next" }, { reset: true });
+          else SQUI.go("today", {}, { replace: true });
+          if (r) SQUI.showReward(r, { title: "You're on the board" });
+        },
+        "ob-yes": function () { OB = null; SQUI.go("discover", {}, { reset: true }); },
+        "ob-no": function () { OB = null; SQUI.go("today", {}, { reset: true }); }
       }));
-      var search = host.querySelector('[data-role="simple-search"]');
-      search.addEventListener("input", function () {
-        var term = search.value.trim().toLowerCase(), shown = 0;
-        host.querySelectorAll(".dc-tree-item").forEach(function (item) {
-          var visible = !term || item.getAttribute("data-name").indexOf(term) >= 0;
-          item.hidden = !visible; if (visible) shown += 1;
-        });
-        host.querySelectorAll("[data-tree-branch]").forEach(function (branch) {
-          branch.hidden = !Array.prototype.some.call(branch.querySelectorAll(".dc-tree-item"), function (item) { return !item.hidden; });
-        });
-        host.querySelector('[data-role="simple-nores"]').hidden = shown > 0;
+      var form = host.querySelector('[data-role="ob-form"]');
+      if (!form) return;
+      var input = form.querySelector('[data-role="ob-name"]');
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var name = (input.value || "").replace(/\s+/g, " ").trim().slice(0, 40);
+        var err = form.querySelector('[data-role="ob-err"]');
+        if (!name) { err.hidden = false; err.textContent = "Type a hobby first."; input.focus(); return; }
+        if (OB.list.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) { err.hidden = false; err.textContent = "You already added " + name + "."; return; }
+        OB.list.push({ name: name, tier: OB.tier });
+        SQUI.refresh();
+        var again = document.querySelector('[data-role="ob-name"]');
+        if (again) try { again.focus(); } catch (x) { /* ignore */ }
       });
     }
   });

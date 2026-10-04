@@ -800,6 +800,7 @@
   }
 
   /* ------------------------------------------------------------------ TODAY */
+  var TIER_NAME = { "new": "Just starting", beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
   function greeting() {
     var h = new Date().getHours();
     try { if (sq()._now) h = new Date(sq()._now).getHours(); } catch (e) { /* ignore */ }
@@ -870,7 +871,7 @@
       nextUp = '<div class="td-next"><span class="td-next-k">Up next</span><span class="td-next-l">Pick a hobby to start</span>' +
         '<button type="button" class="btn primary td-next-go" data-action="pick">' + icon("plus", 18) + "Choose</button></div>";
     } else if (pick && !caughtUp) {
-      var kind = pick.s.inComeback ? "Comeback +20 XP" : stepKind(pick.tw);
+      var kind = pick.s.inComeback ? "Comeback +20 XP" : pick.s.skillTier ? TIER_NAME[pick.s.skillTier] + " task" : stepKind(pick.tw);
       nextUp = '<div class="td-next"><span class="td-next-k">' + esc(kind) + " · " + esc(pick.h.name) + '</span>' +
         '<span class="td-next-l">' + esc(pick.tw.label) + '</span>' +
         '<button type="button" class="btn primary td-next-go" data-action="tiny" data-id="' + esc(pick.id) + '" aria-label="Do it: ' + esc(pick.tw.label) + ', ' + esc(pick.tw.minutes) + ' minutes">' +
@@ -915,7 +916,7 @@
       onClick(root, {
         open: function (b) { go("hobby", { id: b.getAttribute("data-id") }); },
         tiny: function (b) { doTinyWin(b.getAttribute("data-id")); },
-        pick: function () { go("pick"); },
+        pick: function () { go(sq().state.tracked.length ? "pick" : "discover"); },
         discover: function () { go("discover"); }
       });
     }

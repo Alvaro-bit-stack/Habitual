@@ -418,15 +418,44 @@ def flow_pick_today(c):
     c.audit("20-discover-pairs")
 
 
+def ob_add(c, name, tier):
+    c.page.fill("[data-role=ob-name]", name)
+    c.click(f".ob-level[data-tier={tier}]")
+    c.click("[data-role=ob-form] button[type=submit]")
+
+
+def flow_skip_onboarding(c):
+    m = c.mode
+    c.fresh()
+    c.click("[data-action=ob-continue]")
+    expect("Want to start a new hobby?" in c.page.locator("#app-main").inner_text(), m, "skip", "skip did not ask about new hobbies")
+    c.click("[data-action=ob-yes]")
+    expect(c.screen() == "discover", m, "skip", "Yes did not open Discover")
+    expect(c.js("() => SQ.state.onboarded") is True, m, "skip", "skipping should finish onboarding")
+    c.fresh()
+    ob_add(c, "Tennis", "advanced")
+    c.click("[data-action=ob-continue]")
+    c.close_any_overlay()
+    c.click("[data-action=ob-no]")
+    expect(c.screen() == "today", m, "level-task", "No did not open Today")
+    nxt = c.page.locator(".td-next").inner_text()
+    expect("advanced task" in nxt.lower() and "30" in nxt, m, "level-task", f"Up next should be an advanced task: {nxt!r}")
+    expect(c.page.locator(".hc-tier").first.inner_text().strip() == "Advanced", m, "level-task", "tier badge missing on Today")
+    c.audit("05-today-level-task")
+
+
 def flow_simple_discovery(c, place):
     m = c.mode
     c.fresh()
     expect(c.screen() == "pick", m, "first-run", "fresh start should ask for current hobbies")
     expect(c.js("() => document.getElementById('app-nav').hidden"), m, "first-run", "navigation should stay hidden during first-run selection")
-    expect("List your current hobbies" in c.page.locator("#app-main").inner_text(), m, "first-run", "first-run prompt missing")
-    c.click(".dc-tree-item[data-id='guitar']")
-    c.click("[data-action=simple-start]")
+    expect("What hobbies do you already do?" in c.page.locator("#app-main").inner_text(), m, "first-run", "first-run question missing")
+    expect(c.page.locator(".dc-tree-item, .dc-tile").count() == 0, m, "first-run", "first run should ask, not list hobby options")
+    ob_add(c, "Guitar", "beginner")
+    c.click("[data-action=ob-continue]")
     c.close_any_overlay()
+    expect(c.screen() == "pick" and "Want to start a new hobby?" in c.page.locator("#app-main").inner_text(), m, "first-run", "new-hobby question missing")
+    c.click("[data-action=ob-no]")
     expect(c.screen() == "today", m, "first-run", "selection did not open Today")
     expect(c.page.locator(".hc .hc-name").all_inner_texts() == ["Guitar Playing"], m, "first-run", "selected hobby missing from Today")
     c.audit("01-today-with-hobby")
@@ -498,21 +527,19 @@ def flow_simple_discovery(c, place):
 def flow_simple_pick_today(c):
     m = c.mode
     c.fresh()
-    expect(c.screen() == "pick", m, "simple-pick", "current hobbies choice did not open picker")
-    expect(c.page.locator(".dc-tree-item").count() == 10, m, "simple-pick", "tree should contain exactly ten hobbies")
-    expect(c.page.locator(".dc-tree-branch").count() == 3, m, "simple-pick", "hobby tree branches missing")
-    expect(c.page.locator("img.dc-tree-photo-img").count() == 10, m, "simple-pick", "tree should picture every hobby")
-    c.page.fill('[data-role="simple-search"]', "photo")
-    expect(c.page.locator(".dc-tree-item:visible").count() == 1, m, "simple-pick", "search did not filter the tree")
-    expect(c.page.locator(".dc-tree-item:visible").get_attribute("data-id") == "photography", m, "simple-pick", "search returned the wrong hobby")
-    c.page.fill('[data-role="simple-search"]', "")
-    c.audit("12-pick-tree")
-    for hid in ["running", "journaling", "sewing"]:
-        c.click(f".dc-tree-item[data-id='{hid}']")
-    expect(c.page.locator(".dc-tree-item.on").count() == 3, m, "simple-pick", "selected hobbies not marked")
+    expect(c.screen() == "pick", m, "simple-pick", "fresh start did not ask for current hobbies")
+    c.audit("12-pick-question", nav_check=False)
+    for name in ["Running", "Journaling", "Sewing"]:
+        ob_add(c, name, "new")
+    expect(c.page.locator(".ob-item").count() == 3, m, "simple-pick", "added hobbies not listed")
+    c.click(".ob-item [data-action=ob-remove]", nth=2)
+    expect(c.page.locator(".ob-item").count() == 2, m, "simple-pick", "remove did not work")
+    ob_add(c, "Sewing", "new")
     c.audit("13-pick-selected", nav_check=False)
-    c.click("[data-action=simple-start]")
+    c.click("[data-action=ob-continue]")
     c.close_any_overlay()
+    expect(c.js("() => SQ.skill('running') && SQ.skill('running').tier") == "new", m, "simple-pick", "expertise not saved")
+    c.click("[data-action=ob-no]")
     expect(c.screen() == "today", m, "simple-pick", "picker did not open Today")
     names = c.page.locator(".hc .hc-name").all_inner_texts()
     expect(names == ["Running", "Journaling", "Sewing"], m, "simple-pick", f"tracked cards {names}")
@@ -800,7 +827,8 @@ def run_mode(browser, idx, mode, vp, scheme):
                          ("pick", lambda: flow_simple_pick_today(c)),
                          ("hobby", lambda: flow_hobby(c)),
                          ("demo", lambda: flow_demo_community(c)),
-                         ("me", lambda: flow_me(c))]:
+                         ("me", lambda: flow_me(c)),
+                         ("skip", lambda: flow_skip_onboarding(c))]:
             try:
                 fn()
             except Exception as e:  # keep going: one broken flow shouldn't hide others

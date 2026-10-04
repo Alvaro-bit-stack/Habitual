@@ -236,6 +236,7 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 .hc-name { font-family: var(--font-display); font-weight: 800; font-size: 19px; line-height: 1.2; overflow-wrap: anywhere; }
 .hc-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin-top: 2px; }
 .hc-lv { font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.hc-tier { padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--leaf) 12%, transparent); color: var(--leaf); font-size: 11.5px; font-weight: 800; }
 .hc-chev { color: var(--ink-2); margin-top: 12px; }
 .hc-progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .dots { display: inline-flex; gap: 4px; }

@@ -18,14 +18,14 @@
 .sc-level { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
 .sc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .sc-stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
-.sc-val { font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1.15; }
+.sc-val { font-size: clamp(21px, 6.4vw, 26px); font-weight: 700; color: var(--ink); line-height: 1.15; }
 .sc-lbl { font-size: 15px; font-weight: 600; color: var(--ink-2); }
 .sc-settings { padding-top: 8px; border-top: 1px solid var(--line); }
 .sc-val { white-space: nowrap; }
-.sc-unit { font-size: 16px; font-weight: 600; color: var(--ink-2); }
+.sc-unit { font-size: 15px; font-weight: 600; color: var(--ink-2); }
 .sc-stat-tap { position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer; border-color: var(--leaf); }
 .sc-stat-tap:active { background: var(--surface-2); }
-.sc-go { position: absolute; top: 14px; right: 12px; color: var(--leaf); }
+.sc-go { display: inline-flex; vertical-align: -3px; margin-left: 2px; color: var(--leaf); }
 /* Reward celebration: the stage sits above the card in the overlay's column; its bottom 70px tucks
    behind the card, so the character leaps up out of the card. */
 .rw.rw-hero { flex-direction: column; }

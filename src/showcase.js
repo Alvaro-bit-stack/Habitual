@@ -240,7 +240,7 @@
       '<div class="sc-stat"><span class="sc-val num">' + best + '<span class="sc-unit">' + (best === 1 ? " wk" : " wks") + '</span></span><span class="sc-lbl">Best streak</span></div>' +
       '<button type="button" class="sc-stat sc-stat-tap" data-action="achievements">' +
       '<span class="sc-val num">' + earned.length + '<span class="sc-unit"> of ' + achs.length + "</span></span>" +
-      '<span class="sc-lbl">Achievements</span><span class="sc-go" aria-hidden="true">' + icon("chevron-right", 20) + "</span></button></section>" +
+      '<span class="sc-lbl">Achievements<span class="sc-go" aria-hidden="true">' + icon("chevron-right", 18) + "</span></span></button></section>" +
 
       // Hobbies
       '<section class="stack"><h2 class="h3">Your hobbies</h2>' +

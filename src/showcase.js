@@ -19,8 +19,6 @@
     return '<span class="sc-stars" role="img" aria-label="' + t.charAt(0).toUpperCase() + t.slice(1) + ", " + n + (n === 1 ? " star" : " stars") + '">' +
       new Array(n + 1).join(GEM) + "</span>";
   }
-  // Hobby screen: the same stars beside the hobby name (empty below intermediate or before the skill check).
-  SQUI.skillStars = stars;
   // Diamond star: icy gradient under alternating light/dark facets, a white glint.
   var GEM = '<svg width="26" height="26" viewBox="2.5 2.5 19 18.5" aria-hidden="true"><defs><linearGradient id="sc-gem" x1="0" y1="0" x2="1" y2="1">' +
     '<stop offset="0" stop-color="#e8fbff"/><stop offset=".4" stop-color="#5cd0f5"/><stop offset=".7" stop-color="#8f7cf0"/><stop offset="1" stop-color="#2d7fd0"/></linearGradient></defs>' +

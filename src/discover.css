@@ -322,35 +322,35 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .bl-field { position: absolute; left: 10px; right: 10px; top: 6px; bottom: 6px; }
 
 /* Soft colour fields behind the glass so it has something to refract. */
-.bl-backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.bl-backdrop i { position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; filter: blur(42px); opacity: .55; animation: bl-wander 18s ease-in-out infinite alternate; }
-.bl-backdrop i:nth-child(1) { left: -12%; top: 2%; background: #ffb27a; }
-.bl-backdrop i:nth-child(2) { right: -14%; top: 14%; background: #7fe0bd; animation-duration: 22s; }
-.bl-backdrop i:nth-child(3) { left: -10%; bottom: 8%; background: #f59bd0; animation-duration: 20s; }
-.bl-backdrop i:nth-child(4) { right: -12%; bottom: 0; background: #a99bff; animation-duration: 24s; }
+.bl-backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: linear-gradient(160deg, #b9c6ff 0%, #c9b8ff 55%, #e2c3ff 100%); }
+:root[data-theme="dark"] .bl-backdrop { background: linear-gradient(160deg, #1d2a5a 0%, #2a2260 55%, #3a2462 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-backdrop { background: linear-gradient(160deg, #1d2a5a 0%, #2a2260 55%, #3a2462 100%); } }
+.bl-backdrop i { position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; filter: blur(48px); opacity: .45; animation: bl-wander 18s ease-in-out infinite alternate; }
+.bl-backdrop i:nth-child(1) { left: -12%; top: 2%; background: #9fe8ff; }
+.bl-backdrop i:nth-child(2) { right: -14%; top: 14%; background: #ffffff; animation-duration: 22s; }
+.bl-backdrop i:nth-child(3) { left: -10%; bottom: 8%; background: #ffffff; animation-duration: 20s; }
+.bl-backdrop i:nth-child(4) { right: -12%; bottom: 0; background: #ffb3d1; animation-duration: 24s; }
 :root[data-theme="dark"] .bl-backdrop i { opacity: .28; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-backdrop i { opacity: .28; } }
 @keyframes bl-wander { from { transform: translate(0, 0) scale(1); } to { transform: translate(6%, 8%) scale(1.12); } }
 
-/* Glass */
-.bl-blob, .bl-orb { --tint: #3d8fd0; }
+/* Frosted glass: a mostly clear bubble with a white rim and a faint coloured glow inside. */
+.bl-blob, .bl-orb { --tint: #6f8cff; }
 .bl-blob { position: absolute; z-index: 1; left: calc(var(--x) - var(--w) / 2); top: calc(var(--y) - var(--h) / 2); width: var(--w); height: var(--h);
   border-radius: 46% 54% 52% 48% / 52% 46% 54% 48%;
-  background: radial-gradient(120% 90% at 28% 18%, var(--glass-hi) 0, var(--glass-lo) 34%, transparent 58%),
-    radial-gradient(90% 90% at 75% 85%, color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%),
-    color-mix(in srgb, var(--tint) 14%, transparent);
-  border: 1px solid var(--glass-edge);
-  box-shadow: inset 0 1px 2px var(--glass-edge), inset 0 -14px 34px color-mix(in srgb, var(--tint) 22%, transparent), inset 10px 0 24px rgba(255,255,255,.08), 0 24px 46px -18px rgba(var(--shade), .35);
-  -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%);
+  background: radial-gradient(closest-side at 50% 46%, color-mix(in srgb, var(--tint) 16%, transparent) 0, rgba(255,255,255,.08) 55%, rgba(255,255,255,.42) 88%, rgba(255,255,255,.62) 100%);
+  border: 1px solid rgba(255,255,255,.55);
+  box-shadow: inset 0 0 24px rgba(255,255,255,.35), 0 18px 40px -22px rgba(var(--shade), .25);
+  -webkit-backdrop-filter: blur(22px) saturate(115%); backdrop-filter: blur(22px) saturate(115%);
   animation: bl-morph 11s ease-in-out infinite, bl-bob 7s ease-in-out infinite;
   animation-delay: calc(var(--n, 0) * -2.7s), calc(var(--n, 0) * -1.9s);
   transition: left .5s cubic-bezier(.3,.9,.3,1), top .5s cubic-bezier(.3,.9,.3,1), width .5s cubic-bezier(.3,.9,.3,1), height .5s cubic-bezier(.3,.9,.3,1), opacity .35s ease, transform .35s ease, filter .35s ease; }
-.bl-blob::before { content: ""; position: absolute; left: 14%; top: 7%; width: 34%; height: 15%; border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0)); transform: rotate(-18deg); filter: blur(1px); opacity: .7; pointer-events: none; }
-.bl-blob::after { content: ""; position: absolute; right: 16%; bottom: 10%; width: 12%; height: 7%; border-radius: 50%; background: rgba(255,255,255,.4); filter: blur(3px); pointer-events: none; }
-.bl-blob[data-cat="athletic"] { --tint: #f07a2a; }
-.bl-blob[data-cat="mind"] { --tint: #1fa776; }
-.bl-blob[data-cat="art"] { --tint: #e0479a; }
-.bl-blob[data-cat="music"] { --tint: #7357ee; }
+:root[data-theme="dark"] .bl-blob { background: radial-gradient(closest-side at 50% 46%, color-mix(in srgb, var(--tint) 14%, transparent) 0, rgba(255,255,255,.03) 55%, rgba(255,255,255,.12) 88%, rgba(255,255,255,.2) 100%); border-color: rgba(255,255,255,.18); box-shadow: inset 0 0 24px rgba(255,255,255,.06); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-blob { background: radial-gradient(closest-side at 50% 46%, color-mix(in srgb, var(--tint) 14%, transparent) 0, rgba(255,255,255,.03) 55%, rgba(255,255,255,.12) 88%, rgba(255,255,255,.2) 100%); border-color: rgba(255,255,255,.18); box-shadow: inset 0 0 24px rgba(255,255,255,.06); } }
+.bl-blob[data-cat="athletic"] { --tint: #ff9a62; }
+.bl-blob[data-cat="mind"] { --tint: #4fd1c5; }
+.bl-blob[data-cat="art"] { --tint: #ff7eb6; }
+.bl-blob[data-cat="music"] { --tint: #8f7dff; }
 .bl-blob[data-cat="search"] { --tint: #2d86d6; opacity: 0; pointer-events: none; }
 @keyframes bl-morph {
   0%, 100% { border-radius: 46% 54% 52% 48% / 52% 46% 54% 48%; }
@@ -368,24 +368,26 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .bl-seeds { display: flex; justify-content: center; gap: 4px; margin-top: 6px; transition: transform .2s ease; }
 .bl-face:hover .bl-seeds { transform: scale(1.06); }
 
-/* Small glass sphere used for hobby icons */
-.bl-orb { display: grid; place-items: center; border-radius: 50%; color: color-mix(in srgb, var(--tint) 85%, var(--ink));
-  background: radial-gradient(circle at 32% 26%, var(--glass-hi, rgba(255,255,255,.75)) 0, rgba(255,255,255,.18) 38%, transparent 62%), color-mix(in srgb, var(--tint) 16%, color-mix(in srgb, var(--surface) 55%, transparent));
-  border: 1px solid var(--glass-edge, rgba(255,255,255,.7));
-  box-shadow: inset 0 -6px 12px color-mix(in srgb, var(--tint) 22%, transparent), inset 0 1px 1px rgba(255,255,255,.7), 0 8px 18px -6px rgba(var(--shade, 22, 50, 72), .35);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+/* Small frosted orb used for hobby icons: near-white glass, the icon carries the colour. */
+.bl-orb { display: grid; place-items: center; border-radius: 50%; color: color-mix(in srgb, var(--tint) 75%, #1c2a6b);
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.92) 0, rgba(255,255,255,.7) 60%, rgba(255,255,255,.5) 100%);
+  border: 1px solid rgba(255,255,255,.85);
+  box-shadow: inset 0 -4px 10px color-mix(in srgb, var(--tint) 14%, transparent), 0 10px 22px -10px rgba(60, 70, 160, .35);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+:root[data-theme="dark"] .bl-orb { color: color-mix(in srgb, var(--tint) 70%, #fff); background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.22) 0, rgba(255,255,255,.1) 70%); border-color: rgba(255,255,255,.25); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-orb { color: color-mix(in srgb, var(--tint) 70%, #fff); background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.22) 0, rgba(255,255,255,.1) 70%); border-color: rgba(255,255,255,.25); } }
 .bl-seed { width: 32px; height: 32px; }
 .bl-seed:nth-child(even) { transform: translateY(-4px); }
 
-.bl-mine { --tint: #2d86d6; z-index: 3; border-radius: 50%; animation: bl-morph 9s ease-in-out infinite, bl-breathe 5s ease-in-out infinite; }
+.bl-mine { --tint: #6fa8ff; z-index: 3; border-radius: 50%; animation: bl-morph 9s ease-in-out infinite, bl-breathe 5s ease-in-out infinite; }
 .bl-mine .bl-label { font-size: 15px; }
 .bl-mine .bl-seed { width: 26px; height: 26px; }
 .bl-mine .bl-seed svg { width: 15px; height: 15px; }
 .bl-mine.is-empty { border-style: dashed; border-color: color-mix(in srgb, var(--tint) 55%, transparent); }
 .bl-drop-hint { position: absolute; left: 50%; top: -8px; z-index: 3; transform: translateX(-50%); padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 11px; font-weight: 800; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
-.bl-stage.is-dragging .bl-mine { box-shadow: inset 0 1px 2px var(--glass-edge), inset 0 -14px 34px color-mix(in srgb, var(--tint) 30%, transparent), 0 0 0 6px color-mix(in srgb, var(--tint) 18%, transparent), 0 24px 46px -18px rgba(var(--shade), .35); }
+.bl-stage.is-dragging .bl-mine { box-shadow: inset 0 0 24px rgba(255,255,255,.5), 0 0 0 6px rgba(255,255,255,.45), 0 18px 40px -22px rgba(var(--shade), .25); }
 .bl-stage.is-dragging .bl-mine .bl-drop-hint { opacity: 1; }
-.bl-mine.is-target { transform: scale(1.16) !important; background: radial-gradient(120% 90% at 28% 18%, var(--glass-hi) 0, var(--glass-lo) 34%, transparent 58%), color-mix(in srgb, var(--tint) 32%, transparent); }
+.bl-mine.is-target { transform: scale(1.16) !important; background: radial-gradient(closest-side at 50% 46%, color-mix(in srgb, var(--tint) 30%, transparent) 0, rgba(255,255,255,.2) 60%, rgba(255,255,255,.7) 100%); }
 .bl-mine.got-one { animation: bl-gulp .55s cubic-bezier(.3,1.6,.5,1), bl-morph 9s ease-in-out infinite; }
 @keyframes bl-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
 @keyframes bl-gulp { 0% { transform: scale(1.16); } 45% { transform: scale(.92); } 100% { transform: scale(1); } }
@@ -411,13 +413,13 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 @keyframes bl-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.3); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .bl-hobby-dot { position: relative; width: 64px; height: 64px; transition: transform .16s ease; animation: bl-float-dot 6s ease-in-out infinite; animation-delay: calc(var(--i) * -.8s); }
 @keyframes bl-float-dot { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
-.bl-hobby-name { max-width: 96px; padding: 3px 8px; border-radius: 9px; background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-size: 12px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
-.bl-hobby.is-mine .bl-hobby-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf) 45%, transparent), inset 0 -6px 12px color-mix(in srgb, var(--tint) 22%, transparent), 0 8px 18px -6px rgba(var(--shade), .35); }
+.bl-hobby-name { max-width: 96px; padding: 3px 8px; border-radius: 9px; background: rgba(255,255,255,.45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-size: 12px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.bl-hobby.is-mine .bl-hobby-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf) 40%, transparent), 0 10px 22px -10px rgba(60, 70, 160, .35); }
 .bl-hobby-check { position: absolute; right: -3px; bottom: -2px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--surface); border-radius: 50%; background: var(--leaf); color: var(--leaf-ink); }
 .bl-research, .bl-research .bl-hobby-name { width: 160px; max-width: 160px; }
 .bl-empty { position: absolute; left: 50%; top: 50%; width: 70%; margin: 0; transform: translate(-50%, -50%); color: var(--ink-2); font-weight: 600; text-align: center; }
 .bl-ghost { position: fixed; z-index: 80; pointer-events: none; will-change: transform; --glass-hi: rgba(255,255,255,.8); --glass-edge: rgba(255,255,255,.75); --shade: 22, 50, 72; }
-.bl-ghost.is-dragging { box-shadow: inset 0 -6px 12px color-mix(in srgb, var(--tint) 22%, transparent), inset 0 1px 1px rgba(255,255,255,.7), 0 18px 34px -8px rgba(22, 50, 72, .45); }
+.bl-ghost.is-dragging { box-shadow: 0 18px 34px -8px rgba(60, 70, 160, .45); }
 
 /* Sheet */
 .bl-sheet-wrap { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; }

@@ -1,37 +1,50 @@
-# Habitual MVP — Build Contract
+# Habitual — Team Contract
 
-Habitual is a mobile-first web app that gets people off their phones and into hobbies.
-Two entry paths: "I already have hobbies" (add them to a tracker) and "Find a new hobby"
-(5-question quiz → 3 matches → starter pack with gear + cost → start). Tracked hobbies get
-weekly goals, tiny wins, comeback mode, XP, levels, a growing mascot ("Sprout"),
-achievements, and a community tab (groups + local events, sample data only).
+Habitual is a mobile-first web app that gets people off their
+phones and into hobbies. Two ways in: "I already have hobbies" (add them to a tracker) and
+"Find a new hobby" (5-question quiz → 3 matches → starter pack with gear + cost → start).
+Tracked hobbies get weekly goals, tiny wins, comeback mode, XP, levels, achievements, a 3D
+character and progress page (Me), a skill evaluator and a community tab.
 
-Everything ships as ONE self-contained HTML page at the end. You write separate source
-files in `/home/claude/sidequest/src/`; a build script inlines them in this order:
+**This file is the source of truth for how the parts talk to each other**: data shapes, the `SQ`
+engine API, the `SQUI` UI kit, shared CSS classes and design tokens. If you need to change
+something another part depends on, change it here first and get a quick OK from the team
+(in the PR or the group chat). Changes that stay inside your own files don't need to be listed.
 
-1. `data.js`        — catalog content (Agent: DATA)
-2. `engine.js`      — state + game logic, no DOM (Agent: ENGINE)
-3. `shell.css`, `shell.js` — app shell, shared UI kit, Today/Hobby/Me screens, reward overlay (Agent: SHELL)
-4. `discover.css`, `discover.js` — onboarding fork, add-hobbies picker, quiz, results, starter packs (Agent: DISCOVER)
-5. `community.css`, `community.js` — community tab (Agent: COMMUNITY)
-6. `boot.js` — written by the integrator: `SQUI.start()`
+## 0. Who owns what
 
-Rules for ALL agents
-- Plain browser JavaScript (ES2020), no modules, no imports, no build step, no libraries.
-  Each JS file is wrapped by you in an IIFE `(function(){ ... })();` and exposes ONLY the
-  globals named here. Must also load in Node for tests (guard any `window`/`document` use;
-  data.js and engine.js must not touch the DOM at all — use `globalThis`).
-- No emoji anywhere in UI or data. Icons are inline SVG.
-- No `alert/confirm/prompt`, no network calls, no external images. Google Fonts already
-  linked by the shell (see Design tokens).
-- Today = local date. All dates in data are relative (day offsets) so the demo never goes stale.
-- Write ONLY your own files. Do not edit other agents' files. If you need something from
-  another part that isn't in this contract, code defensively and report it in your final message.
-- Final message: list files written, public API exactly as implemented, any deviations from
-  this contract, and known issues. Be precise; the integrator relies on it.
+| Area | Files | Owner |
+| --- | --- | --- |
+| Core & data | `src/engine.js`, `src/data.js`, `tests/` | shared, see each section |
+| Characters & Me page (incl. tracker screens) | `src/shell.*`, `src/showcase.*`, `assets/models/`, `tools/rig.py` | Neo |
+| Community | `src/community.*` | _(fill in)_ |
+| Skill evaluator | `src/evaluate.*` (new) + its engine/data additions | _(fill in)_ |
+| Discovery (onboarding, quiz, starter packs) | `src/discover.*` | _(fill in)_ |
 
--------------------------------------------------------------------------------
-## 1. DATA — `globalThis.SQ_DATA`
+Edit only your own files. If you need something from another part that isn't in this contract,
+code defensively (check it exists before calling it) and raise it with the owner.
+
+## 1. Ground rules
+
+- **Plain browser JavaScript (ES2020).** No framework, no modules, no imports. Each JS file is
+  wrapped in an IIFE `(function(){ ... })();` and exposes only the globals named here.
+- **`data.js` and `engine.js` never touch the DOM** (use `globalThis`), so the tests can load them
+  in Node. Other files guard any `window`/`document` use.
+- **Build:** `build.py` inlines `src/` into one page, in this order:
+  `data.js` → `engine.js` → `shell.css`/`shell.js` → `discover.*` → `community.*` → `showcase.*` →
+  `boot.js` (which just calls `SQUI.start()`). Add new files to the `CSS`/`JS` lists in `build.py`.
+- **Always online.** The app is headed toward a real mobile app with network access, so loading a
+  library from a CDN (cdn.jsdelivr.net, cdnjs) is fine when it earns its place. Load it only on
+  the screen that needs it, and show a friendly message if it fails. Don't bundle libraries.
+- **No emoji** anywhere in UI or data. Icons are inline SVG (`SQUI.icon`, `SQUI.hobbyIcon`).
+- **No `alert/confirm/prompt`.** Use in-page UI (see the reset confirm on the Me screen).
+- **Dates:** today is the local date. All dates in data are relative (day offsets) so the demo
+  never goes stale.
+- **Saved state is rebuilt on load.** `normalize()` in `engine.js` keeps only known top-level
+  fields (extra fields on `state.user` survive). **A new top-level state field must be added to
+  `fresh()` and `normalize()`**, or it will silently disappear on the next page load.
+
+## 2. Data — `globalThis.SQ_DATA` (`src/data.js`)
 
 ```
 SQ_DATA = {
@@ -43,7 +56,7 @@ SQ_DATA = {
 }
 ```
 
-Hobby ids (use exactly these): `drawing`, `running`, `tennis`, `guitar`, `photography`,
+Hobby ids (exactly these): `drawing`, `running`, `tennis`, `guitar`, `photography`,
 `cooking`, `hiking`, `soccer`, `knitting`, `bouldering`, `chess`, `gardening`.
 
 ```
@@ -66,7 +79,7 @@ Hobby = {
     firstMonth: string,                       // 1-2 sentences, concrete
     tiers: {
       free:   { items: GearItem[] },          // borrow / use what you have / free venues; prices [0,0] ok
-      budget: { items: GearItem[] },          // 2-5 items, realistic 2026 USD ranges
+      budget: { items: GearItem[] },          // 2-5 items, realistic USD ranges
       stepup: { items: GearItem[] }           // 2-5 items
     },
     tryFirst: string[],                       // 2-3 try-before-you-buy tips (rent, library, free class, used)
@@ -74,16 +87,14 @@ Hobby = {
   }
 }
 GearItem = { name, price: [lo, hi], reason }  // name is generic, NOT a brand/product name
-                                              // ("Starter aluminum racket, 25 in" not a brand)
 ```
-Budget tier total (sum of lo..hi) should agree with minBudget (0 → free tier truly free;
-50 → budget total low end < 50; 150 → budget total low end < 150).
+Budget tier total should agree with `minBudget` (0 → free tier truly free; 50 → budget total low
+end < 50; 150 → budget total low end < 150).
 
 ```
 AchDef = { id, name, desc, category: "starter"|"consistency"|"comeback"|"skill"|"social" }
 ```
-Achievement ids, in order (write good short names/descs; desc says how to earn it):
-`first_hobby` (track first hobby), `first_session` (log first session),
+Achievement ids, in order: `first_hobby` (track first hobby), `first_session` (log first session),
 `starter_pack` (start a hobby from a starter pack), `tiny_five` (log 5 tiny wins),
 `three_hobbies` (track 3 hobbies), `goal_week_1` (hit a weekly goal),
 `goal_week_4` (weekly streak of 4), `comeback` (log a session after 14+ days away),
@@ -94,9 +105,8 @@ Achievement ids, in order (write good short names/descs; desc says how to earn i
 Group = { hobbyId, name, members: number, posts: Post[] }      // name like "Tennis · Newark area"
 Post  = { author, text, daysAgo, sessionLabel }                 // 3-4 posts each; sessionLabel like "Regular session · 40 min"
 EventDef = { id, hobbyId, title, dayOffset, time, place, level, spots, going, host }
-   // dayOffset: 0 = today (include at least 4 events with 0), up to 13
+   // dayOffset: 0 = today (at least 4 events with 0), up to 13
    // time "9:00 AM"; place = a plausible PUBLIC venue type in the Newark NJ area
-   //   (e.g. "Branch Brook Park courts", "Newark Public Library, Main Branch") — public places only
    // level: "Beginner friendly"|"All levels"|"Experienced"; spots > going
    // host: first name + last initial ("Maya R.")
 QuizQuestion = { id, prompt, options: [{value, label, hint}] }
@@ -105,178 +115,174 @@ Quiz (ids and values exact):
 1. `vibe` — "What sounds most fun?" values `creative`,`active`,`technical`,`social`,`relaxing`
 2. `place` — "Where do you want to spend it?" `indoor`,`outdoor`,`either`
 3. `social` — "Solo or with people?" `solo`,`group`,`either`
-4. `budget` — "Starting budget?" values numbers `0`,`50`,`150`,`999` (labels Free / Under $50 / Under $150 / Flexible)
+4. `budget` — "Starting budget?" values numbers `0`,`50`,`150`,`999` (Free / Under $50 / Under $150 / Flexible)
 5. `time` — "Time per week?" `low`,`mid`,`high` (Under 1 hr / 1–3 hrs / 3+ hrs)
 
--------------------------------------------------------------------------------
-## 2. ENGINE — `globalThis.SQ`
+## 3. Engine — `globalThis.SQ` (`src/engine.js`)
 
-Pure logic over `SQ_DATA` + persisted state. No DOM. Persists to `localStorage` key
-`sidequest.v1` if available (every access in try/catch; works with no storage).
+Pure logic over `SQ_DATA` + saved state. No DOM. Saves to `localStorage` key `sidequest.v1` when
+available (every access in try/catch; works with no storage).
 
-### State (SQ.state, plain JSON)
+### State (`SQ.state`, plain JSON)
 ```
 {
   version: 1,
   onboarded: boolean,
-  user: { name: "You", xp: number, nudgeTime: "21:00", quiz: null | QuizAnswers },
-  custom: [{ id: "custom-<slug>", name, category }],   // user-typed hobbies
+  user: { name: "You", xp: number, nudgeTime: "21:00", quiz: null | QuizAnswers,
+          character?: "neo"|"adrian"|"alvaro" },          // character: see section 6
+  custom: [{ id: "custom-<slug>", name, category }],      // user-typed hobbies
   tracked: [{ hobbyId, goal: 1..7, xp, addedAt: "YYYY-MM-DD", viaStarter: bool, milestones: string[] }],
   sessions: [{ id, hobbyId, date: "YYYY-MM-DD", ts: number, size: "tiny"|"regular"|"big",
                minutes: number|null, note: string, xp: number }],
   achievements: { [achId]: "YYYY-MM-DD" },   // includes dynamic "skill:<hobbyId>:<milestoneId>"
   rsvps: string[], checkins: string[]
+  // skills: see section 5 (proposed)
 }
 ```
 
-### XP rules
+### XP and levels
 tiny 10 · regular 25 · big 50 · comeback bonus +20 · weekly goal hit +50 · milestone 40 · event check-in 60.
-Every XP gain adds to `user.xp` AND (when tied to a tracked hobby) to that tracked hobby's `xp`.
-Level curve (same for player and hobby): start at level 1 with 0 XP; going from level n to
-n+1 costs `100 * n` XP. (L2 at 100, L3 at 300, L4 at 600, L5 at 1000 ...)
-Mascot stage by PLAYER level: 1-2 Seed(0), 3-4 Sprout(1), 5-7 Sapling(2), 8-11 Bloom(3), 12+ Tree(4).
-Accessories: one per category in which the user has logged ≥3 sessions (category of the hobby).
+Every XP gain adds to `user.xp` AND (when tied to a tracked hobby) to that hobby's `xp`.
+Level curve (player and hobby): level 1 at 0 XP; going from level n to n+1 costs `100 * n` XP
+(L2 at 100, L3 at 300, L4 at 600, L5 at 1000 ...).
+Mascot stage by player level: 1-2 Seed(0), 3-4 Sprout(1), 5-7 Sapling(2), 8-11 Bloom(3), 12+ Tree(4).
+Accessories: one per category in which the user has logged ≥3 sessions.
 
 ### Weeks, goals, comeback
-- Weeks start Monday (local). `sessionsThisWeek` = sessions for that hobby dated within the current Mon–Sun week.
-- Goal hit bonus: awarded on the session that makes `sessionsThisWeek === goal` (exactly once per week per hobby).
-- Weekly streak: count consecutive weeks, walking back from the current week, where sessions ≥ goal
-  (current goal). The current week counts only if already met; if not met it is skipped (not a break).
-  One missed week per calendar month is forgiven (bridges the streak, adds 0). Stop at the first
-  unforgiven miss or at the week before the hobby was added.
-- `daysSince`: days since last session for that hobby; if none, null.
-- `inComeback`: (daysSince ≥ 7) OR (no sessions AND added ≥ 7 days ago).
-- Comeback bonus +20 when the logged session happens while `inComeback` was true.
-- `comeback` achievement: session logged when there was a previous session ≥ 14 days earlier.
-- Tiny-win ladder index = number of sessions since the most recent gap of ≥ 7 days between
-  consecutive sessions (or since the first session), capped at 4; if inComeback or no sessions → 0.
-  `nextTinyWin = hobby.tinyWins[index]`. Custom hobbies get a generic 5-step ladder
-  (2, 5, 10, 20, 30 minutes: "Do 2 minutes of <name>", ...) and 5 generic milestones.
+- Weeks start Monday (local). `sessionsThisWeek` = sessions for that hobby in the current Mon–Sun week.
+- Goal-hit bonus: on the session that makes `sessionsThisWeek === goal` (once per week per hobby).
+- Weekly streak: consecutive weeks, walking back from the current week, where sessions ≥ goal.
+  The current week counts only if already met (otherwise skipped, not a break). One missed week per
+  calendar month is forgiven (bridges the streak, adds 0). Stops at the first unforgiven miss or at
+  the week before the hobby was added.
+- `daysSince`: days since the last session for that hobby, or null.
+- `inComeback`: (daysSince ≥ 7) OR (no sessions AND added ≥ 7 days ago). A session logged while
+  in comeback earns +20.
+- `comeback` achievement: a session logged when the previous one was ≥ 14 days earlier.
+- Tiny-win ladder index = sessions since the most recent gap of ≥ 7 days (or since the first
+  session), capped at 4; 0 when in comeback or no sessions. `nextTinyWin = hobby.tinyWins[index]`.
+  Custom hobbies get a generic 5-step ladder (2, 5, 10, 20, 30 minutes) and 5 generic milestones.
 
-### API (all must exist exactly)
+### API
 ```
-SQ.init()                       // load from storage or create fresh default state; returns state
+SQ.init()                       // load from storage or create fresh state; returns state
 SQ.state                        // getter, current state object
-SQ.save()                       // persist (called automatically by every mutator)
-SQ.reset()                      // fresh default state (onboarded:false), saved
-SQ.seedDemo()                   // replaces state with a realistic demo (see below), onboarded:true
-SQ.today()                      // "YYYY-MM-DD" local; respects SQ._now (Date or null) for tests
+SQ.save()                       // persist (every mutator calls it)
+SQ.reset()                      // fresh state (onboarded:false), saved
+SQ.seedDemo()                   // replaces state with the realistic demo, onboarded:true
+SQ.today()                      // "YYYY-MM-DD" local; respects SQ._now
 SQ._now                         // null by default; tests may set a Date
-SQ.getHobby(id)                 // catalog or custom hobby object (custom ones get generated tinyWins/milestones/no starterPack)
+SQ.getHobby(id)                 // catalog or custom hobby (custom ones get generated tinyWins/milestones, no starterPack)
 SQ.catalog()                    // all 12 catalog hobbies
-SQ.addCustomHobby(name, category) // returns new custom hobby id; does NOT track it
+SQ.addCustomHobby(name, category) // returns new custom id; does NOT track it
 SQ.isTracked(id) -> bool
-SQ.addHobby(id, {goal=2, viaStarter=false}={}) -> Reward   // tracks it; may unlock first_hobby/three_hobbies/starter_pack
+SQ.addHobby(id, {goal=2, viaStarter=false}={}) -> Reward   // xpGained 0; may unlock first_hobby/three_hobbies/starter_pack
 SQ.removeHobby(id)              // untrack; keeps sessions
 SQ.setGoal(id, n)               // clamp 1..7
 SQ.logSession(id, {size, minutes=null, note=""}) -> Reward
-SQ.tickMilestone(id, milestoneId) -> Reward | null   // null if already ticked; +40 xp; unlocks dynamic skill achievement
-SQ.events() -> [EventDef & {date:"YYYY-MM-DD", rsvp:bool, checkedIn:bool, canCheckIn:bool}] sorted by date then time
-SQ.toggleRsvp(eventId) -> bool (new rsvp state)
-SQ.checkIn(eventId) -> Reward | null   // requires rsvp and event date <= today and not already checked in
+SQ.tickMilestone(id, milestoneId) -> Reward | null   // null if already ticked; +40 xp
+SQ.events() -> [EventDef & {date, rsvp, checkedIn, canCheckIn}]   // sorted by date then time
+SQ.toggleRsvp(eventId) -> bool
+SQ.checkIn(eventId) -> Reward | null   // needs rsvp, event date <= today, not already checked in
 SQ.communityUnlocked() -> bool  // tracked.length >= 1
 SQ.hobbyStats(id) -> {
   level, xp, xpIntoLevel, xpForNext, sessionsThisWeek, goal, weeklyStreak,
   totalSessions, totalMinutes, bestWeek, daysSince, inComeback, ladderIndex, nextTinyWin,
-  heat: [{date, count}]   // exactly 84 entries, oldest first, ending today
+  heat: [{date, count}],  // exactly 84 entries, oldest first, ending today
   recent: Session[]       // newest first, max 20
 }
-SQ.player() -> { level, xp, xpIntoLevel, xpForNext, stage, stageName, accessories: string[], totalSessions, weekSessions, trackedCount }
-SQ.levelFor(xp) -> { level, into, next }   // into = xp past current level start, next = cost of this level
-SQ.match(answers) -> [{ hobby, score, reasons: string[] }]   // top 3, deterministic
-   // score: vibe in hobby.vibes +3 (primary category +1 more); place match or "either" on either side +2;
-   //   social match or either +2; budget: hobby.minBudget <= answers.budget +2 else -3;
-   //   time equal +1; related to a tracked hobby +1.5; already tracked → excluded.
-   //   reasons: up to 3 short human strings ("Creative", "Indoors", "Under $50 to start", "Pairs with Drawing")
-   //   ties broken by catalog order.
-SQ.achievementsList() -> [{ id, name, desc, category, unlocked: "YYYY-MM-DD"|null }]  // static defs then dynamic skill ones
-SQ.weekKey(dateStr) -> "YYYY-MM-DD" of that week's Monday
+SQ.player() -> { level, xp, xpIntoLevel, xpForNext, stage, stageName, accessories, totalSessions, weekSessions, trackedCount }
+SQ.levelFor(xp) -> { level, into, next }
+SQ.match(answers) -> [{ hobby, score, reasons }]   // top 3, deterministic, already-tracked excluded
+SQ.achievementsList() -> [{ id, name, desc, category, unlocked: "YYYY-MM-DD"|null }]
+SQ.weekKey(dateStr) -> Monday of that week
 SQ.daysBetween(a, b) -> integer days b - a
 ```
+`match` scoring: vibe in hobby.vibes +3 (primary category +1 more); place match or "either" +2;
+social match or "either" +2; budget: minBudget <= answers.budget +2 else -3; time equal +1;
+related to a tracked hobby +1.5. Ties broken by catalog order. Up to 3 short reasons.
+
 Reward:
 ```
 { xpGained, breakdown: [{label, xp}], hobbyId|null,
   hobbyLevelBefore, hobbyLevelAfter, playerLevelBefore, playerLevelAfter,
-  stageBefore, stageAfter, newAchievements: AchDef-like[] (with name/desc/category),
+  stageBefore, stageAfter, newAchievements: [{id, name, desc, category}],
   goalHit: bool, wasComeback: bool }
 ```
-`addHobby` returns a Reward with xpGained 0 (it may still carry newAchievements).
 
-### seedDemo()
-Build the demo by replaying real API calls with `SQ._now` set to past dates (then reset `_now` to null):
-user tracks `drawing` (goal 3), `running` (goal 2), `guitar` (goal 2, added 20 days ago via starter pack).
-~5 weeks of plausible history: running regular & consistent, last run yesterday, 1 run this week
-(if today is Monday, put that one today); drawing used to be frequent but last session 9 days ago
-(so it's in comeback); guitar: 3 tiny wins + 1 regular, last 2 days ago. 2 milestones ticked on running,
-1 on drawing. RSVP to 2 events, one of them today (not yet checked in). Player should land around level 4-5.
+### Demo data and tests
+`seedDemo()` replays real API calls on past dates: tracks drawing (goal 3, in comeback),
+running (goal 2, consistent, last run yesterday) and guitar (goal 2, via starter pack); 2 running
+milestones and 1 drawing milestone ticked; 2 RSVPs, one today. Player lands around level 4-5.
+Keep these invariants if you change it; `tests/engine.test.js` checks them.
 
-### Tests
-Write `/home/claude/sidequest/tests/engine.test.js` (node, no deps; load data.js then engine.js
-via `vm` or `require` after defining globalThis) covering: level curve, XP per size, goal-hit once,
-comeback bonus + ladder reset, weekly streak incl. forgiven week, match() determinism and exclusion,
-milestone idempotence, check-in rules, seedDemo invariants (drawing inComeback, level 4-5), storage-less operation.
-Until DATA is ready, use a minimal stub in tests; at the end run against the real `src/data.js` if it exists.
-Run with `node tests/engine.test.js` — must exit 0.
+Tests (CI runs all three on every push and PR):
+`node tests/data.check.js` · `node tests/engine.test.js` · `python3 tests/e2e.py` (Playwright).
+Engine changes come with a test in `tests/engine.test.js`.
 
--------------------------------------------------------------------------------
-## 3. UI KIT — provided by SHELL as `window.SQUI`
+## 4. UI kit — `window.SQUI` (`src/shell.js`)
 
 ```
-SQUI.screens = {}                     // registry; other files add entries
+SQUI.screens = {}                     // registry
 SQUI.register(name, { tab, title, render(params) -> htmlString, mount(rootEl, params) })
    // tab: "today"|"discover"|"community"|"me"|null (null = full-screen flow, nav hidden)
-SQUI.go(name, params={}, {replace=false}={})   // render screen into #app-main, scroll top, push history
+SQUI.go(name, params={}, {replace=false, reset=false}={})
 SQUI.back()                           // history back, fallback "today"
 SQUI.refresh()                        // re-render current screen with same params
-SQUI.start()                          // SQ.init(); go("welcome") if !SQ.state.onboarded else go("today")
-SQUI.showReward(reward, {title}?)     // full-screen celebration overlay; returns Promise resolved on close
-SQUI.toast(text)                      // small transient message
-SQUI.esc(str)                         // HTML-escape
-SQUI.icon(name, size=20)              // inline SVG string. names: categories ("creative","active","technical",
-                                      //  "social","relaxing"), "plus","check","chevron-right","chevron-left","flame",
-                                      //  "spark","calendar","pin","users","lock","star","clock","close","search","leaf"
-SQUI.hobbyIcon(hobbyId, size=24)      // per-hobby SVG glyph (12 catalog hobbies; custom → its category icon)
-SQUI.mascot(stage 0..4, {mood:"happy"|"sleepy"|"cheer", size:120, accessories:[]}) // inline SVG string
+SQUI.current() -> {name, params}|null
+SQUI.start()                          // SQ.init(); welcome if not onboarded, else today
+SQUI.showReward(reward, {title}?)     // full-screen celebration; Promise resolved on close
+SQUI.toast(text)
+SQUI.esc(str)                         // HTML-escape. Use it on every string that isn't a literal.
+SQUI.icon(name, size=20)              // inline SVG: categories ("creative","active","technical","social",
+                                      //  "relaxing"), "plus","check","chevron-right","chevron-left","flame",
+                                      //  "spark","calendar","pin","users","lock","star","clock","close",
+                                      //  "search","leaf","trophy","sun","compass","user"
+SQUI.hobbyIcon(hobbyId, size=24)      // per-hobby glyph (custom → its category icon)
+SQUI.mascot(stage 0..4, {mood, size, accessories})  // 2D Sprout SVG
 SQUI.money([lo,hi]) -> "$25–60" / "Free"
+SQUI.setTheme("system"|"light"|"dark")
+SQUI.getTheme() -> "system"|"light"|"dark"
+SQUI.celebrate(overlayEl, {levelUp}) -> bool   // defined by showcase.js; showReward calls it. The 3D character
+                                      //  leaps up behind the reward card and cheers (level-up: bigger, spins,
+                                      //  cheers twice). Returns false (2D Sprout stays) when the model isn't
+                                      //  loaded yet or reduced motion is on.
 ```
-Event binding convention: screens render HTML strings; `mount(root)` wires listeners with
-`root.querySelector(...)` / event delegation using `data-action` attributes. No inline `onclick`.
+**Event binding:** screens render HTML strings; `mount(root)` wires listeners with `data-action`
+attributes and event delegation. Bind to `root.firstElementChild` (your screen's own node), not
+`root`: `#app-main` stays the same element across screens, so listeners on it pile up.
+No inline `onclick`.
 
-Screens owned by SHELL: `today` (tab today), `hobby` ({id}) (tab today), `log` ({id, size?}) sheet-style
-screen (tab null), `me` (tab me), `achievements` (tab me).
-Screens owned by DISCOVER: `welcome` (null), `pick` (null during onboarding / tab discover after),
-`quiz` (null), `results` (null), `pack` ({id}) (tab discover), `discover` (tab discover — browse:
-"Find something new" hub with Retake quiz, your last matches, Browse all 12).
-Screens owned by COMMUNITY: `community` (tab community), `group` ({hobbyId}) (tab community),
-`event` ({id}) (tab community).
+**Screens and owners**
+- Shell: `today`, `hobby` ({id}), `log` ({id, size?}, tab null), `achievements` (earned first, newest on top, then what's left).
+- Discovery: `welcome`, `pick`, `quiz`, `results` (tab null), `pack` ({id}), `discover`.
+- Community: `community`, `group` ({hobbyId}), `event` ({id}).
+- Me page (`showcase.js`): `me`.
+- Skill evaluator: `evaluate` ({id}), see section 5.
 
-Bottom nav (SHELL): Today · Discover · Community · Me, hidden when screen tab is null. Community
-shows a lock glyph when locked.
+Bottom nav (shell): Today · Discover · Community · Me, hidden when a screen's tab is null.
+Community shows a lock until the user tracks a hobby.
 
-Onboarding contract (DISCOVER): `welcome` shows the fork: "I already have hobbies" → `pick`,
-"Find a new hobby" → `quiz`, plus a quiet link "Explore with sample data" → `SQ.seedDemo(); SQUI.go("today")`.
-Finishing `pick` (≥1 hobby added) or pressing Start on a pack during onboarding sets
-`SQ.state.onboarded = true; SQ.save()` and goes to `today`. Starting from a pack calls
-`SQ.addHobby(id, {goal:2, viaStarter:true})` then `SQUI.showReward(r)` if it has newAchievements.
+**Onboarding (discovery):** `welcome` offers "I already have hobbies" → `pick`, "Find a new hobby" →
+`quiz`, and a quiet "Explore with sample data" → `SQ.seedDemo(); SQUI.go("today")`. Finishing
+`pick` (≥1 hobby) or pressing Start on a pack sets `SQ.state.onboarded = true; SQ.save()` and goes
+to `today`. Starting from a pack calls `SQ.addHobby(id, {goal:2, viaStarter:true})`, then
+`SQUI.showReward(r)` if it has newAchievements.
 
-### Shared CSS classes (SHELL defines in shell.css; others use, never redefine)
-Layout: `.screen` (padded page column, max-width 560px centered), `.stack` (flex column gap 12px),
-`.stack-lg` (gap 24px), `.row` (flex row, align center, gap 8px, wrap), `.spacer` (flex:1),
-`.screen-head` (title row with optional back button), `.back-btn`.
-Type: `.h1`, `.h2`, `.h3`, `.eyebrow` (small caps label), `.muted`, `.small`, `.num` (mono, tabular).
-Components: `.btn` (secondary), `.btn.primary`, `.btn.ghost`, `.btn.block` (full width), `.btn.sm`,
-`.card` (surface + border + radius), `.card.tap` (hover/active affordance, cursor pointer),
-`.chip` (pill), `.chip.on` (selected), `.pill-good`, `.pill-warn` (status pills),
-`.progress` > `.progress-bar` (style="width:NN%"), `.list` (divided rows) > `.list-row`,
-`.seg` (segmented control container) > `button` with `.on`, `.empty` (designed empty state block),
-`.sheet` (bottom-sheet style panel), `.icon-btn`.
+### Shared CSS classes (defined in `shell.css`; use them, never redefine them)
+Layout: `.screen` (padded column, max-width 560px), `.stack` (gap 12px), `.stack-lg` (gap 24px),
+`.row`, `.spacer`, `.screen-head`, `.back-btn`.
+Type: `.h1`, `.h2`, `.h3`, `.eyebrow`, `.muted`, `.small`, `.num` (mono, tabular).
+Components: `.btn`, `.btn.primary`, `.btn.ghost`, `.btn.block`, `.btn.sm`, `.card`, `.card.tap`,
+`.chip`, `.chip.on`, `.pill-good`, `.pill-warn`, `.progress` > `.progress-bar` (style="width:NN%"),
+`.list` > `.list-row`, `.seg` > `button.on`, `.empty`, `.sheet`, `.icon-btn`, `.me-stats`.
+Prefix your own classes with your area (`sc-`, `cm-`, `dc-`, `ev-`).
 
-### Design tokens (SHELL writes these into shell.css; everyone uses ONLY these vars)
-Direction: "trail map meets field notebook" — calm, daylight, outdoorsy; the reward moments
-are the only loud thing. Mobile-first, max content width 560px.
+### Design tokens (use only these variables; no literal colors in component rules)
+Direction: "trail map meets field notebook": calm, daylight, outdoorsy. Reward moments are the
+only loud thing. Mobile-first, max content width 560px.
 ```
 :root {
-  /* Layout: single centered column, bottom tab bar, cards only for tappable objects */
   --bg: #F3F5EF;  --surface: #FFFFFF; --surface-2: #E9EDE3; --line: #D5DCCB;
   --ink: #1D2A22; --ink-2: #56645A;
   --leaf: #2F7D4F;     /* growth, primary actions */
@@ -295,27 +301,82 @@ dark (both blocks, same values):
   --ink: #E6EDE7; --ink-2: #9FB0A4; --leaf: #5DBB84; --leaf-ink: #0D1A12;
   --sun: #F5C25A; --sun-ink: #2A1E00; --sky: #7FA7DE; --good: #5DBB84; --warn: #E09A55; --bad: #E07575;
 ```
-Fonts link (SHELL puts in index.html head area):
-`https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap`
+Theme rule: bare `:root` holds light values; `@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){...; color-scheme:dark} }`;
+`:root[data-theme="dark"]{...; color-scheme:dark}`.
+Fonts come from Google Fonts (Bricolage Grotesque, Figtree, JetBrains Mono); `build.py` adds the link.
 
-Theme rule: bare `:root` light values; `@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){...; color-scheme:dark} }`;
-`:root[data-theme="dark"]{...; color-scheme:dark}`. Never use literal colors in component rules.
-Accessibility: visible `:focus-visible`, buttons are `<button>`, `prefers-reduced-motion` respected,
-tap targets ≥ 44px, works at 360px width with no horizontal scroll.
+**Accessibility:** visible `:focus-visible`; buttons are `<button>`; respect `prefers-reduced-motion`;
+tap targets ≥ 44px; works at 360px wide with no horizontal scroll.
 
--------------------------------------------------------------------------------
-## 4. SHOWCASE — `src/showcase.js`, `src/showcase.css` (Tracker & rewards)
+## 5. Skill evaluator — PROPOSAL, owner to confirm
 
-Fifth nav tab `showcase`: rotating 3D character + trophy shelf (every tracked hobby with level, XP bar,
-sessions, milestones, weekly streak) + share button.
-- Characters: `assets/models/<id>.glb` (ids `neo`, `adrian`, `alvaro`), rigged by `tools/rig.py` (Blender CLI; `--faces N` culls enclosed faces and decimates) with
-  clips `idle` (loops), `wave` (plays on load), `cheer` (plays on tap; reuse it for level-ups). `build.py` writes each as
-  `dist/models/<id>.js` setting `window.SQ_MODELS[id]` (base64) so it loads from file:// too.
-- Selected character is stored in `SQ.state.user.character` (kept by `normalize`). Later: set from the signed-in user.
-- Exception to "no libraries / no network": three.js r147 is loaded from jsDelivr only when this tab opens.
-  The rest of the app still works offline.
+> Draft so the other parts know what to expect. The skill evaluator owner should edit this
+> section to match what they actually build, then tell the team.
 
-## Community feed and character profiles
+**What it does:** a short check-in per hobby that places the user at a skill tier, so the app
+can meet them where they are: harder tiny wins for experienced people, matching community events,
+and a tier badge on the Me page.
+
+**Data** (`SQ_DATA.skillChecks`, in `data.js`):
+```
+skillChecks: { [hobbyId]: SkillQuestion[] }     // 3-5 questions per catalog hobby
+SkillQuestion = { id, prompt, options: [{ value, label, points: 0..3 }] }
+   // e.g. guitar: "Can you switch between G, C and D without stopping?"
+```
+
+**State** (new top-level field; add it to `fresh()` and `normalize()`):
+```
+skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced",
+                       score: 0..100, answers: { [questionId]: value }, evaluatedAt: "YYYY-MM-DD" } }
+```
+
+**Engine API:**
+```
+SQ.evaluateSkill(hobbyId, answers) -> { tier, score, reasons: string[], eventLevel }
+   // saves to state.skills, then returns. eventLevel maps tier to EventDef.level:
+   //   new/beginner → "Beginner friendly", intermediate → "All levels", advanced → "Experienced"
+SQ.skill(hobbyId) -> state.skills[hobbyId] | null
+```
+Open questions for the owner: does a tier change the tiny-win ladder start or the milestones?
+Does re-evaluating award XP or an achievement? Do custom hobbies get a generic check?
+
+**Screen:** `evaluate` ({id}), tab null (full-screen flow), opened from the hobby screen
+("Check my level"). Shows the result and a "Back to hobby" button.
+
+**Who reads it:**
+- Me page: tier badge on each hobby card (`SQ.skill(id)`, hidden when null).
+- Community: highlight events whose `level` matches `eventLevel`.
+- Hobby screen (shell): "Check my level" entry point and the current tier.
+
+## 6. Me page — `src/showcase.js`, `src/showcase.css`
+
+The `me` tab, top to bottom: the 3D character with name, level and XP bar to the next level;
+a character picker; four stat tiles (sessions, time spent, best streak, and an Achievements tile
+showing "11 of 16" that opens `achievements`); every tracked hobby with
+level, XP bar, sessions and streak (tap to open it); a share button; and Settings (nudge time,
+appearance, sample data, two-step reset). Character customization is paused until new models exist.
+
+- **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, built by
+  `tools/mixamo_merge.py` from Neo's Mixamo downloads (Adrian and Alvaro get a fitted copy of Neo's
+  Mixamo skeleton and its skin weights). Clips: `idle` (keyed by the script, loops), `JoyfulJump`,
+  `SillyDance`, `Breakdance`, `GoalkeeperDive`, `StandardWalk`, `DrunkWalk` (all kept in place).
+  Me: greets with JoyfulJump, each tap plays the next move and names it. Celebrations: JoyfulJump,
+  level-ups SillyDance. Older models from `tools/rig.py` (idle/wave/cheer) still work as fallbacks.
+  `build.py` writes each as `dist/models/<id>.js` (base64 on `window.SQ_MODELS[id]`) so it also loads
+  when `dist/preview.html` is opened from disk.
+- **Selected character:** `SQ.state.user.character` (survives `normalize` because it is on
+  `user`). Everyone can pick any character for now; later it is set from the signed-in user.
+- **Celebrations:** every reward (`SQUI.showReward`, which all XP gains go through) brings the
+  character in via `SQUI.celebrate`. The model is preloaded 2 s after startup so the first one is instant.
+- **three.js r147** loads from jsDelivr (on the Me tab or by the preload) (see "Always online" in section 1).
+
+## 7. Working together
+
+- `main` is protected: one short-lived branch per task, small PRs, one approval, tests passing.
+- Reviews come from someone outside the area (see `.github/CODEOWNERS`).
+- Interface change → edit this file in the same PR and say so in the PR description.
+
+## 8. Community — `src/community.js`, `src/community.css`, `src/gathering.css`
 
 Community now uses a venue-photo event feed with original inline SVG character profiles.
 The old numbered trail layout is retired. The app uses a blue mobile theme in both light and dark modes. Community stays
@@ -334,13 +395,21 @@ No new engine API or stored state is introduced. Existing `sidequest.v1` and
 `sidequest.theme` storage keys remain compatible.
 
 
-## Venue photo assets
+### Venue photo assets
 
 `build.py` injects `globalThis.SQ_VENUES` from `src/assets/venues/manifest.json` before the app scripts, adding a JPEG data URL to each entry. Community matches normalized exact event locations in each entry's `places` array. This curated demo catalog does not perform live venue searches. Unknown locations and failed images receive a location-based fallback. Character avatars and group artwork stay inline SVG. Event cards and event details include expandable photo descriptions and source/license attribution. Assets retain their individual licenses; see `src/assets/venues/ATTRIBUTION.md`.
 
 
-## Mobile design (Ocean)
+### Mobile design (Ocean)
 
-PR #1 (merged upstream at `ea68143`) adds Showcase and its three bundled character models. The app uses the Ocean design: `src/mobile.css` is the shared mobile shell and `src/ocean.css` layers on DM Sans, inset cards and the floating navigation. Both have light/dark tokens, safe-area insets, reduced-motion handling and one-column community layouts. Community starts with a page title, not an app wordmark. Its category tabs precede search and date filters.
+The app uses the Ocean design: `src/mobile.css` is the shared mobile shell and `src/ocean.css` layers on DM Sans, inset cards and the floating navigation. Both have light/dark tokens, safe-area insets, reduced-motion handling and one-column community layouts. Community starts with a page title, not an app wordmark. Its category tabs precede search and date filters.
 
-`build.py` emits one page, `dist/Habitual.html`, plus `dist/models/` for Showcase. Keep `dist/models/` beside the page when copying it.
+`build.py` emits one page, `dist/Habitual.html`, plus `dist/models/` for the Me tab's 3D characters. Keep `dist/models/` beside the page when copying it.
+
+### Avatar gathering
+
+Event cards place the people going as pre-rendered sprites of the three characters
+(`src/assets/avatars/<id>-idle.png` and an 8-frame `<id>-run.png`, rendered from the GLBs by
+`tools/render-community-avatars.py`; `build.py` embeds them once as CSS variables). When the user
+RSVPs, their selected character (`SQ.state.user.character`) joins the cast with a "You" label and
+an arrival animation that plays once per RSVP. Reduced motion shows the final state.

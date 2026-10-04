@@ -127,21 +127,35 @@ function sampleRaw() {
         geminiCalls++;
         const body = JSON.parse(init.body);
         assert.deepEqual(body.tools, [{ google_search: {} }]);
+        if (geminiCalls === 2) {
+          assert.match(body.contents[0].parts[0].text, /YouTube tutorial videos/);
+          return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ videos: [{ title: "More", channel: "C", url: "https://www.youtube.com/watch?v=DDDDDDDDDDD" }] }) }] } }] }) };
+        }
         assert.match(body.contents[0].parts[0].text, /Reddit/);
         return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "Here you go:\n```json\n" + JSON.stringify(raw) + "\n```" }] },
-          groundingMetadata: { groundingChunks: [{ web: { title: "reddit.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc" } }] } }] }) };
+          groundingMetadata: { groundingChunks: [
+            { web: { title: "reddit.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc" } },
+            { web: { title: "youtube.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/yt" } }
+          ] } }] }) };
+      }
+      if (url.startsWith("https://vertexaisearch.cloud.google.com/")) {
+        assert.equal(init.redirect, "manual");
+        const loc = url.endsWith("/yt") ? "https://www.youtube.com/watch?v=CCCCCCCCCCC" : "https://www.reddit.com/r/bouldering/comments/real";
+        return { ok: false, status: 302, headers: { get: (h) => h === "location" ? loc : null } };
       }
       if (url.startsWith("https://www.youtube.com/oembed")) {
-        const ok = url.includes("AAAAAAAAAAA");
+        const ok = /AAAAAAAAAAA|CCCCCCCCCCC|DDDDDDDDDDD/.test(url);
         return { ok, status: ok ? 200 : 404, json: async () => ({ title: "Real video title", author_name: "Real channel" }) };
       }
       if (url === "https://www.reddit.com/r/bouldering/comments/real" || url === "https://shop.example/tarantulace") return { ok: true, status: 200 };
       return { ok: false, status: 404 };
     };
     const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
-    assert.equal(geminiCalls, 1);
-    assert.equal(out.videos.length, 1);
+    assert.equal(geminiCalls, 2);
+    assert.deepEqual(out.videos.map((v) => v.id), ["AAAAAAAAAAA", "CCCCCCCCCCC", "DDDDDDDDDDD"]);
     assert.equal(out.videos[0].url, "https://www.youtube.com/watch?v=AAAAAAAAAAA");
+    assert.equal(out.sources[0].url, "https://www.reddit.com/r/bouldering/comments/real");
+    assert.equal(out.sources[0].publisher, "reddit.com");
     assert.equal(out.videos[0].title, "Real video title");
     assert.equal(out.videos[0].channel, "Real channel");
     assert.equal(out.gear.entry.products[0].url, "https://shop.example/tarantulace");

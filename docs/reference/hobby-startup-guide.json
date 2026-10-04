@@ -1,0 +1,1411 @@
+{
+ "source": "Neo-Land/Gamify-Life @ 0b02297 2026-10-01",
+ "note": "Estimates checked 2026-09 in the source; curated draft. Re-check prices before presenting as fact.",
+ "hobbies": [
+  {
+   "id": "tennis",
+   "name": "Tennis",
+   "description": "Find your rhythm. One rally at a time.",
+   "quickStart": "Borrow a racquet · TECHNIQUE-HEAVY",
+   "safetyNote": "Check the court, warm up gently, keep clear of others and stop if you feel pain.",
+   "startCost": {
+    "low": 34,
+    "high": 110,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 200,
+    "high": 450,
+    "note": "Your own graphite racquet, restringing, court shoes, lessons or clinics"
+   },
+   "gear": [
+    {
+     "name": "Racquet",
+     "necessity": "required",
+     "cost": {
+      "low": 30,
+      "high": 100,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Many clubs and public courts lend a racquet for a first session.",
+     "guidance": "Aluminum is fine while you decide if the sport sticks; graphite once it has."
+    },
+    {
+     "name": "Tennis balls",
+     "necessity": "required",
+     "cost": {
+      "low": 4,
+      "high": 10,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Whoever you hit with usually has some.",
+     "guidance": "A fresh can bounces predictably. Old balls are fine for wall practice."
+    },
+    {
+     "name": "Court shoes",
+     "necessity": "recommended",
+     "cost": {
+      "low": 50,
+      "high": 100,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Running shoes work for your first few sessions.",
+     "guidance": "Court soles grip and protect ankles on lateral moves. Worth it once you play regularly."
+    },
+    {
+     "name": "Hat and sunscreen",
+     "necessity": "recommended",
+     "cost": {
+      "low": 10,
+      "high": 25,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Outdoor courts reflect a lot of sun. Protect yourself before comfort items."
+    },
+    {
+     "name": "Overgrips",
+     "necessity": "optional",
+     "cost": {
+      "low": 8,
+      "high": 15,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "A fresh grip stops the racquet slipping. Add one once the original wears."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Tennis",
+     "do": "Read overview and choose a first goal",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "First Racquet & Balls",
+     "do": "Record owned/borrowed racquet and balls",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Court Safety & Etiquette",
+     "do": "Complete safety checklist",
+     "minutes": 10,
+     "safety": true
+    },
+    {
+     "title": "Court, Rules & Scoring",
+     "do": "Correctly log a sample game score",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Grip & Ready Position",
+     "do": "Demonstrate/confirm ready position for 10 reps",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Contact & Ball Tracking",
+     "do": "Self-drop and contact 20 balls under control",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Forehand Fundamentals",
+     "do": "Land 10 controlled forehands in court",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Backhand Fundamentals",
+     "do": "Land 10 controlled backhands in court",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Split Step & Recovery",
+     "do": "Complete three 60-second shadow-footwork rounds",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Five-Shot Rally",
+     "do": "Sustain five cooperative shots",
+     "minutes": 20,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "USTA Tennis 101",
+     "url": "https://www.usta.com/en/home/stay-current/midwest/tennis101.html",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Intuitive Tennis: Beginner forehand and two-handed backhand (video)",
+     "url": "https://www.youtube.com/watch?v=kbmsyOGR6Cc",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "cycling",
+   "name": "Cycling / Fixed Gear",
+   "description": "A little farther. A little more freedom.",
+   "quickStart": "Bike + helmet · GEAR NEEDED",
+   "safetyNote": "Check air, brakes and chain before every ride. Use a fitted helmet and follow local traffic rules. Fixed-gear road use needs a functional front brake; do not learn brakeless street riding.",
+   "startCost": {
+    "low": 285,
+    "high": 840,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 400,
+    "high": 1200,
+    "note": "Wheels, saddle, clipless pedals and shoes, a drivetrain refresh, a bike fit, tools"
+   },
+   "gear": [
+    {
+     "name": "Helmet",
+     "necessity": "required",
+     "cost": {
+      "low": 35,
+      "high": 80,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": false,
+     "freeAlternative": null,
+     "guidance": "Buy new and buy for fit. A helmet that has taken one impact is done, even if it looks fine."
+    },
+    {
+     "name": "Bike (fixed or single speed)",
+     "necessity": "required",
+     "cost": {
+      "low": 250,
+      "high": 700,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "A used track bike, or converting an old steel road frame, is the cheapest honest path.",
+     "guidance": "Fit and working brakes matter more than weight or looks. Have a shop check a used bike."
+    },
+    {
+     "name": "Front brake",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 60,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Included on most complete bikes; about $25–60 to add if yours has none.",
+     "guidance": "Required for road riding on this path, including fixed gear, whatever your skid skills."
+    },
+    {
+     "name": "U-lock",
+     "necessity": "recommended",
+     "cost": {
+      "low": 40,
+      "high": 100,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "A bike without a good lock is a bike on borrowed time. Lock the frame, not just a wheel."
+    },
+    {
+     "name": "Front and rear lights",
+     "necessity": "recommended",
+     "cost": {
+      "low": 20,
+      "high": 60,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Needed from dusk onward and on grey days. Be seen from the front and behind."
+    },
+    {
+     "name": "Multi-tool, pump and spare tube",
+     "necessity": "optional",
+     "cost": {
+      "low": 50,
+      "high": 105,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Most shops will lend a floor pump.",
+     "guidance": "Enough to fix a flat by the road. Learn the fix at home first."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Cycling",
+     "do": "Choose riding goal and environment",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Bike Types & Use Cases",
+     "do": "Identify current/preferred bike type",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Bike Anatomy",
+     "do": "Identify 10 major parts",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Helmet, Visibility & Traffic Safety",
+     "do": "Complete mandatory safety checklist",
+     "minutes": 10,
+     "safety": true
+    },
+    {
+     "title": "Basic Bike Fit",
+     "do": "Record saddle height check and reach comfort",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Pre-Ride ABC Check",
+     "do": "Perform air/brakes/chain check",
+     "minutes": 20,
+     "safety": true
+    },
+    {
+     "title": "Starting, Stopping & Steering",
+     "do": "Complete 20-minute low-traffic control session",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Controlled Braking",
+     "do": "Complete 10 smooth controlled stops",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "First Five-Mile Ride",
+     "do": "Log a safe five-mile ride",
+     "minutes": 20,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "Sheldon Brown: Fixed Gear for the Road",
+     "url": "https://www.sheldonbrown.com/fixed.html",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "League of American Bicyclists: Learn to Ride (free course)",
+     "url": "https://learn.bikeleague.org/p/learntoride",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "swimming",
+   "name": "Swimming",
+   "description": "Build confidence, one length at a time.",
+   "quickStart": "Pool + supervision · SAFETY FIRST",
+   "safetyNote": "Practice with qualified supervision in a swim-safe environment. Never swim alone, hyperventilate or do breath-holding contests. Restrictive knee bands are not a default freestyle correction.",
+   "startCost": {
+    "low": 30,
+    "high": 100,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 150,
+    "high": 500,
+    "note": "Better goggles, a training set, a swim watch, masters club or coached lessons"
+   },
+   "gear": [
+    {
+     "name": "Swimsuit",
+     "necessity": "required",
+     "cost": {
+      "low": 20,
+      "high": 45,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": false,
+     "freeAlternative": "Any snug athletic swimwear you already own.",
+     "guidance": "Anything snug that your pool accepts. Loose clothing drags and can be unsafe."
+    },
+    {
+     "name": "Goggles",
+     "necessity": "required",
+     "cost": {
+      "low": 10,
+      "high": 30,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": false,
+     "freeAlternative": null,
+     "guidance": "Fit is everything: they should seal lightly without a strap. Not something to share."
+    },
+    {
+     "name": "Pool access",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 25,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Campus rec centers and many municipal pools are free or included.",
+     "guidance": "Choose a pool with lifeguards. Cost varies a lot by area; campus and city pools are often cheapest."
+    },
+    {
+     "name": "Swim cap",
+     "necessity": "recommended",
+     "cost": {
+      "low": 5,
+      "high": 15,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Keeps hair out of your face and the filters. Many pools require one."
+    },
+    {
+     "name": "Towel",
+     "necessity": "recommended",
+     "cost": {
+      "low": 0,
+      "high": 20,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "One you own.",
+     "guidance": "The one you already own is perfect."
+    },
+    {
+     "name": "Fins, pull buoy or kickboard",
+     "necessity": "optional",
+     "cost": {
+      "low": 10,
+      "high": 50,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Most pools have a shared bin.",
+     "guidance": "Training tools for later. Ask your instructor before using them."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Swimming",
+     "do": "Choose comfort level and pool access",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Water Safety & Pool Rules",
+     "do": "Confirm supervised/swim-safe environment",
+     "minutes": 10,
+     "safety": true
+    },
+    {
+     "title": "Suit, Goggles & Cap",
+     "do": "Record available gear; none beyond safe attire required",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Water Comfort & Exhaling",
+     "do": "Complete supervised face-in-water exhale drill",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Front & Back Float",
+     "do": "Hold relaxed front/back float with supervision",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Body Line & Streamline",
+     "do": "Complete 10 controlled wall glides",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Flutter Kick from the Hip",
+     "do": "Complete short kick sets without excessive knee bend",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Freestyle Pull",
+     "do": "Swim controlled short lengths focusing on pull",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Side Breathing",
+     "do": "Complete repeatable side-breathing drill",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Continuous 25",
+     "do": "Swim 25 yards/meters continuously and safely",
+     "minutes": 20,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "Red Cross Adult Swim Lessons",
+     "url": "https://www.redcross.org/take-a-class/swimming/swim-lessons/adult-swim-lessons",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "MySwimPro: How to swim freestyle for beginners",
+     "url": "https://blog.myswimpro.com/2021/06/04/how-to-swim-freestyle-for-beginners-5-step-guide/",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "journaling",
+   "name": "Journaling",
+   "description": "Make a little space for your thoughts.",
+   "quickStart": "Existing paper + pen · EASY TO START",
+   "safetyNote": "",
+   "startCost": {
+    "low": 0,
+    "high": 25,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 50,
+    "high": 150,
+    "note": "A hardcover or dot-grid notebook, a fountain pen and ink"
+   },
+   "gear": [
+    {
+     "name": "Notebook",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 20,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any notebook you own, loose paper, or a free notes app.",
+     "guidance": "Anything you are not afraid to write badly in. Cheap makes it easier to start."
+    },
+    {
+     "name": "Pen",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 5,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any pen in the house.",
+     "guidance": "Whatever writes smoothly for you."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Why Journal?",
+     "do": "Pick one personal reason to journal",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Choose a Notebook & Pen",
+     "do": "Use something already owned or record a simple choice",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "First Five-Minute Entry",
+     "do": "Write uninterrupted for five minutes",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Make Starting Easy",
+     "do": "Choose a visible place and minimum entry size",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Daily Log",
+     "do": "Complete three daily logs",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Guided Reflection",
+     "do": "Complete three reflection prompts",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Gratitude Without Repetition",
+     "do": "Complete three specific gratitude entries",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Seven-Day Experiment",
+     "do": "Journal on five of seven days",
+     "minutes": 20,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "Bullet Journal: How to start a simple bullet journal",
+     "url": "https://bulletjournal.com/blogs/bulletjournalist/how-to-start-a-simple-bullet-journal",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "UC Berkeley Greater Good in Action: Expressive writing",
+     "url": "https://ggia.berkeley.edu/practice/expressive_writing",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "pc-building",
+   "name": "PC Building",
+   "description": "Understand the machine, then build it.",
+   "quickStart": "Parts + one screwdriver · PLAN FIRST",
+   "safetyNote": "Unplug at the wall and hold the power button before opening anything. Ground yourself against the bare case or use a strap before touching a board, and never open a power supply — it holds charge long after it is unplugged.",
+   "startCost": {
+    "low": 629,
+    "high": 1580,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 500,
+    "high": 1500,
+    "note": "A faster graphics card, more memory, another drive, a monitor and peripherals"
+   },
+   "gear": [
+    {
+     "name": "CPU",
+     "necessity": "required",
+     "cost": {
+      "low": 90,
+      "high": 250,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Match the socket to the motherboard exactly. One generation back is the usual value pick."
+    },
+    {
+     "name": "Motherboard",
+     "necessity": "required",
+     "cost": {
+      "low": 70,
+      "high": 180,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Check the socket and memory generation before anything else."
+    },
+    {
+     "name": "Memory (16–32 GB)",
+     "necessity": "required",
+     "cost": {
+      "low": 99,
+      "high": 220,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Match the generation the board accepts. Prices are unusually high right now; check before buying."
+    },
+    {
+     "name": "Graphics card",
+     "necessity": "required",
+     "cost": {
+      "low": 200,
+      "high": 450,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "$0 if your processor has integrated graphics.",
+     "guidance": "Only needed for games and heavy visual work. A processor with integrated graphics can skip this at first."
+    },
+    {
+     "name": "Storage (1 TB NVMe)",
+     "necessity": "required",
+     "cost": {
+      "low": 70,
+      "high": 120,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "One solid-state drive is enough to start."
+    },
+    {
+     "name": "Power supply",
+     "necessity": "required",
+     "cost": {
+      "low": 50,
+      "high": 110,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": false,
+     "freeAlternative": null,
+     "guidance": "Buy this new and leave headroom over what the parts draw. Never the place to cut, and never open one."
+    },
+    {
+     "name": "Case",
+     "necessity": "required",
+     "cost": {
+      "low": 50,
+      "high": 100,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Check cooler height and card length against its specification before buying."
+    },
+    {
+     "name": "Operating system",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 140,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Linux is free; student licenses often are too.",
+     "guidance": "Linux is free, and many students can get Windows through their school."
+    },
+    {
+     "name": "#2 Phillips screwdriver",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 10,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Almost certainly one in the house already.",
+     "guidance": "One magnetic screwdriver does the whole build."
+    },
+    {
+     "name": "Anti-static strap",
+     "necessity": "recommended",
+     "cost": {
+      "low": 0,
+      "high": 15,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Touch the bare metal case with the power supply switched off, and avoid carpet.",
+     "guidance": "Makes it harder to forget to ground yourself."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to PC Building",
+     "do": "Read the overview and name the machine you want to build",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Electrical and ESD Safety",
+     "do": "Confirm you can work unplugged, grounded and on a safe surface",
+     "minutes": 15,
+     "safety": true
+    },
+    {
+     "title": "Parts and Tools",
+     "do": "Record the parts and tools you have or can borrow",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Check Part Compatibility",
+     "do": "Verify socket, RAM type, wattage and clearances for your list",
+     "minutes": 30,
+     "safety": false
+    },
+    {
+     "title": "Bench Test Before Assembly",
+     "do": "Post the system outside the case with the minimum parts",
+     "minutes": 45,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "PCPartPicker Build Guides",
+     "url": "https://pcpartpicker.com/guide/",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Linus Tech Tips: How to build a PC (video)",
+     "url": "https://www.youtube.com/watch?v=BL4DCEp7blY",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "drawing",
+   "name": "Drawing",
+   "description": "Look closely. The hand follows.",
+   "quickStart": "Pencil and paper · FREE TO TRY",
+   "safetyNote": "Keep the wrist neutral and draw from the shoulder for large shapes. Take a short break every twenty to thirty minutes, work with light across the page, and stop if your hand aches.",
+   "startCost": {
+    "low": 0,
+    "high": 40,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 100,
+    "high": 400,
+    "note": "A quality sketchbook, graphite and charcoal, a drawing board, figure sessions, a tablet"
+   },
+   "gear": [
+    {
+     "name": "Pencil or graphite set",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 12,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any pencil you own.",
+     "guidance": "Any pencil works. Harder grades smudge less, softer ones shade faster."
+    },
+    {
+     "name": "Paper or sketchbook",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 20,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Printer paper, which is what Drawabox itself recommends.",
+     "guidance": "Cheap paper keeps you from being precious about mistakes, and volume is what teaches."
+    },
+    {
+     "name": "Eraser and sharpener",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 8,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "A soft eraser lifts graphite without tearing cheap paper."
+    },
+    {
+     "name": "Fineliner pens (0.5 mm)",
+     "necessity": "recommended",
+     "cost": {
+      "low": 8,
+      "high": 15,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Only needed if you follow the Drawabox curriculum, which is drawn in ink."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Drawing",
+     "do": "Read the overview and make one mark on paper",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Pencil, Paper, Eraser",
+     "do": "Record the drawing materials you already have",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Hands, Eyes and Posture",
+     "do": "Set up a position you can hold comfortably and confirm your breaks",
+     "minutes": 10,
+     "safety": true
+    },
+    {
+     "title": "Line Confidence",
+     "do": "Fill a page with deliberate lines, circles and ellipses",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Seeing in Basic Shapes",
+     "do": "Break three real objects down into simple shapes",
+     "minutes": 30,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "Drawabox Lesson 0: Getting started",
+     "url": "https://drawabox.com/lesson/0",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Proko: Drawing Basics (video playlist)",
+     "url": "https://www.youtube.com/playlist?list=PLtG4P3lq8RHHMNwxuVk0IcGRtPGHi4vN9",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "painting",
+   "name": "Painting",
+   "description": "Mix it, and see what the colour really is.",
+   "quickStart": "Three colours + a brush · LOW COST",
+   "safetyNote": "Work where air moves, keep solvents sealed and away from heat, and never pour them down a drain. Do not eat or point a brush with your mouth. Acrylic and watercolour avoid nearly all of this while you learn.",
+   "startCost": {
+    "low": 35,
+    "high": 105,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 150,
+    "high": 400,
+    "note": "Artist-grade paint, stretched canvas, an easel, better brushes, classes"
+   },
+   "gear": [
+    {
+     "name": "Acrylic paint starter set",
+     "necessity": "required",
+     "cost": {
+      "low": 15,
+      "high": 40,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Student grade is fine. A red, a blue, a yellow and a white mix almost anything."
+    },
+    {
+     "name": "Brush set",
+     "necessity": "required",
+     "cost": {
+      "low": 10,
+      "high": 30,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "A few rounds and a flat cover most of what a beginner needs."
+    },
+    {
+     "name": "Painting surface",
+     "necessity": "required",
+     "cost": {
+      "low": 10,
+      "high": 25,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Heavy paper or primed cardboard for practice.",
+     "guidance": "Canvas panels or an acrylic pad. Practice on anything that takes paint."
+    },
+    {
+     "name": "Palette",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 10,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "A paper plate or plastic lid.",
+     "guidance": "Anything flat and wipeable. Acrylic peels cleanly off a lid."
+    },
+    {
+     "name": "Water jar and rag",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 0,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any jar and an old shirt.",
+     "guidance": "Change the water more often than feels necessary."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Painting",
+     "do": "Read the overview and choose acrylic, watercolour or oil",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Ventilation and Materials Safety",
+     "do": "Confirm your ventilation, storage and clean-up plan",
+     "minutes": 15,
+     "safety": true
+    },
+    {
+     "title": "A Minimal Palette",
+     "do": "Record the paints, brushes and surface you have or can borrow",
+     "minutes": 15,
+     "safety": false
+    },
+    {
+     "title": "Mixing What You See",
+     "do": "Mix and record a ten-step value scale and three matched colours",
+     "minutes": 40,
+     "safety": false
+    },
+    {
+     "title": "Brush Control",
+     "do": "Fill a sheet with controlled strokes, edges and washes",
+     "minutes": 30,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "The Art Sherpa: Beginner acrylic painting course",
+     "url": "https://theartsherpa.com/BeginnerAcrylicPaintingCourse",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Will Kemp Art School: Acrylic painting for beginners",
+     "url": "https://willkempartschool.com/acrylic-painting/",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "running",
+   "name": "Running",
+   "description": "Slower than you think. Further than you expect.",
+   "quickStart": "Comfortable shoes · FREE TO TRY",
+   "safetyNote": "Build distance gradually and take a lighter week roughly every fourth. Run facing traffic where there is no path, wear something reflective in low light, plan water in heat, and treat new sharp pain as a reason to stop.",
+   "startCost": {
+    "low": 60,
+    "high": 180,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 250,
+    "high": 600,
+    "note": "A second pair for rotation, a GPS watch, race entries, coaching"
+   },
+   "gear": [
+    {
+     "name": "Running shoes",
+     "necessity": "required",
+     "cost": {
+      "low": 60,
+      "high": 130,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": false,
+     "freeAlternative": "Any athletic shoe you own will cover your first few weeks; replace it before your mileage builds.",
+     "guidance": "Fit matters more than model or price. A shop that watches you walk is worth the trip. Not something to buy used."
+    },
+    {
+     "name": "Athletic clothes",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 50,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Whatever you already exercise in.",
+     "guidance": "Whatever you already exercise in."
+    },
+    {
+     "name": "Moisture-wicking socks",
+     "necessity": "recommended",
+     "cost": {
+      "low": 10,
+      "high": 20,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Cotton holds sweat and causes blisters on longer runs."
+    },
+    {
+     "name": "Water bottle",
+     "necessity": "recommended",
+     "cost": {
+      "low": 0,
+      "high": 25,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "One you own.",
+     "guidance": "Needed in heat and on longer runs, or plan a route past water."
+    },
+    {
+     "name": "Reflective vest or headlamp",
+     "necessity": "recommended",
+     "cost": {
+      "low": 15,
+      "high": 45,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Run in daylight.",
+     "guidance": "Needed for low light, not optional there."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Running",
+     "do": "Read the overview and choose a first route",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Load, Traffic and Heat",
+     "do": "Confirm your progression rule, visibility and hydration plan",
+     "minutes": 15,
+     "safety": true
+    },
+    {
+     "title": "Shoes That Fit",
+     "do": "Record the shoes and visibility gear you have or can borrow",
+     "minutes": 20,
+     "safety": false
+    },
+    {
+     "title": "Walk-Run Intervals",
+     "do": "Complete a twenty-minute walk-run session",
+     "minutes": 25,
+     "safety": false
+    },
+    {
+     "title": "Finding Easy Pace",
+     "do": "Complete a continuous run at conversational pace",
+     "minutes": 30,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "RRCA 10-week training plan for new runners",
+     "url": "https://www.rrca.org/education/for-runners/10-week-training-plan/",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "NHS: Get running with Couch to 5K",
+     "url": "https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "volleyball",
+   "name": "Volleyball",
+   "description": "Three touches, and everyone is involved.",
+   "quickStart": "Mostly borrowed · JOIN A SESSION",
+   "safetyNote": "Warm the shoulders, wrists and ankles before hitting. Set with firm fingers, land on two feet, keep out of the space under the net, and call loudly so nobody collides.",
+   "startCost": {
+    "low": 25,
+    "high": 70,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 150,
+    "high": 400,
+    "note": "Your own competition ball, court shoes, better pads, league fees"
+   },
+   "gear": [
+    {
+     "name": "Indoor volleyball",
+     "necessity": "required",
+     "cost": {
+      "low": 25,
+      "high": 70,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "Every gym, rec league and pickup group has balls.",
+     "guidance": "Sessions almost always provide balls; your own helps solo wall practice."
+    },
+    {
+     "name": "Knee pads",
+     "necessity": "recommended",
+     "cost": {
+      "low": 15,
+      "high": 35,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Cheap, and the floor is unforgiving. Unnecessary on sand."
+    },
+    {
+     "name": "Court shoes",
+     "necessity": "recommended",
+     "cost": {
+      "low": 50,
+      "high": 110,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any clean non-marking athletic shoe for your first sessions.",
+     "guidance": "Indoor courts need clean non-marking soles. Court shoes add ankle support for lateral moves."
+    },
+    {
+     "name": "Ankle braces",
+     "necessity": "optional",
+     "cost": {
+      "low": 25,
+      "high": 50,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Worth considering if you have a history of rolling an ankle."
+    },
+    {
+     "name": "Ball pump",
+     "necessity": "optional",
+     "cost": {
+      "low": 8,
+      "high": 15,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": null,
+     "guidance": "Only needed once you own a ball."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Volleyball",
+     "do": "Read the overview and find somewhere people play",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "Warm-Up, Fingers and Ankles",
+     "do": "Confirm your warm-up and landing habits",
+     "minutes": 15,
+     "safety": true
+    },
+    {
+     "title": "Shoes, Pads and a Ball",
+     "do": "Record the kit you have or can borrow",
+     "minutes": 15,
+     "safety": false
+    },
+    {
+     "title": "The Forearm Pass",
+     "do": "Complete fifty controlled passes against a wall or partner",
+     "minutes": 25,
+     "safety": false
+    },
+    {
+     "title": "Setting Overhead",
+     "do": "Complete fifty controlled sets",
+     "minutes": 25,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "USA Volleyball: A beginner's guide (PDF)",
+     "url": "https://usavolleyball.org/wp-content/uploads/2022/03/Volleyball-Beginners-Guide-by-SportsEngine.pdf",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Elevate Yourself: Volleyball tutorials (video)",
+     "url": "https://www.youtube.com/@ElevateYourselfOfficial",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  },
+  {
+   "id": "reading",
+   "name": "Reading",
+   "description": "A few pages, most days.",
+   "quickStart": "A library card · FREE TO TRY",
+   "safetyNote": "Read with light on the page rather than behind it, hold the book near eye level, and look at something distant every twenty minutes. Dim screens in the evening and prefer paper near bedtime.",
+   "startCost": {
+    "low": 0,
+    "high": 18,
+    "currency": "USD",
+    "basis": "sum of required gear"
+   },
+   "upgrade": {
+    "low": 100,
+    "high": 350,
+    "note": "An e-reader, an audiobook subscription, a book budget, shelves"
+   },
+   "gear": [
+    {
+     "name": "Library card",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 0,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Libby gives you ebooks and audiobooks on the same card, from your phone.",
+     "guidance": "Free at any US public library with proof of address. This is your whole starting kit."
+    },
+    {
+     "name": "A book",
+     "necessity": "required",
+     "cost": {
+      "low": 0,
+      "high": 18,
+      "currency": "USD"
+     },
+     "borrowable": true,
+     "usedOk": true,
+     "freeAlternative": "The library, Libby, Project Gutenberg or a Little Free Library.",
+     "guidance": "Start with something you want to read, not something you think you should."
+    },
+    {
+     "name": "Book light",
+     "necessity": "optional",
+     "cost": {
+      "low": 10,
+      "high": 20,
+      "currency": "USD"
+     },
+     "borrowable": false,
+     "usedOk": true,
+     "freeAlternative": "Any lamp.",
+     "guidance": "Light on the page rather than behind it."
+    }
+   ],
+   "firstSteps": [
+    {
+     "title": "Welcome to Reading",
+     "do": "Read the overview and choose one book to start",
+     "minutes": 10,
+     "safety": false
+    },
+    {
+     "title": "A Library Card",
+     "do": "Record your library access or the books you already own",
+     "minutes": 15,
+     "safety": false
+    },
+    {
+     "title": "Eyes, Light and Sleep",
+     "do": "Set up comfortable light and a screen habit you can keep",
+     "minutes": 10,
+     "safety": true
+    },
+    {
+     "title": "A Daily Reading Slot",
+     "do": "Read on five separate days this week",
+     "minutes": 25,
+     "safety": false
+    },
+    {
+     "title": "Reading With a Pencil",
+     "do": "Finish a book while keeping brief notes",
+     "minutes": 60,
+     "safety": false
+    }
+   ],
+   "resources": [
+    {
+     "title": "Libby: Getting started with free library ebooks",
+     "url": "https://help.libbyapp.com/en-us/6103.htm",
+     "checkedAt": "2026-09-21"
+    },
+    {
+     "title": "Book Riot: How to start reading (if you've never liked it)",
+     "url": "https://bookriot.com/how-to-start-reading/",
+     "checkedAt": "2026-09-21"
+    }
+   ]
+  }
+ ]
+}

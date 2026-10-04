@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "apiBase": "https://YOUR-FUNCTION-APP.azurewebsites.net/api",
+  "clientId": "YOUR-SPA-APPLICATION-CLIENT-ID",
+  "authority": "https://YOUR-TENANT.ciamlogin.com/YOUR-TENANT-ID",
+  "scope": "api://YOUR-API-APPLICATION-CLIENT-ID/access_as_user"
+}

@@ -29,6 +29,8 @@
   };
 
   var state = null;
+  var saveListeners = [];
+  var remoteEvents = null;
   var idCounter = 0;
 
   // ---------------------------------------------------------------- data
@@ -148,10 +150,27 @@
 
   function save() {
     var st = storage();
-    if (!st || !state) return false;
-    try { st.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+    if (!st || !state) {
+      saveListeners.slice().forEach(function (fn) { try { fn(false); } catch (e) {} });
+      return false;
+    }
+    var ok = false;
+    try { st.setItem(KEY, JSON.stringify(state)); ok = true; } catch (e) { /* keep the in-memory state */ }
+    saveListeners.slice().forEach(function (fn) { try { fn(ok); } catch (e) { /* observer cannot break saving */ } });
+    return ok;
   }
 
+  function replaceState(value) {
+    var next = normalize(value);
+    if (!next) throw new Error("Invalid saved progress");
+    var previous = state; state = next;
+    if (!save()) { state = previous; throw new Error("Device storage is full or unavailable"); }
+    return state;
+  }
+  function useStorage(key) {
+    if (key !== "sidequest.v1" && !/^habitual\.account\.[a-z0-9-]+$/.test(key)) throw new Error("Invalid account storage key");
+    KEY = key; remoteEvents = null; return init();
+  }
   function reset() { state = fresh(); save(); return state; }
 
   // ---------------------------------------------------------------- hobbies
@@ -565,6 +584,11 @@
   function events() {
     ensure();
     var t = today();
+    if (remoteEvents !== null) return remoteEvents.map(function (ev) {
+      var dt = new Date(ev.startsAt);
+      return Object.assign({}, ev, {remote: true, date: fmt(dt), time: dt.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}),
+        going: Math.max(0, ev.going - (ev.rsvp ? 1 : 0)), checkedIn:false, canCheckIn:false});
+    });
     return data().events.map(function (ev, i) {
       var date = eventDate(ev);
       var rsvp = state.rsvps.indexOf(ev.id) >= 0;
@@ -740,6 +764,11 @@
   var SQ = {
     _now: null,
     init: init,
+    replaceState: replaceState,
+    useStorage: useStorage,
+    subscribe: function (fn) { saveListeners.push(fn); return function () { saveListeners = saveListeners.filter(function (x) { return x !== fn; }); }; },
+    setRemoteEvents: function (events) { remoteEvents = events; },
+    isLiveCommunity: function () { return remoteEvents !== null; },
     save: save,
     reset: reset,
     seedDemo: seedDemo,

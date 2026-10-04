@@ -33,7 +33,8 @@ code defensively (check it exists before calling it) and raise it with the owner
 - **Build:** `build.py` inlines `src/` into one page, in this order:
   `data.js` → `engine.js` → `shell.css`/`shell.js` → `discover.*` → `community.*` → `showcase.*` →
   `boot.js` (which just calls `SQUI.start()`). Add new files to the `CSS`/`JS` lists in `build.py`.
-- **Always online.** The app is headed toward a real mobile app with network access, so loading a
+- **Offline hobbies and queued personal progress.** The app caches its shell and saves account-scoped progress on the device; network access is required for shared event attendance.
+- **Optional online libraries.** The app is headed toward a real mobile app with network access, so loading a
   library from a CDN (cdn.jsdelivr.net, cdnjs) is fine when it earns its place. Load it only on
   the screen that needs it, and show a friendly message if it fails. Don't bundle libraries.
 - **No emoji** anywhere in UI or data. Icons are inline SVG (`SQUI.icon`, `SQUI.hobbyIcon`).
@@ -443,3 +444,10 @@ If the 3D model is loaded, `SQUI.dropIn(slot, opts)` (showcase.js) does the fall
 character, which then plays `JoyfulJump` and fades into the sprite. Otherwise the 2D sprite falls.
 Reduced motion: the character simply appears. Falling characters and sparks live in a fixed
 `.cm-drop-layer` under the nav (z-index 19) and clean themselves up. Test: `tests/arrival.e2e.py`.
+
+
+## 9. Backend and offline progress
+
+Authorized backend addition: `backend/` is an Azure Functions Node v4 application, backed by Azure SQL. Protected endpoints independently verify an Entra access token (issuer, audience, expiry, signature and delegated scope). User IDs always come from that verified identity. `GET/PUT /api/me/state` stores private progress with a numeric revision and required If-Match; 409 never silently overwrites another device. Client XP in this private backup is not a trusted leaderboard or authorization value. `GET/POST /api/events` and idempotent `PUT /api/events/:id/attendance` handle real dated events and capacity under a SQL transaction. Event attendance requires online server confirmation; the demo remains separate. Account creation/sign-in is delegated to Entra External ID.
+
+Engine additions: `subscribe(fn)` emits a boolean after local persistence; `useStorage(key)` loads a separate account cache; `replaceState(snapshot)` normalizes/persists a downloaded snapshot; `setRemoteEvents(events|null)` supplies live dated events; `isLiveCommunity()` distinguishes the sample feed. No existing data is deleted when signing in. `src/sync-core.js` compares durable local progress with the last acknowledged snapshot, retaining changes through reload/offline periods. Conflicts require an explicit choice and keep a device backup. `src/cloud.js` handles configured sign-in, account isolation, retries, status UI and live event requests. Cloud configuration is disabled until Azure is configured. The service worker caches only the app shell, never API responses, sign-in responses or third-party requests. Me exposes sync status and local progress export.

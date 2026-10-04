@@ -315,6 +315,7 @@
       (shelf.length ? '<button type="button" class="btn block" data-action="share">' + icon("spark", 18) + " Share my progress</button>" : "") +
 
       // Settings
+      (G.SQCloud ? G.SQCloud.panel() : "") +
       '<section class="stack sc-settings"><h2 class="h3">Settings</h2>' +
       '<div class="stack"><label class="sc-lbl" for="me-nudge">Daily nudge time</label>' +
       '<div class="nudge-row"><input class="input" type="time" id="me-nudge" value="' + esc(nudge) + '"><button type="button" class="btn" data-action="nudge">Save</button></div>' +

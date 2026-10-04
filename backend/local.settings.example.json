@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AUTH_ISSUER": "https://YOUR-TENANT.ciamlogin.com/YOUR-TENANT-ID/v2.0",
+    "AUTH_JWKS_URI": "https://YOUR-TENANT.ciamlogin.com/YOUR-TENANT-ID/discovery/v2.0/keys",
+    "AUTH_AUDIENCE": "YOUR-API-APPLICATION-CLIENT-ID",
+    "AUTH_SCOPE": "access_as_user",
+    "SQL_SERVER": "YOUR-SERVER.database.windows.net",
+    "SQL_DATABASE": "habitual"
+  }
+}

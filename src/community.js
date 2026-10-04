@@ -484,7 +484,7 @@
       '</div>' +
       '<div class="cm-feed-label"><h2>' + (groups ? 'Your circles' : view.category === 'going' ? 'On your calendar' : view.category === 'for-you' ? 'For your hobbies' : 'Around you') + '</h2>' +
       '<span class="small muted" role="status" aria-live="polite" aria-atomic="true" data-feed-status>' + feedStatus() + '</span></div>' +
-      '<div data-feed-results>' + feedResults() + '</div><p class="small muted cm-sample">Sample events · Real venues, sample characters</p></div>';
+      '<div data-feed-results>' + feedResults() + '</div><p class="small muted cm-sample">' + (SQ().isLiveCommunity && SQ().isLiveCommunity() ? 'Community events · Representative characters' : 'Sample events · Real venues, sample characters') + '</p></div>';
   }
 
   /* ---------------- group ---------------- */
@@ -839,6 +839,15 @@
       }
       else if (a === "rsvp") {
         var e = findEvent(id);
+        if (e && e.remote && G.SQCloud) {
+          el.disabled = true;
+          G.SQCloud.attend(id, !e.rsvp).then(function (on) {
+            arrivingEvent = on ? id : null;
+            SQUI.toast(on ? "Your spot is confirmed" : "RSVP removed");
+            SQUI.refresh();
+          }).catch(function (error) { SQUI.toast(error.message || "Could not confirm your spot"); el.disabled = false; });
+          return;
+        }
         var on = SQ().toggleRsvp(id);
         arrivingEvent = on ? id : null;
         SQUI.toast(on ? "You joined the group" + (e ? " · " + e.title : "") : "RSVP removed");

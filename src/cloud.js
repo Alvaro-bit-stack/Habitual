@@ -4,7 +4,7 @@
   if(typeof document==='undefined')return;
   var config={enabled:false},owner=null,core=null,key='sidequest.v1';
   // Email sign-in: stage is null, 'email' or 'code'; the typed values survive panel re-renders.
-  var stage=null,typedEmail='',typedCode='';
+  var stage=null,typedEmail='',typedCode='',offerImport=false;
   var suppress=false,storageFailed=false,timer=null,status='local',busy=false,ready=false,pendingImport=null;
   function read(name,fallback){try{var text=localStorage.getItem(name);return text?JSON.parse(text):fallback;}catch(e){return fallback;}}
   function write(name,value){localStorage.setItem(name,JSON.stringify(value));}
@@ -61,11 +61,11 @@
   }
   async function finishSignIn(){
     var user=await request('/me');
-    // A brand-new account (no cloud copy, nothing on this device for it) starts from this device's
-    // progress, so signing in never looks like losing your hobbies. Existing accounts keep their own.
+    // A brand-new account starts empty; device progress is never attached silently. Ask right away
+    // instead, so signing in doesn't look like losing your hobbies.
     var fresh=!read('habitual.account.'+user.id,null),device=read('sidequest.v1',null);
     if(!owner||owner.id!==user.id)activate(user);else{owner=user;write('habitual.cloud.owner',user);}
-    if(fresh&&device&&device.onboarded){var remote=await request('/me/state');if(remote.revision===0){backup(persisted());replace(device);}}
+    if(fresh&&device&&device.onboarded){var remote=await request('/me/state');offerImport=remote.revision===0;}
     refresh();await sync();
   }
   async function loadEvents(){
@@ -95,7 +95,7 @@
     write(key+'.events',events);G.SQ.setRemoteEvents(events);return result.rsvp;
   }
   async function signOut(){
-    if(core)core.stop();clearTimeout(timer);core=null;owner=null;stage=null;
+    if(core)core.stop();clearTimeout(timer);core=null;owner=null;stage=null;offerImport=false;
     localStorage.removeItem('habitual.cloud.owner');localStorage.removeItem('habitual.session');key='sidequest.v1';G.SQ.useStorage(key);tell('local');refresh();
     // Keep unsynced account data on-device. Explicit sign-in is required to resume that account.
   }
@@ -109,6 +109,7 @@
     if(G.SQ.isGuest&&G.SQ.isGuest())return '<h2 class="h3">Guest mode</h2><p class="small" role="status">Nothing is saved. Your progress disappears when you close this tab.</p><div class="row">'+button('end-guest','Start over and save on this device')+'</div>';
     var text='<h2 class="h3">Your saved progress</h2><p class="small" role="status">'+esc(messages[status]||messages.local)+'</p>';
     if(owner)text+='<p class="small muted">Signed in as '+esc(owner.email||owner.name)+'</p>';
+    if(owner&&offerImport)return text+'<p class="small">This account is new. Bring the hobbies from this device into it?</p><div class="row">'+button('import-confirm','Bring them over')+button('skip-import','Start fresh')+'</div>';
     if(stage&&!owner||stage&&status==='signin')return text+loginForm();
     text+='<div class="row">';
     if(config.enabled)text+=owner?button('sync','Sync now')+button('out','Sign out'):button('in',config.localDemo?'Connect local test account':'Save progress online');
@@ -160,7 +161,8 @@
       else if(action==='import'){
         // A concrete in-page confirmation prevents replacing existing account progress by accident.
         b.outerHTML='<span class="stack"><span class="small">Replace this account’s progress with the original device copy? A backup will be kept.</span><span class="row">'+button('import-confirm','Replace progress')+button('cancel','Cancel')+'</span></span>';
-      }else if(action==='import-confirm'){backup(persisted());replace(read('sidequest.v1',null));tell('pending');await sync();refresh();}
+      }else if(action==='import-confirm'){offerImport=false;backup(persisted());replace(read('sidequest.v1',null));tell('pending');await sync();refresh();}
+      else if(action==='skip-import'){offerImport=false;tell(status);}
       else if(action==='cancel'){pendingImport=null;tell(status);}
       else if(action==='cancel-login'){stage=null;tell(status);}
       else if(action==='end-guest'){G.SQ.endGuest();if(G.SQ.state.onboarded)G.SQUI.go('today',{},{reset:true});else G.SQUI.go('pick',{step:'character'},{reset:true});}

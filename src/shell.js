@@ -1108,6 +1108,8 @@
         '<button type="button" class="tiny-btn" data-action="tiny"><span class="tw-ic">' + icon("check", 18) + '</span><span class="tw-l">' + (stepSize(tw) === "regular" ? "Did it, log the session" : "Did it, log a tiny win") + '</span><span class="tw-m">' + esc(tw.minutes) + " min</span></button></div>" : "") +
       '<button type="button" class="btn block" data-action="log">' + icon("plus", 18) + "Log a session</button></div>" +
 
+      '<div class="stack-lg" data-role="kit"></div>' +
+
       '<section class="stack"><div><h2 class="h3">Tiny-win ladder</h2><p class="small muted">Each session steps you up the ladder. A week away resets it to the first rung, so coming back is always easy.</p></div>' +
       '<ol class="ladder">' + ladder + "</ol></section>" +
 
@@ -1131,6 +1133,8 @@
     render: renderHobby,
     mount: function (root, params) {
       var id = params.id;
+      var kitHost = root.querySelector('[data-role="kit"]'), kh = hobby(id);
+      if (kitHost && kh && SQUI.starterKit) SQUI.starterKit(kitHost, kh.name);
       onClick(root, {
         back: function () { back(); },
         track: function () {

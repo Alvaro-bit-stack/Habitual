@@ -1256,7 +1256,7 @@
   }
 
   // ---------- Gemini hobby guide (real products, real videos, community tips) ----------
-  var GUIDE_KEY = "habitual.hobbyGuides.v1", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
+  var GUIDE_KEY = "habitual.hobbyGuides.v2", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
   var guidePending = {};
   function guideStore() {
     try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; } catch (x) { return {}; }
@@ -1295,28 +1295,63 @@
   }
   var guideTier = "entry";
   function usd(n) { return n ? "$" + Number(n).toLocaleString() : ""; }
+  var KITS = [["entry", "Beginner", "Everything you need to start, for the least money"], ["mid", "Step up", "Better gear, worth it once you’re hooked"], ["high", "Premium", "Equipment serious hobbyists keep for years"]];
+  function verifyBadge(p) {
+    var n = p.sourceCount || 0;
+    if (p.verified) return '<span class="kit-badge is-verified">' + SQUI.icon("check", 13) + "Cross-verified · " + n + " sites</span>";
+    return '<span class="kit-badge">' + (n ? "1 source" : "No sources confirmed") + "</span>";
+  }
+  function sourceList(p) {
+    var list = p.sources || [];
+    if (!list.length) return "";
+    return '<details class="kit-sources"><summary>Sources (' + list.length + ")</summary><ul>" + list.map(function (src) {
+      return '<li><span class="kit-src-ic" aria-hidden="true">' + SQUI.icon("check", 12) + '</span><a href="' + e(src.url) + '" target="_blank" rel="noopener noreferrer">' +
+        "<strong>" + e(src.site) + "</strong> " + e(src.title && src.title !== src.site ? src.title : "") + "</a>" +
+        '<span class="small muted">' + (src.how === "page" ? "Names this product" : "Found by Gemini search") + "</span></li>";
+    }).join("") + "</ul></details>";
+  }
   function productCard(p) {
-    var inner = '<span class="bl-prod-main"><strong>' + e((p.brand && p.name.indexOf(p.brand) < 0 ? p.brand + " " : "") + p.name) + "</strong>" +
-      (p.why ? '<span class="small muted">' + e(p.why) + "</span>" : "") +
-      '<span class="bl-prod-meta">' + (p.price ? '<span class="num bl-prod-price">' + e(usd(p.price)) + "</span>" : "") +
-      (p.retailer ? '<span class="small">' + e(p.retailer) + "</span>" : "") + "</span></span>";
-    return p.url
-      ? '<a class="card tap bl-prod" href="' + e(p.url) + '" target="_blank" rel="noopener noreferrer">' + inner + SQUI.icon("chevron-right", 18) + "</a>"
-      : '<div class="card bl-prod">' + inner + "</div>";
+    var name = (p.brand && p.name.indexOf(p.brand) < 0 ? p.brand + " " : "") + p.name;
+    var buy = p.buyUrl || p.url;
+    var buyLabel = p.linkType === "product" || (p.url && !p.linkType) ? "View at " + (p.retailer || "store") : "Find it online";
+    return '<article class="card kit-prod">' +
+      '<div class="kit-prod-top"><strong class="kit-prod-name">' + e(name) + "</strong>" + (p.price ? '<span class="num kit-prod-price">' + e(usd(p.price)) + "</span>" : "") + "</div>" +
+      (p.why ? '<p class="small muted kit-prod-why">' + e(p.why) + "</p>" : "") +
+      '<div class="kit-prod-foot">' + verifyBadge(p) +
+      (buy ? '<a class="btn sm kit-buy" href="' + e(buy) + '" target="_blank" rel="noopener noreferrer">' + e(buyLabel) + SQUI.icon("chevron-right", 16) + "</a>" : "") + "</div>" +
+      sourceList(p) + "</article>";
   }
   function gearTiers(g) {
-    var tiers = [["entry", "Entry level"], ["mid", "Mid tier"], ["high", "High end"]].filter(function (t) { return g.gear && g.gear[t[0]] && g.gear[t[0]].products.length; });
-    if (!tiers.length) return "";
-    if (!tiers.some(function (t) { return t[0] === guideTier; })) guideTier = tiers[0][0];
-    return '<section class="stack"><h3 class="h3">Gear people recommend</h3>' +
-      '<div class="seg bl-tier-seg" role="tablist" aria-label="Price range">' + tiers.map(function (t) {
+    var kits = KITS.filter(function (t) { return g.gear && g.gear[t[0]] && g.gear[t[0]].products.length; });
+    if (!kits.length) return "";
+    if (!kits.some(function (t) { return t[0] === guideTier; })) guideTier = kits[0][0];
+    function total(t) { var k = g.gear[t[0]]; return k.total || k.products.reduce(function (n, p) { return n + (p.price || 0); }, 0); }
+    return '<section class="stack kit"><div><h3 class="h3">Your starter kit</h3><p class="small muted">Gemini read reviews, Reddit threads and forums and picked real products, so you don’t have to.</p></div>' +
+      '<div class="seg kit-seg" role="tablist" aria-label="Starter kit">' + kits.map(function (t) {
         var on = t[0] === guideTier;
-        return '<button type="button" role="tab" class="' + (on ? "on" : "") + '" aria-selected="' + on + '" data-tier="' + t[0] + '">' + t[1] + "</button>";
+        return '<button type="button" role="tab" class="' + (on ? "on" : "") + '" aria-selected="' + on + '" data-tier="' + t[0] + '"><span>' + t[1] + "</span>" +
+          (total(t) ? '<span class="num kit-seg-total">' + e(usd(total(t))) + "</span>" : "") + "</button>";
       }).join("") + "</div>" +
-      tiers.map(function (t) {
-        return '<div class="stack bl-tier" data-tier-panel="' + t[0] + '"' + (t[0] === guideTier ? "" : " hidden") + ">" + g.gear[t[0]].products.map(productCard).join("") + "</div>";
+      kits.map(function (t) {
+        var k = g.gear[t[0]], ver = k.products.filter(function (p) { return p.verified; }).length;
+        return '<div class="stack kit-panel" data-tier-panel="' + t[0] + '"' + (t[0] === guideTier ? "" : " hidden") + ">" +
+          '<div class="kit-summary"><div><strong>' + e(t[1]) + " kit</strong><span class=\"small muted\">" + e(t[2]) + "</span></div>" +
+          (total(t) ? '<div class="kit-total"><span class="num">' + e(usd(total(t))) + '</span><span class="small muted">' + k.products.length + " item" + (k.products.length === 1 ? "" : "s") + "</span></div>" : "") + "</div>" +
+          k.products.map(productCard).join("") +
+          '<p class="small muted">' + ver + " of " + k.products.length + " pick" + (k.products.length === 1 ? "" : "s") + " cross-verified</p></div>";
       }).join("") +
-      '<p class="small muted">Picked by Gemini from hobbyist threads and reviews. Prices change, so check before you buy.</p></section>';
+      '<p class="small muted kit-note"><span class="kit-badge is-verified">' + SQUI.icon("check", 13) + "Cross-verified</span> means at least two independent sites (not the store) recommend that exact product. Prices change, so check before you buy.</p></section>";
+  }
+  function bindKitTabs(host) {
+    if (!host || host.__kitTabs) return;
+    host.__kitTabs = true;
+    host.addEventListener("click", function (ev) {
+      var tier = ev.target.closest && ev.target.closest("[data-tier]");
+      if (!tier || !host.contains(tier)) return;
+      guideTier = tier.getAttribute("data-tier");
+      host.querySelectorAll("[data-tier]").forEach(function (b) { var on = b === tier; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+      host.querySelectorAll("[data-tier-panel]").forEach(function (pn) { pn.hidden = pn.getAttribute("data-tier-panel") !== guideTier; });
+    });
   }
   function videoCard(v) {
     return '<a class="card tap bl-video" href="' + e(v.url) + '" target="_blank" rel="noopener noreferrer">' +
@@ -1344,7 +1379,7 @@
   }
   function guideLoading() {
     return '<div class="card dc-ai-loading" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span><div><div class="h3">Researching with Gemini</div>' +
-      '<p class="small muted">Reading Reddit threads, forums and reviews for real gear picks and tutorial videos. This can take up to a minute.</p></div></div>';
+      '<p class="small muted">Reading Reddit threads, forums and reviews, picking real products for three starter kits and checking every source. This can take up to a minute.</p></div></div>';
   }
   function guideFallback(it, err) {
     var lo = 0, hi = 0;
@@ -1358,6 +1393,20 @@
         return '<li class="list-row"><span class="dc-row-name">' + e(g[0]) + '</span><span class="spacer"></span><span class="num small muted">' + e(money(g[1])) + "</span></li>";
       }).join("") + '</ul><p class="small muted">Typical US prices, about ' + e(money([lo, hi])) + " in total.</p></section>" : "");
   }
+
+  // The hobby screen shows the same starter kit for hobbies you track.
+  SQUI.starterKit = function (host, name) {
+    if (!host || !name) return;
+    bindKitTabs(host);
+    host.innerHTML = guideLoading();
+    fetchGuide(name).then(function (g) {
+      if (host.isConnected) host.innerHTML = gearTiers(g) || "";
+    }, function (err) {
+      if (!host.isConnected) return;
+      host.innerHTML = '<div class="card bl-guide-note" role="note"><div class="h3">Starter kit</div><p class="small muted">' +
+        e(err && err.offline ? "Real product picks come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
+    });
+  };
 
   // ---------- hobby info sheet ----------
   var sheetKeys = null;
@@ -1399,6 +1448,7 @@
       "</div></div>";
     (document.getElementById("overlay-root") || document.body).appendChild(wrap);
     var guideHost = wrap.querySelector('[data-role="guide"]');
+    bindKitTabs(guideHost);
     function load() {
       guideHost.innerHTML = guideLoading();
       fetchGuide(it.name).then(function (g) {
@@ -1414,13 +1464,7 @@
     document.addEventListener("keydown", sheetKeys, true);
     wrap.addEventListener("click", function (ev) {
       if (ev.target.closest("[data-close]")) { closeBlobSheet(); return; }
-      var tier = ev.target.closest("[data-tier]");
-      if (tier) {
-        guideTier = tier.getAttribute("data-tier");
-        wrap.querySelectorAll("[data-tier]").forEach(function (b) { var on = b === tier; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
-        wrap.querySelectorAll("[data-tier-panel]").forEach(function (p) { p.hidden = p.getAttribute("data-tier-panel") !== guideTier; });
-        return;
-      }
+      if (ev.target.closest("[data-tier]")) return;
       var b = ev.target.closest("[data-sheet]");
       if (!b) return;
       var act = b.getAttribute("data-sheet");

@@ -4,7 +4,7 @@
 const assert = require("node:assert/strict");
 const {
   createServer, normalizeRequest, extractText, extractSources, validateResearch, researchHobby,
-  hobbyGuide, youtubeId
+  hobbyGuide, youtubeId, mentionsProduct, pageText, siteOf
 } = require("../server.js");
 
 let passed = 0;
@@ -165,6 +165,84 @@ function sampleRaw() {
     assert.equal(out.community[1].url, null);
     assert.equal(out.grounded, true);
     assert.equal("rawUrl" in out.gear.entry.products[0], false);
+  });
+
+  await test("product names are matched by brand and model words", () => {
+    const p = { brand: "La Sportiva", name: "Tarantulace climbing shoe" };
+    assert.equal(mentionsProduct(pageText("<p>I started in the <b>La Sportiva Tarantulace</b>, great shoe</p>"), p), true);
+    assert.equal(mentionsProduct(pageText("<p>Get the Tarantulace from La&nbsp;Sportiva</p>"), p), true);
+    assert.equal(mentionsProduct(pageText("<p>La Sportiva makes good shoes</p>"), p), false);
+    assert.equal(mentionsProduct(pageText("<p>Scarpa Origin is the best first shoe</p>"), p), false);
+    assert.equal(mentionsProduct(pageText("<script>Tarantulace La Sportiva</script><p>nothing</p>"), p), false);
+    assert.equal(mentionsProduct(pageText("Yamaha FG800 acoustic"), { brand: "Yamaha", name: "FG800" }), true);
+    assert.equal(mentionsProduct(pageText("Yamaha FG830 acoustic"), { brand: "Yamaha", name: "FG800" }), false);
+    assert.equal(siteOf("https://old.reddit.com/r/x"), "reddit.com");
+    assert.equal(siteOf("https://www.rei.co.uk/p"), "rei.co.uk");
+    assert.equal(siteOf("https://forum.example.org/t/1"), "example.org");
+  });
+
+  await test("starter kits: cross-verified products need two independent sites that name them", async () => {
+    const raw = {
+      hobby: "Bouldering", overview: "Start at a gym.", community: [],
+      gear: {
+        entry: { label: "whatever", products: [
+          { name: "Tarantulace", brand: "La Sportiva", price: 89, retailer: "REI", url: "https://www.rei.com/product/tarantulace", why: "Comfy.",
+            sources: [{ site: "Reddit", url: "https://www.reddit.com/r/bouldering/comments/shoes" }, { site: "Review", url: "https://www.outdoorgearlab.com/shoes" }, { site: "REI", url: "https://www.rei.com/learn/shoes" }] },
+          { name: "Momentum", brand: "Black Diamond", price: 99, retailer: "Store", url: "https://store.example/wrong-page", why: "Popular.",
+            sources: [{ site: "Blog", url: "https://blog.example/nothing-about-it" }, { site: "Made up", url: "https://made-up.example/x" }] }
+        ] },
+        mid: { products: [{ name: "Chalk bag 2", brand: "Metolius", price: 25, retailer: "", url: "", why: "Classic.", sources: [] }] },
+        high: { products: [] }
+      },
+      videos: [], firstSteps: []
+    };
+    const text = JSON.stringify(raw);
+    const payload = { candidates: [{ content: { parts: [{ text }] }, groundingMetadata: {
+      groundingChunks: [{ web: { title: "mountainproject.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/mp" } }],
+      groundingSupports: [{ segment: { text: '"name":"Chalk bag 2","brand":"Metolius"' }, groundingChunkIndices: [0] },
+                          { segment: { text: '"name":"Tarantulace"' }, groundingChunkIndices: [0] }]
+    } }] };
+    const pages = {
+      "https://www.rei.com/product/tarantulace": "<title>La Sportiva Tarantulace Climbing Shoes | REI</title>",
+      "https://www.reddit.com/r/bouldering/comments/shoes": "<p>Everyone here starts in the La Sportiva Tarantulace</p>",
+      "https://www.outdoorgearlab.com/shoes": "<h2>La Sportiva Tarantulace review</h2>",
+      "https://www.rei.com/learn/shoes": "<p>Our pick: La Sportiva Tarantulace</p>",
+      "https://store.example/wrong-page": "<title>Black Diamond Solution harness</title>",
+      "https://blog.example/nothing-about-it": "<p>Climbing is fun</p>"
+    };
+    const fetchImpl = async (url, init) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        const body = JSON.parse(init.body);
+        if (/Skip video ids/.test(body.contents[0].parts[0].text)) return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "{\"videos\":[]}" }] } }] }) };
+        assert.match(body.contents[0].parts[0].text, /Beginner kit/);
+        assert.match(body.contents[0].parts[0].text, /different websites/);
+        return { ok: true, json: async () => payload };
+      }
+      if (url.endsWith("/grounding-api-redirect/mp")) return { ok: false, status: 302, headers: { get: (h) => h === "location" ? "https://www.mountainproject.com/forum/topic/123" : null } };
+      if (url === "https://www.mountainproject.com/forum/topic/123") return { ok: false, status: 403 };
+      if (pages[url]) return { ok: true, status: 200, text: async () => pages[url] };
+      return { ok: false, status: 404 };
+    };
+    const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
+    const [shoe, harness] = out.gear.entry.products;
+    assert.equal(out.gear.entry.label, "Beginner kit");
+    assert.equal(out.gear.mid.label, "Step-up kit");
+    assert.equal(out.gear.entry.total, 188);
+    assert.equal(shoe.url, "https://www.rei.com/product/tarantulace");
+    assert.equal(shoe.linkType, "product");
+    assert.equal(shoe.buyUrl, shoe.url);
+    assert.deepEqual(shoe.sources.map((x) => [x.site, x.how]).sort(), [["mountainproject.com", "search"], ["outdoorgearlab.com", "page"], ["reddit.com", "page"]]);
+    assert.equal(shoe.verified, true, "Reddit + OutdoorGearLab + Mountain Project, not the store's own blog");
+    assert.equal(shoe.sourceCount, 3);
+    assert.equal(harness.url, null, "a store page for a different product is not linked");
+    assert.equal(harness.linkType, "search");
+    assert.match(harness.buyUrl, /^https:\/\/www\.google\.com\/search\?tbm=shop&q=Black%20Diamond%20Momentum$/);
+    assert.deepEqual(harness.sources, [], "pages that do not name it, or do not exist, are not sources");
+    assert.equal(harness.verified, false);
+    const chalk = out.gear.mid.products[0];
+    assert.equal(chalk.sourceCount, 1);
+    assert.equal(chalk.verified, false, "one grounded site is a source, not cross-verification");
+    assert.equal("rawSources" in shoe, false);
   });
 
   await test("character scripts are allowlisted and the Three.js CDN is permitted", async () => {

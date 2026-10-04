@@ -60,6 +60,9 @@ jobs:
       - name: Today header test
         run: python3 tests/today.e2e.py
 
+      - name: Starter kit test
+        run: python3 tests/kit.e2e.py
+
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4

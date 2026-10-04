@@ -1284,7 +1284,7 @@
       guidePending[k] = fetch("/api/hobby-guide", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hobby: name, location: "United States", currency: "USD" }) })
         .then(function (res) {
           return res.json().catch(function () { return {}; }).then(function (body) {
-            if (!res.ok) { var err = new Error(body.error || "Guide request failed."); err.offline = res.status === 404 || res.status === 503; throw err; }
+            if (!res.ok) { var err = new Error(body.error || "Guide request failed."); err.offline = res.status === 404 || !body.error; throw err; }
             return body;
           });
         }, function () { var err = new Error("offline"); err.offline = true; throw err; })

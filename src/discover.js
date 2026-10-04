@@ -1,4 +1,4 @@
-/* Sidequest — DISCOVER: welcome fork, hobby picker, quiz, results, starter packs, discover hub. */
+/* Habitual — DISCOVER: welcome fork, hobby picker, quiz, results, starter packs, discover hub. */
 (function () {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   var SQUI = window.SQUI, SQ = globalThis.SQ, D = globalThis.SQ_DATA;
@@ -107,7 +107,7 @@
         '<div class="dc-trail" aria-hidden="true"></div>' +
         '<div class="dc-mascot">' + SQUI.mascot(0, { mood: "happy", size: 112 }) + "</div>" +
         '<div class="eyebrow dc-brand-eyebrow">Your next chapter starts small</div>' +
-        '<h1 class="dc-brand">Sidequest</h1>' +
+        '<h1 class="dc-brand">Habitual</h1>' +
         '<p class="dc-promise">Trade ten minutes of scrolling for something you actually like doing.</p>' +
         "</div>" +
         '<div class="stack dc-fork">' +
@@ -490,7 +490,7 @@
             SQUI.go("hobby", { id: id }, wasOnboarded ? { replace: true } : { reset: true });
             if (r && r.newAchievements && r.newAchievements.length) {
               var h = SQ.getHobby(id);
-              SQUI.showReward(r, { title: "Your " + (h ? h.name : "new") + " sidequest begins" });
+              SQUI.showReward(r, { title: "Your " + (h ? h.name : "new") + " hobby journey begins" });
             } else {
               SQUI.toast("Tracking " + (SQ.getHobby(id) || { name: "it" }).name);
             }

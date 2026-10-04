@@ -1,6 +1,6 @@
-# Sidequest MVP — Build Contract
+# Habitual MVP — Build Contract
 
-Sidequest is a mobile-first web app that gets people off their phones and into hobbies.
+Habitual is a mobile-first web app that gets people off their phones and into hobbies.
 Two entry paths: "I already have hobbies" (add them to a tracker) and "Find a new hobby"
 (5-question quiz → 3 matches → starter pack with gear + cost → start). Tracked hobbies get
 weekly goals, tiny wins, comeback mode, XP, levels, a growing mascot ("Sprout"),
@@ -314,3 +314,33 @@ sessions, milestones, weekly streak) + share button.
 - Selected character is stored in `SQ.state.user.character` (kept by `normalize`). Later: set from the signed-in user.
 - Exception to "no libraries / no network": three.js r147 is loaded from jsDelivr only when this tab opens.
   The rest of the app still works offline.
+
+## Community feed and character profiles
+
+Community now uses a venue-photo event feed with original inline SVG character profiles.
+The old numbered trail layout is retired. The app uses a blue mobile theme in both light and dark modes. Community stays
+a single readable column, including on larger screens. Artwork palette values are
+local to the SVG illustrations. All content stays self-contained, without remote images.
+
+Community filters: Upcoming / Today / Tomorrow / Weekend; For you / All events /
+Your groups / Going. Weekend means the upcoming Saturday-Sunday, or the remaining
+current weekend. Group listings are independent of date filters. Search is rendered only in All events
+and filters that category immediately, without replacing the search field. Its query
+is retained when changing categories but never filters For you, Your groups or Going.
+
+Additional registered screen: `member` ({id: eventId}), tab `community`, title `Member`.
+It shows the event host's deterministic sample character, their event and hobby group.
+No new engine API or stored state is introduced. Existing `sidequest.v1` and
+`sidequest.theme` storage keys remain compatible.
+
+
+## Venue photo assets
+
+`build.py` injects `globalThis.SQ_VENUES` from `src/assets/venues/manifest.json` before the app scripts, adding a JPEG data URL to each entry. Community matches normalized exact event locations in each entry's `places` array. This curated demo catalog does not perform live venue searches. Unknown locations and failed images receive a location-based fallback. Character avatars and group artwork stay inline SVG. Event cards and event details include expandable photo descriptions and source/license attribution. Assets retain their individual licenses; see `src/assets/venues/ATTRIBUTION.md`.
+
+
+## Mobile design (Ocean)
+
+PR #1 (merged upstream at `ea68143`) adds Showcase and its three bundled character models. The app uses the Ocean design: `src/mobile.css` is the shared mobile shell and `src/ocean.css` layers on DM Sans, inset cards and the floating navigation. Both have light/dark tokens, safe-area insets, reduced-motion handling and one-column community layouts. Community starts with a page title, not an app wordmark. Its category tabs precede search and date filters.
+
+`build.py` emits one page, `dist/Habitual.html`, plus `dist/models/` for Showcase. Keep `dist/models/` beside the page when copying it.

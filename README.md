@@ -2,7 +2,7 @@
 
 A mobile-first app that helps people trade scrolling for hobbies. It gets you started on a new hobby in minutes and makes coming back to an old one feel rewarding, even for a two-minute effort.
 
-> The MVP's in-app name is still the working name "Sidequest". Rename it when the team settles on a name.
+> The app is named **Habitual**. Legacy `sidequest` storage keys and artifact filenames are retained for compatibility.
 
 ## What the MVP does
 
@@ -10,7 +10,7 @@ A mobile-first app that helps people trade scrolling for hobbies. It gets you st
 - **Starter packs** for 12 hobbies: gear in Free / Budget / Step-up tiers with totals, try-before-you-buy tips, and a plan for the first 3 sessions.
 - **Tracker:** weekly goals, one-tap tiny wins on a 5-rung ladder, comeback mode after 7+ days away, a 12-week activity map, skill milestones and a session log.
 - **Rewards:** XP, hobby and player levels, the Sprout mascot (5 growth stages, accessories), achievements and a celebration screen.
-- **Community (sample data):** Newark-area groups and events, RSVP and check-in for XP. Events first, no infinite feed.
+- **Community (sample data):** a venue-photo event feed with character profiles, live search, date filters, your groups, RSVPs and check-in for XP. Character profiles use inline SVG. Licensed venue photos are bundled in the standalone page; no remote image requests.
 
 Everything runs in the browser and saves to the device (localStorage). There are no accounts, servers or real other users yet.
 
@@ -20,26 +20,24 @@ Requirements: Python 3 and Node 18+.
 
 ```bash
 python3 build.py          # inlines src/ into dist/
-open dist/preview.html    # or double-click it; on Linux use xdg-open
+open dist/Habitual.html   # or double-click it; on Linux use xdg-open
 ```
 
 On the welcome screen, tap **Explore with sample data** to see the app filled in.
 
-`build.py` writes two files:
-
-- `dist/preview.html` is a full HTML page you can open locally or host anywhere.
-- `dist/sidequest.html` is the same page without the outer `<html>` wrapper (used for the Claude artifact).
+`build.py` writes one page, `dist/Habitual.html`, in the Ocean design. Keep the `dist/models` folder next to it; the Showcase tab loads its 3D characters from there.
 
 ## Tests
 
 ```bash
 node tests/data.check.js       # content: every hobby, pack, event and quiz entry matches the contract
 node tests/engine.test.js      # game logic: XP, levels, streaks, comeback, matching, storage
+node tests/community.test.js   # dates, search, RSVPs, groups and character profiles
 pip install playwright && python3 -m playwright install chromium
 python3 tests/e2e.py           # browser walkthrough of every flow, phone + desktop, light + dark
 ```
 
-All three run automatically on every push and pull request (see `.github/workflows/tests.yml`). Screenshots from the browser tests land in `scratch/qa/` (git-ignored).
+All checks run automatically on every push and pull request (see `.github/workflows/tests.yml`). Screenshots from the browser tests land in `scratch/qa/` (git-ignored).
 
 ## How the code is organized
 
@@ -77,3 +75,15 @@ Fill in GitHub usernames in `.github/CODEOWNERS` so each area's owner is asked t
 ## Product spec
 
 The full spec (user flows, tracker, discovery, gamification, community, data model, metrics, roadmap) lives in the team's Claude doc "Hobby App — Product Spec".
+
+
+### Venue thumbnails
+
+Event cards resolve their `place` against the exact locations in `src/assets/venues/manifest.json` (case and whitespace normalized). Photos describe the wider venue, not necessarily the exact meeting area or current season. Events at the same venue share a photo. Unknown places show a location placeholder; they never inherit a photo from their hobby or host. Image load failures reveal the same fallback. Host profiles and group illustrations remain original SVG characters.
+
+This demo uses a curated photo catalog, not a live Places/search API. To add a venue, save its licensed JPEG in `src/assets/venues`, add its exact event locations to `places` in the manifest, and include its author, source, license URL, and accurate alt text. Update `ATTRIBUTION.md` alongside it. `build.py` embeds each JPEG once into `SQ_VENUES`; no API key or runtime image service is required. The build fails on missing or non-JPEG assets. Expand “About this venue photo” on a card or event detail to view credits.
+
+
+### Design
+
+The app uses the Ocean design: DM Sans, pale blue, inset cards and a floating navigation bar. `src/mobile.css` holds the shared mobile shell and `src/ocean.css` the Ocean layer. Google Fonts and the Showcase 3D library need a connection; venue photos and model files are local. The pre-update local changes remain recoverable in the Git stash named `Habitual local venue feed before PR 1 update`.

@@ -1,4 +1,4 @@
-/* Sidequest — SHELL: window.SQUI (router, UI kit, icons, mascot, reward overlay)
+/* Habitual — SHELL: window.SQUI (router, UI kit, icons, mascot, reward overlay)
    and screens today, hobby, log, me, achievements. */
 (function () {
   "use strict";
@@ -372,10 +372,10 @@
     }
     renderNav(tab);
     if (HAS_DOM) {
-      try { document.title = (def && def.title ? def.title + " · " : "") + "Sidequest"; } catch (e) { /* ignore */ }
+      try { document.title = (def && def.title ? def.title + " · " : "") + "Habitual"; } catch (e) { /* ignore */ }
     }
   }
-  function logErr(e) { try { console.warn("[Sidequest]", e); } catch (x) { /* ignore */ } }
+  function logErr(e) { try { console.warn("[Habitual]", e); } catch (x) { /* ignore */ } }
 
   function go(name, params, opts) {
     params = params || {};
@@ -1155,7 +1155,7 @@
     var S = sq();
     if (!S) {
       var m = mainEl();
-      if (m) m.innerHTML = errorCard("Sidequest couldn’t start", new Error("Engine not loaded"));
+      if (m) m.innerHTML = errorCard("Habitual couldn’t start", new Error("Engine not loaded"));
       return;
     }
     try { S.init(); } catch (e) { logErr(e); }

@@ -1,0 +1,80 @@
+/* Shared mobile shell and option A: Cobalt. Option B adds ocean.css. */
+:root {
+  --bg: #f7f9fd; --surface: #ffffff; --surface-2: #eaf0fa; --line: #d4ddeb;
+  --ink: #16233a; --ink-2: #54647a; --leaf: #245bda; --leaf-ink: #ffffff;
+  --sky: #245bda; --good: #287454; --radius: 18px; --radius-sm: 12px;
+  --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --nav-h: 72px; --page-width: 520px;
+  --photo-tag: #10213bea; --photo-tag-ink: #ffffff;
+}
+:root[data-theme="dark"] {
+  --bg: #0c1422; --surface: #131f31; --surface-2: #1c2b42; --line: #33445e;
+  --ink: #f2f6ff; --ink-2: #a6b6cd; --leaf: #91baff; --leaf-ink: #0c234a;
+  --sky: #91baff; --good: #94d2b2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1422; --surface: #131f31; --surface-2: #1c2b42; --line: #33445e;
+    --ink: #f2f6ff; --ink-2: #a6b6cd; --leaf: #91baff; --leaf-ink: #0c234a;
+    --sky: #91baff; --good: #94d2b2;
+  }
+}
+.screen, .cm-feed { max-width: var(--page-width); padding: max(16px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 24px max(20px, env(safe-area-inset-left, 0px)); }
+.h1 { font-size: 28px; font-weight: 750; line-height: 1.2; letter-spacing: -.035em; }
+.h2 { font-weight: 700; }
+.eyebrow, .num { font-family: var(--font-body); }
+.btn:active, .card.tap:active { transform: none; opacity: .78; }
+button { touch-action: manipulation; }
+input, textarea, select { font-size: 16px; }
+#app-nav { background: color-mix(in srgb, var(--surface) 97%, transparent); }
+.nav-inner { max-width: var(--page-width); }
+.nav-btn { font-size: 11px; font-weight: 600; min-height: 48px; }
+.nav-btn .nav-ic { width: 48px; height: 30px; }
+.nav-btn.on .nav-ic { background: color-mix(in srgb, var(--leaf) 16%, transparent); }
+.cm-feed-header { align-items: center; margin: 0 0 16px; min-height: 48px; }
+.cm-feed-header h1 { margin: 0; color: var(--ink); font: 750 26px/1.2 var(--font-display); letter-spacing: -.035em; }
+.cm-location { font-size: 12px; gap: 4px; }
+.cm-categories { gap: 4px; margin: 0 0 16px; }
+.cm-categories button { min-height: 48px; font-size: 12px; padding: 12px 2px; justify-content: center; }
+.cm-categories button > span { display: none; }
+.cm-categories button.on { color: var(--leaf); }
+.cm-categories button.on::after { width: 28px; height: 3px; }
+.cm-search { margin: 0 0 12px; min-height: 48px; border-radius: 14px; }
+.cm-search input { font-size: 16px; }
+.cm-dates { margin: 0 0 24px; gap: 4px; }
+.cm-dates button { min-height: 44px; padding: 10px 5px; font-size: 12px; font-weight: 600; }
+.cm-dates button.on { background: var(--leaf); color: var(--leaf-ink); }
+.cm-feed-label { margin-bottom: 16px; }
+.cm-feed-label h2 { font-size: 17px; font-weight: 700; letter-spacing: -.015em; }
+.cm-event-feed, .cm-feed-groups { display: flex; flex-direction: column; gap: 24px; }
+.cm-feed-event.cm-ev { padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+.cm-event-photo { border-radius: 16px; aspect-ratio: 1.65; min-height: 0; }
+.cm-photo-tag { top: 12px; left: 12px; font-size: 12px; background: var(--photo-tag); color: var(--photo-tag-ink); }
+.cm-photo-going { background: var(--leaf); color: var(--leaf-ink); }
+.cm-feed-event .cm-ev-main { margin-top: 16px; }
+.cm-event-date { font-size: 12px; letter-spacing: .03em; }
+.cm-feed-event .cm-ev-title { font: 700 19px/1.35 var(--font-display); letter-spacing: -.025em; }
+.cm-event-place { font-size: 13px; }
+.cm-attendance strong, .cm-host { font-size: 12px; }
+.cm-feed-event .cm-rsvp { min-height: 48px; min-width: 88px; font-size: 14px; background: color-mix(in srgb, var(--leaf) 12%, var(--surface)); color: var(--leaf); border: 0; }
+.cm-feed-event .cm-rsvp.on { background: var(--leaf); color: var(--leaf-ink); }
+.cm-photo-credit { font-size: 12px; margin-top: 4px; }
+.cm-photo-credit summary { min-height: 44px; }
+.cm-feed-end { padding: 20px 0 8px; font-size: 12px; }
+.cm-feed .cm-sample { font-size: 12px; }
+.cm-group-photo { width: 88px; height: 88px; }
+.cm-venue-detail { min-height: 180px; }
+.cm-feed button, .nav-btn { transition: color .15s ease, background-color .15s ease, opacity .1s ease; }
+@media (max-width: 370px) {
+  .screen, .cm-feed { padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .cm-feed-header h1 { font-size: 24px; }
+  .cm-location { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Five tabs: keep every label whole at phone widths */
+.nav-btn { padding-inline: 2px; min-width: 0; }
+.nav-btn > span:not(.nav-ic) { font-size: 10.5px; letter-spacing: -0.01em; white-space: nowrap; overflow: visible; }

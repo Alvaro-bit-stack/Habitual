@@ -1,0 +1,11 @@
+{
+  "frames": 8,
+  "frameWidth": 128,
+  "frameHeight": 160,
+  "source": "assets/models/*.glb",
+  "characters": [
+    "neo",
+    "adrian",
+    "alvaro"
+  ]
+}

@@ -1,0 +1,50 @@
+/* Venue backdrops with pre-rendered Showcase characters. */
+.cm-mii { position: relative; display: inline-block; flex: none; height: var(--mii-size, 106px); width: calc(var(--mii-size, 106px) * .8); vertical-align: bottom; }
+.cm-mii::before, .cm-mii::after { content: ""; position: absolute; inset: 0; background-image: var(--mii-idle); background-repeat: no-repeat; background-size: 100% 100%; }
+.cm-mii::after { background-image: var(--mii-run); background-size: 800% 100%; opacity: 0; }
+.cm-feed-header { gap: 8px; }
+.cm-feed-header h1 { flex: 1; }
+.cm-feed-header .cm-location { padding: 0; background: none; white-space: nowrap; font-size: 11px; }
+.cm-self-avatar { display: grid; place-items: start center; width: 44px; height: 44px; flex: none; padding: 0; border: 1px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--surface); }
+.cm-self-avatar .cm-mii { margin-top: -3px; }
+.cm-event-photo { aspect-ratio: 1.5; }
+.cm-venue-ground { position: absolute; inset: 42% 0 0; background: linear-gradient(transparent, #122c3d42 70%, #102a3f80); pointer-events: none; }
+.cm-venue-cast { position: absolute; inset: auto 8px 8px; height: 106px; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.cm-person { position: relative; display: block; height: 106px; width: 85px; flex: none; margin-inline: -12px; }
+.cm-person::before { content: ""; position: absolute; bottom: 4px; left: 19%; width: 62%; height: 8px; border-radius: 50%; background: #07192c60; filter: blur(3px); }
+.cm-person:nth-child(2) { transform: translateY(-6px) scale(.94); }
+.cm-person:nth-child(3) { transform: translateY(-2px) scale(.98); }
+.cm-person.cm-you { z-index: 2; transform: none; }
+.cm-you-label { position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); border-radius: 8px; background: var(--leaf); color: var(--leaf-ink); border: 1px solid var(--surface); padding: 1px 7px; font: 700 10px/1.3 var(--font-body); box-shadow: 0 2px 8px #102a3f30; }
+.cm-photo-tag { z-index: 3; }
+.cm-arriving { animation: cm-arrive 1.1s cubic-bezier(.2,.65,.3,1) both; }
+.cm-arriving .cm-mii::before { animation: cm-rest-visible 1.1s step-end both; }
+.cm-arriving .cm-mii::after { animation: cm-run-frames .55s steps(7,end) 2, cm-run-visible 1.1s step-end both; }
+.cm-arriving .cm-you-label { animation: cm-rest-visible 1.1s step-end both; }
+@keyframes cm-arrive { from { transform: translateX(-280px); } to { transform: translateX(0); } }
+@keyframes cm-run-frames { from { background-position: 0 0; } to { background-position: 100% 0; } }
+@keyframes cm-run-visible { from { opacity: 1; } to { opacity: 0; } }
+@keyframes cm-rest-visible { from { opacity: 0; } to { opacity: 1; } }
+.cm-attendance-icon .cm-mii { margin-top: 4px; transform: scale(1.5); transform-origin: center 15%; }
+.cm-member-stage { min-height: 300px; background: radial-gradient(ellipse at 50% 90%, var(--surface-2), var(--surface)); }
+.cm-member-stage .cm-mii { --mii-size: 280px !important; }
+.cm-feed-event .cm-rsvp { min-width: 102px; }
+.cm-venue-fallback { justify-content: flex-start; padding: 48px 16px 100px; gap: 4px; }
+.cm-venue-fallback > svg { display: none; }
+.cm-venue-fallback strong { font-size: 13px; }
+.cm-venue-fallback > span { font-size: 11px; }
+.cm-feed-group.cm-gathering { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 10px; border-radius: 24px; }
+.cm-group-scene { display: block; width: 100%; flex: none; aspect-ratio: 1.7; border-radius: 16px; }
+.cm-gathering-body { display: flex; flex-direction: column; gap: 6px; padding: 16px 6px 8px; }
+.cm-gathering-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cm-gathering-top .cm-ev-title { font-size: 20px; font-weight: 700; line-height: 1.3; }
+.cm-group-next { font-size: 12px; font-weight: 700; color: var(--leaf); margin-top: 6px; }
+.cm-group-place { font-size: 13px; color: var(--ink-2); }
+.cm-av { overflow: hidden; }
+.cm-av .cm-mii { transform: scale(1.5); transform-origin: center top; }
+@media (prefers-reduced-motion: reduce) {
+  .cm-arriving, .cm-arriving .cm-mii::before, .cm-arriving .cm-mii::after, .cm-arriving .cm-you-label { animation: none !important; }
+  .cm-arriving .cm-mii::before, .cm-arriving .cm-you-label { opacity: 1; }
+  .cm-arriving .cm-mii::after { display: none; }
+}
+@media (max-width: 370px) { .cm-feed-header h1 { font-size: 24px; } .cm-feed-header .cm-location { font-size: 10px; } }

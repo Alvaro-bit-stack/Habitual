@@ -26,6 +26,9 @@ jobs:
       - name: Engine tests
         run: node tests/engine.test.js
 
+      - name: Community tests
+        run: node tests/community.test.js
+
       - name: Build
         run: python3 build.py
 

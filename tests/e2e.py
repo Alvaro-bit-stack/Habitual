@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Sidequest end-to-end QA (Playwright, headless chromium).
+"""Habitual end-to-end QA (Playwright, headless chromium).
 
-Run: python3 tests/e2e.py            (builds first if dist/preview.html is missing)
+Run: python3 tests/e2e.py            (builds first if dist/Habitual.html is missing)
 Screenshots: scratch/qa/<mode>-<step>.png
 Exit code 0 = all green.
 """
@@ -13,7 +13,7 @@ import traceback
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PREVIEW = os.path.join(ROOT, "dist", "preview.html")
+PREVIEW = os.path.join(ROOT, "dist", "Habitual.html")
 SHOTS = os.path.join(ROOT, "scratch", "qa")
 URL = "file://" + PREVIEW
 
@@ -61,6 +61,7 @@ AUDIT_JS = r"""
   const bad = txt.match(/\bundefined\b|\bNaN\b|\bnull\b|\[object|Infinity/);
   if (bad) out.problems.push('bad token in text: "' + bad[0] + '" near "' + txt.substr(Math.max(0, bad.index - 30), 70).replace(/\n/g,' | ') + '"');
   const vis = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+    if (el.closest('details:not([open])') && !el.closest('summary')) return false; // collapsed disclosure content
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
   // accessible names
   document.querySelectorAll('button, [role=button], a[href]').forEach(b => {
@@ -81,10 +82,11 @@ AUDIT_JS = r"""
   });
   // clipped text: element whose content overflows a non-visible overflow box
   document.querySelectorAll('#app-main *, #overlay-root *, #app-nav *').forEach(el => {
-    if (!vis(el)) return;
+    if (!vis(el) || el.closest('[aria-hidden="true"]')) return;
     if (el.matches('.sr-only, .dc-hscroll, svg, svg *, canvas, input, textarea, select, .rw-card, .heat-grid, .heat-wrap')) return;
     const cs = getComputedStyle(el);
     if (cs.overflowX === 'visible' && cs.overflowY === 'visible') return;
+    if (!(el.innerText || '').trim()) return; // image frames (avatars) crop on purpose; only text can be clipped
     if (el.scrollWidth > el.clientWidth + 1 && cs.overflowX !== 'auto' && cs.overflowX !== 'scroll')
       out.problems.push('text clipped horizontally in ' + el.tagName + '.' + el.className + ' "' + (el.innerText||'').slice(0,40) + '"');
   });
@@ -92,7 +94,7 @@ AUDIT_JS = r"""
   document.querySelectorAll('#app-main .screen').forEach(scr => {
     const sr = scr.getBoundingClientRect();
     scr.querySelectorAll('*').forEach(el => {
-      if (!vis(el) || el.closest('.dc-hscroll') || el.closest('svg')) return;
+      if (!vis(el) || el.closest('[aria-hidden="true"]') || el.closest('.dc-hscroll') || el.closest('svg')) return;
       const r = el.getBoundingClientRect();
       if (r.right > Math.max(sr.right, vw) + 1) out.problems.push('element spills past screen edge: ' + el.tagName + '.' + el.className + ' right=' + Math.round(r.right));
     });
@@ -120,6 +122,7 @@ NAV_CLEAR_JS = r"""
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     if (r.width === 0 || r.height === 0 || cs.visibility === 'hidden' || cs.position === 'fixed') return;
+    if (el.closest('[aria-hidden="true"]')) return;
     if (el.closest('svg') && el.tagName.toLowerCase() !== 'svg') return;
     if (r.bottom > maxBottom) { maxBottom = r.bottom; who = el.tagName + '.' + el.className + ' "' + (el.innerText || '').slice(0, 30) + '"'; }
   });
@@ -153,7 +156,7 @@ class Ctx:
         t = msg.text
         if msg.type == "error" and "fonts.g" not in t:
             self.errors.append("console.error: " + t)
-        if msg.type == "warning" and "[Sidequest]" in t:
+        if msg.type == "warning" and "[Habitual]" in t:
             self.errors.append("console.warn: " + t)
 
     def fresh(self):
@@ -392,10 +395,12 @@ def flow_pick_today(c):
     c.click("#app-nav [data-nav=community]")
     c.audit("18-community-custom")
     expect(c.page.locator("#app-main b").count() == 0, m, "custom-comm", "custom name as HTML in community")
-    # filter chip for custom hobby
-    c.click(f".cm-chips [data-f='{cid}']")
+    # A custom hobby has no sample events; search must safely show an empty state.
+    c.click('[data-action="category"][data-v="all"]')
+    c.page.locator("#cm-search").fill(CUSTOM_NAME)
+    expect(c.page.locator(".cm-empty").count() == 1, m, "custom-comm", "missing empty search state")
     c.audit("19-community-filter-custom")
-    c.click(".cm-chips [data-f=all]")
+    c.page.locator("#cm-search").fill("")
     c.click("#app-nav [data-nav=discover]")
     expect(c.page.locator("#app-main b").count() == 0, m, "custom-disc", "custom name as HTML in discover")
     c.audit("20-discover-pairs")
@@ -572,7 +577,7 @@ def flow_demo_community(c):
     for scr, params in [("today", {}), ("hobby", {"id": "running"}), ("log", {"id": "running"}), ("me", {}),
                         ("achievements", {}), ("welcome", {}), ("pick", {}), ("quiz", {}), ("results", {}),
                         ("pack", {"id": "tennis"}), ("discover", {}), ("community", {}), ("group", {"hobbyId": "tennis"}),
-                        ("event", {"id": "ev-tennis-1"}), ("hobby", {"id": "nope"}), ("event", {"id": "nope"}),
+                        ("member", {"id": "ev-tennis-1"}), ("event", {"id": "ev-tennis-1"}), ("hobby", {"id": "nope"}), ("event", {"id": "nope"}),
                         ("group", {"hobbyId": "nope"}), ("pack", {"id": "nope"}), ("log", {"id": "tennis"})]:
         c.js(f"() => SQUI.go('{scr}', {json.dumps(params)})")
         expect(c.screen() == scr, m, "back", f"go({scr}) failed")

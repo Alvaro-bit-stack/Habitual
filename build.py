@@ -1,62 +1,81 @@
 #!/usr/bin/env python3
-"""Inline src/ files into one self-contained page: dist/sidequest.html (artifact body, no doctype)
-and dist/preview.html (full document for local headless testing). Missing files are skipped."""
+"""Build Habitual (Ocean design) into one page, dist/Habitual.html, with venue photos and Showcase models."""
 import base64
-import os
+import json
+from pathlib import Path
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(ROOT, "src")
-DIST = os.path.join(ROOT, "dist")
-FONTS = ("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;"
-         "12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap")
-CSS = ["shell.css", "discover.css", "community.css", "showcase.css"]
+ROOT = Path(__file__).resolve().parent
+SRC = ROOT / "src"
+DIST = ROOT / "dist"
+CSS = ["shell.css", "discover.css", "community.css", "showcase.css", "mobile.css", "ocean.css", "gathering.css"]
 JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "boot.js"]
-MODELS = os.path.join(ROOT, "assets", "models")
+FONT_URL = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
 
 
-def read(name):
-    p = os.path.join(SRC, name)
-    if not os.path.exists(p):
-        print("  (missing)", name)
-        return None
-    with open(p, encoding="utf-8") as f:
-        return f.read()
+def venue_script():
+    asset_dir = SRC / "assets" / "venues"
+    venues = json.loads((asset_dir / "manifest.json").read_text(encoding="utf-8"))
+    for venue in venues.values():
+        image_path = (asset_dir / venue["file"]).resolve()
+        if image_path.parent != asset_dir.resolve():
+            raise ValueError("Venue image must be inside src/assets/venues")
+        image = image_path.read_bytes()
+        if not image.startswith(b"\xff\xd8"):
+            raise ValueError("Venue image must be a JPEG")
+        venue["src"] = "data:image/jpeg;base64," + base64.b64encode(image).decode("ascii")
+    payload = json.dumps(venues, ensure_ascii=True).replace("<", "\\u003c")
+    return '<script data-src="venues">globalThis.SQ_VENUES=' + payload + ';</script>'
+
+
+def avatar_styles():
+    # Six reusable sprite assets are embedded once, rather than once per event/person.
+    parts = []
+    for character in ["neo", "adrian", "alvaro"]:
+        assets = {}
+        for pose in ["idle", "run"]:
+            image = (SRC / "assets" / "avatars" / f"{character}-{pose}.png").read_bytes()
+            if not image.startswith(b"\x89PNG\r\n\x1a\n"):
+                raise ValueError("Avatar sprite must be a PNG")
+            assets[pose] = "data:image/png;base64," + base64.b64encode(image).decode("ascii")
+        parts.append('.cm-mii[data-character="' + character + '"]{--mii-idle:url("' + assets["idle"] + '");--mii-run:url("' + assets["run"] + '")}')
+    return '<style data-src="avatar-sprites">' + "\n".join(parts) + '</style>'
+
+
+def render(venues):
+    parts = ["<title>Habitual</title>",
+             '<link rel="preconnect" href="https://fonts.googleapis.com">',
+             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+             '<link rel="stylesheet" href="' + FONT_URL + '">']
+    for name in CSS:
+        parts.append(f'<style data-src="{name}">\n{(SRC / name).read_text(encoding="utf-8-sig")}\n</style>')
+    parts.append(avatar_styles())
+    parts.append('<div id="app"><main id="app-main"></main><nav id="app-nav" aria-label="Main"></nav></div>')
+    parts.append('<div id="overlay-root"></div><div id="toast-root" aria-live="polite"></div>')
+    parts.append(venues)
+    for name in JS:
+        text = (SRC / name).read_text(encoding="utf-8").replace("</script", "<\\/script")
+        parts.append(f'<script data-src="{name}">\n{text}\n</script>')
+    return "\n".join(parts)
+
+
+def document(body):
+    return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+            '<meta name="apple-mobile-web-app-capable" content="yes">'
+            '<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>'
+            '</head><body>' + body + '</body></html>')
 
 
 def main():
-    os.makedirs(DIST, exist_ok=True)
-    parts = ["<title>Sidequest</title>",
-             '<link rel="preconnect" href="https://fonts.googleapis.com">',
-             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-             f'<link rel="stylesheet" href="{FONTS}">']
-    for c in CSS:
-        t = read(c)
-        if t is not None:
-            parts.append(f"<style data-src=\"{c}\">\n{t}\n</style>")
-    parts.append('<div id="app"><main id="app-main"></main><nav id="app-nav" aria-label="Main"></nav></div>')
-    parts.append('<div id="overlay-root"></div><div id="toast-root" aria-live="polite"></div>')
-    for j in JS:
-        t = read(j)
-        if t is not None:
-            t = t.replace("</script", "<\\/script")
-            parts.append(f"<script data-src=\"{j}\">\n{t}\n</script>")
-    body = "\n".join(parts)
-    with open(os.path.join(DIST, "sidequest.html"), "w", encoding="utf-8") as f:
-        f.write(body)
-    with open(os.path.join(DIST, "preview.html"), "w", encoding="utf-8") as f:
-        f.write('<!doctype html><html><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-                '<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>'
-                f'</head><body>{body}</body></html>')
-    # Characters ship as script files (base64 GLB) so the showcase can load them even from file://.
-    os.makedirs(os.path.join(DIST, "models"), exist_ok=True)
-    for f in sorted(os.listdir(MODELS)) if os.path.isdir(MODELS) else []:
-        if f.endswith(".glb"):
-            with open(os.path.join(MODELS, f), "rb") as g:
-                b64 = base64.b64encode(g.read()).decode()
-            with open(os.path.join(DIST, "models", f[:-4] + ".js"), "w") as out:
-                out.write(f'(window.SQ_MODELS=window.SQ_MODELS||{{}})["{f[:-4]}"]="{b64}";')
-    print("built dist/sidequest.html", len(body), "bytes")
+    DIST.mkdir(exist_ok=True)
+    (DIST / "Habitual.html").write_text(document(render(venue_script())), encoding="utf-8")
+    # Showcase loads its 3D models from dist/models (works from file:// too).
+    (DIST / "models").mkdir(exist_ok=True)
+    for model in sorted((ROOT / "assets" / "models").glob("*.glb")):
+        b64 = base64.b64encode(model.read_bytes()).decode("ascii")
+        (DIST / "models" / (model.stem + ".js")).write_text(
+            '(window.SQ_MODELS=window.SQ_MODELS||{})[' + json.dumps(model.stem) + ']="' + b64 + '";', encoding="utf-8")
+    print("Built dist/Habitual.html (Ocean design).")
 
 
 if __name__ == "__main__":

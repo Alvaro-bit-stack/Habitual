@@ -1,4 +1,4 @@
-/* Sidequest — COMMUNITY tab: community, group({hobbyId}), event({id}) */
+/* Habitual — COMMUNITY tab: community, group({hobbyId}), event({id}) */
 (function () {
   "use strict";
   if (typeof window === "undefined" || !window.SQUI) return;
@@ -7,15 +7,15 @@
 
   var AREA = "Sample community · Newark area";
   var CHECKIN_XP = 60;
-  var TWO_PLAYER = ["tennis", "chess"];
-  var WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   var WD_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   var MON_LONG = ["January", "February", "March", "April", "May", "June", "July", "August",
     "September", "October", "November", "December"];
 
   // view state for the community list (kept for the session)
-  var view = { filter: "all", showAll: false };
+  var arrivingEvent = null;
+  var view = { when: "upcoming", category: "for-you", query: "" };
 
   function esc(s) { return SQUI.esc(s == null ? "" : String(s)); }
   function icon(n, s) { try { return SQUI.icon(n, s) || ""; } catch (e) { return ""; } }
@@ -99,7 +99,7 @@
     return '<button type="button" class="btn sm cm-rsvp' + (e.rsvp ? " on" : "") + (extra || "") +
       '" data-action="rsvp" data-id="' + esc(e.id) + '" aria-pressed="' + (e.rsvp ? "true" : "false") +
       '" aria-label="' + (e.rsvp ? "Going to " : "RSVP to ") + esc(e.title) + '">' +
-      (e.rsvp ? icon("check", 16) + " Going" : "RSVP") + "</button>";
+      (e.rsvp ? icon("check", 16) + " Going" : "I’m going") + "</button>";
   }
 
   // Shared event row component
@@ -151,124 +151,163 @@
     "</div>";
   }
 
+  var DATE_FILTERS = [['upcoming', 'Upcoming'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['weekend', 'Weekend']];
+  var CATEGORIES = [['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users'], ['going', 'Going', 'calendar']];
+
+  var AVATARS = ['neo', 'adrian', 'alvaro'];
+  function selectedAvatar() {
+    var id = SQ().state.user.character;
+    return AVATARS.indexOf(id) >= 0 ? id : 'neo';
+  }
+  function avatarFor(name) {
+    var seed = Array.from(String(name)).reduce(function (n, c) { return ((n * 31) + c.charCodeAt(0)) >>> 0; }, 7);
+    return AVATARS[seed % AVATARS.length];
+  }
+  function mii(id, size) {
+    return '<span class="cm-mii" data-character="' + id + '" style="--mii-size:' + size + 'px" aria-hidden="true"></span>';
+  }
+  function character(name, size) { return mii(avatarFor(name), size); }
+  // A small illustrative cast represents the meetup; the text still gives the full attendee count.
+  function venueCast(e) {
+    var joined = e.rsvp || e.checkedIn;
+    var people = Math.min(3, Math.max(0, +e.going || 0));
+    var first = AVATARS.indexOf(avatarFor(e.host));
+    var cast = '<span class="cm-venue-cast" aria-hidden="true">';
+    for (var i = 0; i < people; i++) {
+      cast += '<span class="cm-person">' + mii(AVATARS[(first + i) % 3], 106) + '</span>';
+    }
+    if (joined) cast += '<span class="cm-person cm-you' + (arrivingEvent === e.id ? ' cm-arriving' : '') + '">' +
+      mii(selectedAvatar(), 106) + '<span class="cm-you-label">You</span></span>';
+    return cast + '</span><span class="sr-only">' + (joined ? 'Your avatar has joined the group. ' : '') +
+      going(e) + ' people going. Characters represent sample attendees.</span>';
+  }
+  // Curated venue identity comes from the location, never the activity or host.
+  function venuePhoto(e) {
+    var place = String(e.place || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    var photos = G.SQ_VENUES || {};
+    var key = Object.keys(photos).find(function (id) {
+      return (photos[id].places || []).some(function (p) {
+        return p.trim().toLowerCase().replace(/\s+/g, ' ') === place;
+      });
+    });
+    return key ? photos[key] : null;
+  }
+  function venueCover(e) {
+    var photo = venuePhoto(e);
+    return '<span class="cm-venue-fallback" aria-hidden="true">' + icon('pin', 30) +
+      '<strong>' + esc(photo ? photo.name : e.place) + '</strong><span>Venue photo unavailable</span></span>' +
+      (photo && photo.src ? '<img class="cm-venue-image" src="' + esc(photo.src) + '" alt="' + esc(photo.alt) + '" loading="lazy" decoding="async">' : '') + '<span class="cm-venue-ground" aria-hidden="true"></span>' + venueCast(e);
+  }
+  function venueCredit(e) {
+    var photo = venuePhoto(e);
+    if (!photo) return '';
+    return '<details class="cm-photo-credit"><summary>About this venue photo</summary><p>' + esc(photo.alt) +
+      '. Venue overview; the meeting area and current conditions may differ.</p><p>Photo by ' + esc(photo.author) + ' · ' +
+      '<a href="' + esc(photo.source) + '" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> · ' +
+      '<a href="' + esc(photo.licenseUrl || photo.source) + '" target="_blank" rel="noopener noreferrer">' + esc(photo.license) +
+      '</a>. Cropped to fit.</p></details>';
+  }
+  function renderMember(params) {
+    var e = findEvent(params && params.id);
+    if (!e) return renderEvent(params);
+    return '<div class="screen stack-lg cm cm-member"><div class="screen-head"><button type="button" class="back-btn" data-action="back" aria-label="Back">' + icon('chevron-left', 22) + '</button><span class="eyebrow">Meet your host</span></div>' +
+      '<div class="cm-member-stage">' + character(e.host, 220) + '</div><div class="cm-member-name"><p class="eyebrow">' + esc(hobbyName(e.hobbyId)) + ' community</p><h1 class="h1">' + esc(e.host) + '</h1><p class="muted">Sample host · Newark area</p></div>' +
+      '<section class="stack"><h2 class="h2">Hosting next</h2><ul class="cm-evlist">' + eventRow(e, {showDate:true}) + '</ul></section>' +
+      '<button type="button" class="btn primary block" data-action="open-group" data-id="' + esc(e.hobbyId) + '">Explore the ' + esc(hobbyName(e.hobbyId)) + ' group</button>' +
+      '<p class="small muted cm-sample">Showcase character · Sample host profile</p></div>';
+  }
+
+  function matchesDate(e) {
+    var offset = diffDays(today(), e.date);
+    if (offset < 0) return false;
+    if (view.when === 'today') return offset === 0;
+    if (view.when === 'tomorrow') return offset === 1;
+    if (view.when === 'weekend') {
+      var day = parse(today()).getDay();
+      var first = day === 0 ? 0 : (6 - day + 7) % 7;
+      return offset >= first && offset <= first + (day === 0 ? 0 : 1);
+    }
+    return true;
+  }
+  function matchesQuery(text) {
+    return view.category !== 'all' || text.toLowerCase().indexOf(view.query.trim().toLowerCase()) >= 0;
+  }
+  function feedEvents() {
+    return allEvents().filter(function (e) {
+      if (!matchesDate(e)) return false;
+      if (view.category === 'for-you' && !isTracked(e.hobbyId) && !e.rsvp && !e.checkedIn) return false;
+      if (view.category === 'going' && !e.rsvp && !e.checkedIn) return false;
+      return matchesQuery([e.title, e.place, e.host, hobbyName(e.hobbyId), (group(e.hobbyId) || {}).name || ''].join(' '));
+    });
+  }
+  function feedGroups() {
+    return (data().groups || []).filter(function (g) {
+      return isTracked(g.hobbyId) && matchesQuery(g.name + ' ' + hobbyName(g.hobbyId));
+    });
+  }
+  function eventCard(e) {
+    var label = e.checkedIn ? 'Checked in' : e.rsvp ? 'You’re going' : e.level;
+    var status = e.checkedIn || e.rsvp;
+    return '<li class="cm-feed-event cm-ev' + (e.rsvp ? ' is-going' : '') + '">' +
+      '<button type="button" class="cm-event-photo" data-action="open-event" data-id="' + esc(e.id) + '" aria-label="View ' + esc(e.title) + '">' +
+      venueCover(e) + '<span class="cm-photo-tag' + (status ? ' cm-photo-going' : '') + '">' +
+      (status ? icon('check', 14) : glyph(e.hobbyId, 16)) + ' ' + esc(label) + '</span>' +
+      '<span class="cm-photo-hobby">' + esc(hobbyName(e.hobbyId)) + '</span></button>' +
+      '<button type="button" class="cm-ev-main' + (e.date === today() ? ' cm-today-top' : '') + '" data-action="open-event" data-id="' + esc(e.id) + '">' +
+      '<span class="cm-ev-body"><span class="cm-event-date">' + esc(dayLabel(e.date)) + ' · ' + esc(e.time) + '</span>' +
+      '<span class="cm-ev-title">' + esc(e.title) + '</span>' +
+      '<span class="cm-event-place">' + icon('pin', 14) + ' ' + esc(e.place) + '</span></span></button>' +
+      '<div class="cm-feed-foot"><button type="button" class="cm-attendance" data-action="open-member" data-id="' + esc(e.id) + '" aria-label="Meet ' + esc(e.host) + '"><span class="cm-attendance-icon">' + character(e.host, 42) + '</span>' +
+      '<span><strong>' + going(e) + ' going</strong><span class="cm-host">with ' + esc(e.host) + '</span></span></button>' + rsvpBtn(e) + '</div>' +
+      venueCredit(e) +
+      (e.canCheckIn ? '<button type="button" class="btn primary block cm-checkin" data-action="checkin" data-id="' + esc(e.id) + '" aria-label="Check in to ' + esc(e.title) + '">' + icon('pin', 16) + ' Check in · +60 XP</button>' : '') + '</li>';
+  }
+  function groupCard(g) {
+    var events = allEvents().filter(function (e) { return e.hobbyId === g.hobbyId && e.date >= today(); });
+    var next = events.find(function (e) { return e.rsvp || e.checkedIn; }) || events[0];
+    return '<li><button type="button" class="cm-feed-group cm-gathering" data-action="open-group" data-id="' + esc(g.hobbyId) + '">' +
+      (next ? '<span class="cm-event-photo cm-group-scene">' + venueCover(next) + '</span>' : '') +
+      '<span class="cm-gathering-body"><span class="cm-gathering-top"><span class="cm-ev-title">' + esc(g.name) +
+      '</span><span aria-hidden="true">' + icon('chevron-right', 20) + '</span></span>' +
+      '<span class="small muted">' + esc(g.members) + ' members' + (next && (next.rsvp || next.checkedIn) ? ' · You’re going' : '') + '</span>' +
+      (next ? '<span class="cm-group-next">Next together · ' + esc(dayLabel(next.date)) + '</span><span class="cm-group-place">' + esc(next.place) + '</span>' : '<span class="small muted">More meetups soon</span>') +
+      '</span></button>' + (next ? venueCredit(next) : '') + '</li>';
+  }
+  function feedStatus() {
+    var groups = view.category === 'groups';
+    var n = groups ? feedGroups().length : feedEvents().length;
+    return n + (groups ? n === 1 ? ' group' : ' groups' : n === 1 ? ' event' : ' events');
+  }
+  function feedResults() {
+    var groups = view.category === 'groups';
+    var list = groups ? feedGroups() : feedEvents();
+    if (!list.length) {
+      return '<div class="empty cm-empty"><span aria-hidden="true">' + icon('search', 28) + '</span>' +
+        '<h2 class="h3">' + (groups ? 'Your groups start here' : view.category === 'going' && !view.query ? 'Your plans start here' : 'No events found') + '</h2>' +
+        '<p class="muted small">' + (groups ? 'Groups appear for the hobbies you track. Add a hobby to find your people.' : 'Try a different day, or explore All events to search nearby meetups.') + '</p>' +
+        '<button type="button" class="btn primary" data-action="reset-feed">Explore all events</button>' +
+        (groups ? '<button type="button" class="btn" data-action="go" data-to="pick">Add a hobby</button>' : '') + '</div>';
+    }
+    return '<ul class="' + (groups ? 'cm-feed-groups' : 'cm-event-feed') + '" aria-label="' + (groups ? 'Your hobby groups' : 'Community events') + '">' +
+      list.map(groups ? groupCard : eventCard).join('') + '</ul>' +
+      '<p class="cm-feed-end">' + (groups ? 'Your hobby groups' : 'You’re all caught up') + '</p>';
+  }
   function render() {
     if (!SQ() || !SQ().communityUnlocked()) return renderLocked();
-    var t = today();
-    var mine = tracked();
-    var catalogMine = mine.filter(function (id) { return !!group(id); });
-    if (view.filter !== "all" && mine.indexOf(view.filter) < 0) view.filter = "all";
-
-    var evs = allEvents().filter(function (e) { return e.date >= t; });
-    var scoped = evs.filter(function (e) {
-      if (view.filter !== "all") return e.hobbyId === view.filter;
-      return view.showAll || mine.indexOf(e.hobbyId) >= 0;
-    });
-
-    // Today strip: today's events, RSVP'd first (scoped to tracked hobbies + any RSVP'd)
-    var todays = evs.filter(function (e) {
-      return e.date === t && (mine.indexOf(e.hobbyId) >= 0 || e.rsvp || view.showAll);
-    }).sort(function (a, b) { return (b.rsvp ? 1 : 0) - (a.rsvp ? 1 : 0); });
-
-    var h = '<div class="screen stack-lg cm">';
-    h += '<div class="screen-head cm-head"><div><h1 class="h1">Community</h1>' +
-      '<p class="small muted cm-area">' + icon("pin", 14) + " " + esc(AREA) + "</p></div></div>";
-
-    // Today strip
-    h += '<section class="stack" aria-labelledby="cm-today-h">' +
-      '<div class="row"><h2 class="h2" id="cm-today-h">Today</h2><span class="spacer"></span>' +
-      '<span class="small muted">' + esc(dayLabel(t) === "Today" ? longDate(t).replace("Today · ", "") : "") + "</span></div>";
-    if (todays.length) {
-      h += '<div class="cm-strip" role="list">';
-      todays.forEach(function (e) {
-        h += '<div class="cm-today card' + (e.rsvp ? " is-going" : "") + '" role="listitem">' +
-          '<button type="button" class="cm-today-top" data-action="open-event" data-id="' + esc(e.id) + '">' +
-            '<span class="cm-glyph" aria-hidden="true">' + glyph(e.hobbyId, 24) + "</span>" +
-            '<span class="cm-today-txt"><span class="cm-ev-title">' + esc(e.title) + "</span>" +
-            '<span class="small muted"><span class="num">' + esc(e.time) + "</span> · " + esc(e.place) + "</span></span>" +
-          "</button>";
-        if (e.checkedIn) {
-          h += '<span class="cm-done">' + icon("check", 16) + " Checked in · +" + CHECKIN_XP + " XP</span>";
-        } else if (e.canCheckIn) {
-          h += '<button type="button" class="btn primary sm block cm-checkin" data-action="checkin" data-id="' + esc(e.id) + '">' +
-            icon("pin", 16) + " Check in · +" + CHECKIN_XP + " XP</button>";
-        } else {
-          h += rsvpBtn(e, " block");
-        }
-        h += "</div>";
-      });
-      h += "</div>";
-    } else {
-      h += '<p class="muted small cm-none">Nothing on today for your hobbies. Upcoming meetups are below.</p>';
-    }
-    h += "</section>";
-
-    // Filters
-    h += '<section class="stack" aria-labelledby="cm-up-h">' +
-      '<h2 class="h2" id="cm-up-h">Upcoming</h2>' +
-      '<div class="cm-chips" role="group" aria-label="Filter events">' +
-      '<button type="button" class="chip' + (view.filter === "all" ? " on" : "") + '" data-action="filter" data-f="all" aria-pressed="' + (view.filter === "all") + '">All</button>';
-    mine.forEach(function (id) {
-      h += '<button type="button" class="chip' + (view.filter === id ? " on" : "") + '" data-action="filter" data-f="' + esc(id) + '" aria-pressed="' + (view.filter === id) + '">' + esc(hobbyName(id)) + "</button>";
-    });
-    h += '<button type="button" class="chip cm-chip-toggle' + (view.showAll ? " on" : "") + '" data-action="toggle-all" aria-pressed="' + view.showAll + '"' +
-      (view.filter !== "all" ? " disabled" : "") + ">" + (view.showAll ? icon("check", 14) + " " : "") + "Show all hobbies</button>";
-    h += "</div>";
-
-    if (!scoped.length) {
-      h += '<div class="empty cm-empty"><p class="h3">No meetups for ' + esc(view.filter === "all" ? "your hobbies" : hobbyName(view.filter)) + " in the next two weeks</p>" +
-        '<p class="muted small">Try showing all hobbies. Something nearby might be worth a first look.</p>' +
-        (view.showAll ? "" : '<button type="button" class="btn sm" data-action="toggle-all">Show all hobbies</button>') + "</div>";
-    } else {
-      var lastDay = null;
-      scoped.forEach(function (e) {
-        if (e.date !== lastDay) {
-          if (lastDay !== null) h += "</ul>";
-          h += '<h3 class="eyebrow cm-day">' + esc(dayLabel(e.date)) + "</h3><ul class=\"cm-evlist\">";
-          lastDay = e.date;
-        }
-        h += eventRow(e);
-      });
-      h += "</ul>";
-    }
-    h += "</section>";
-
-    // Your groups
-    if (catalogMine.length) {
-      h += '<section class="stack" aria-labelledby="cm-gr-h"><h2 class="h2" id="cm-gr-h">Your groups</h2><div class="cm-groups">';
-      catalogMine.forEach(function (id) {
-        var g = group(id);
-        var count = evs.filter(function (e) { return e.hobbyId === id; }).length;
-        h += '<button type="button" class="card tap cm-group" data-action="open-group" data-id="' + esc(id) + '">' +
-          '<span class="cm-glyph" aria-hidden="true">' + glyph(id, 26) + "</span>" +
-          '<span class="cm-group-txt"><span class="cm-ev-title">' + esc(g.name) + "</span>" +
-          '<span class="small muted"><span class="num">' + esc(g.members) + "</span> members · " +
-          count + (count === 1 ? " meetup" : " meetups") + " coming up</span></span>" +
-          '<span class="cm-chev" aria-hidden="true">' + icon("chevron-right", 20) + "</span></button>";
-      });
-      h += "</div></section>";
-    }
-
-    // Partner finder teaser
-    var duo = mine.filter(function (id) { return TWO_PLAYER.indexOf(id) >= 0; });
-    if (duo.length) {
-      var hid = duo[0];
-      var sample = hid === "chess"
-        ? { who: "Dev P.", text: "Casual player, around 1100 online. Looking for someone to play slow games with at the library on weekday evenings." }
-        : { who: "Jordan K.", text: "Beginner, can rally a bit. Free most Saturday mornings at Branch Brook Park courts. Happy to just hit for an hour." };
-      h += '<section class="card cm-partner" aria-labelledby="cm-pt-h">' +
-        '<div class="row"><span class="cm-glyph" aria-hidden="true">' + glyph(hid, 24) + "</span>" +
-        '<h2 class="h3" id="cm-pt-h">Looking for a ' + esc(hobbyName(hid).toLowerCase()) + " partner?</h2></div>" +
-        '<div class="cm-post cm-post-sample"><div class="row"><span class="cm-av" aria-hidden="true">' + esc(sample.who.charAt(0)) + "</span>" +
-        '<span class="cm-author">' + esc(sample.who) + '</span><span class="spacer"></span><span class="cm-tag">Sample post</span></div>' +
-        '<p class="cm-post-text">' + esc(sample.text) + "</p></div>" +
-        '<p class="small muted">Partner matching is coming. For now, meet people at a beginner-friendly event.</p>' +
-        '<button type="button" class="btn sm" data-action="open-group" data-id="' + esc(hid) + '">See the ' + esc(hobbyName(hid)) + " group</button>" +
-      "</section>";
-    }
-
-    h += '<p class="small muted cm-sample">All people, groups and events here are sample data.</p>';
-    h += "</div>";
-    return h;
+    var groups = view.category === 'groups';
+    return '<div class="screen cm cm-feed">' +
+      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span><button type="button" class="cm-self-avatar" data-action="go" data-to="showcase" aria-label="Change your avatar in Showcase">' + mii(selectedAvatar(), 60) + '</button></header>' +
+      '<div class="cm-categories" role="group" aria-label="Community categories">' + CATEGORIES.map(function (c) {
+        return '<button type="button" data-action="category" data-v="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '" class="' + (view.category === c[0] ? 'on' : '') + '"><span aria-hidden="true">' + icon(c[2], 23) + '</span>' + c[1] + '</button>';
+      }).join('') + '</div>' +
+      (view.category === 'all' ? '<label class="cm-search"><span aria-hidden="true">' + icon('search', 20) + '</span><span class="sr-only">Search all events</span>' +
+      '<input id="cm-search" type="search" placeholder="Search events or places…" value="' + esc(view.query) + '" maxlength="120" autocomplete="off"></label>' : '') +
+      '<div class="cm-dates" role="group" aria-label="Event dates"' + (groups ? ' hidden' : '') + '>' + DATE_FILTERS.map(function (d) {
+        return '<button type="button" data-action="date-filter" data-v="' + d[0] + '" aria-pressed="' + (view.when === d[0]) + '" class="' + (view.when === d[0] ? 'on' : '') + '">' + d[1] + '</button>';
+      }).join('') + '</div>' +
+      '<div class="cm-feed-label"><h2>' + (groups ? 'Your circles' : view.category === 'going' ? 'On your calendar' : view.category === 'for-you' ? 'For your hobbies' : 'Around you') + '</h2>' +
+      '<span class="small muted" role="status" aria-live="polite" aria-atomic="true" data-feed-status>' + feedStatus() + '</span></div>' +
+      '<div data-feed-results>' + feedResults() + '</div><p class="small muted cm-sample">Sample events · Real venues, sample characters</p></div>';
   }
 
   /* ---------------- group ---------------- */
@@ -294,7 +333,7 @@
 
     h += '<section class="stack" aria-labelledby="cm-gup-h"><h2 class="h2" id="cm-gup-h">Upcoming</h2>';
     if (evs.length) {
-      h += '<ul class="cm-evlist">' + evs.map(function (e) { return eventRow(e, { showDate: true }); }).join("") + "</ul>";
+      h += '<ul class="cm-event-feed">' + evs.map(eventCard).join("") + "</ul>";
     } else {
       h += '<p class="muted small">No meetups scheduled in the next two weeks.</p>';
     }
@@ -307,7 +346,7 @@
     if (posts.length) {
       h += '<ul class="cm-posts">';
       posts.forEach(function (p) {
-        h += '<li class="cm-post"><div class="row cm-post-head"><span class="cm-av" aria-hidden="true">' + esc(String(p.author || "?").charAt(0)) + "</span>" +
+        h += '<li class="cm-post"><div class="row cm-post-head"><span class="cm-av" aria-hidden="true">' + character(p.author || "?", 42) + "</span>" +
           '<span class="cm-author">' + esc(p.author) + '</span><span class="small muted">' + esc(ago(p.daysAgo)) + "</span></div>" +
           (p.sessionLabel ? '<span class="cm-tag">' + icon("clock", 14) + " " + esc(p.sessionLabel) + "</span>" : "") +
           '<p class="cm-post-text">' + esc(p.text) + "</p></li>";
@@ -334,6 +373,7 @@
     var left = Math.max(0, (+e.spots || 0) - nGoing);
     var h = '<div class="screen stack-lg cm">';
     h += '<div class="screen-head">' + back + '<span class="eyebrow">' + esc(hobbyName(e.hobbyId)) + " meetup</span></div>";
+    h += '<div class="cm-event-photo cm-venue-detail">' + venueCover(e) + '</div>' + venueCredit(e);
     h += '<header class="cm-ehead"><span class="cm-glyph cm-glyph-lg" aria-hidden="true">' + glyph(e.hobbyId, 36) + "</span>" +
       '<h1 class="h1">' + esc(e.title) + "</h1>" + levelPill(e.level) + "</header>";
 
@@ -357,7 +397,7 @@
         h += '<button type="button" class="btn primary block" data-action="checkin" data-id="' + esc(e.id) + '">' + icon("pin", 18) + " Check in · +" + CHECKIN_XP + " XP</button>";
       }
       h += '<button type="button" class="btn block cm-rsvp' + (e.rsvp ? " on" : "") + '" data-action="rsvp" data-id="' + esc(e.id) + '" aria-pressed="' + e.rsvp + '">' +
-        (e.rsvp ? icon("check", 18) + " Going · tap to cancel" : "RSVP · I'm going") + "</button>";
+        (e.rsvp ? icon("check", 18) + " Going · tap to cancel" : "I’m going") + "</button>";
       if (e.rsvp && !e.canCheckIn) {
         h += '<p class="small muted cm-hint">Check-in opens on the day. It\'s worth ' + CHECKIN_XP + " XP.</p>";
       } else if (!e.rsvp) {
@@ -387,6 +427,20 @@
     var host = root && (root.querySelector(".cm") || root);
     if (!host || host._cmBound) return;
     host._cmBound = true;
+    // Arrival is a one-shot RSVP transition, never replayed by filters or a later render.
+    arrivingEvent = null;
+    host.addEventListener("animationend", function (ev) {
+      if (ev.animationName === "cm-arrive" && ev.target.classList) ev.target.classList.remove("cm-arriving");
+    });
+    host.addEventListener("error", function (ev) {
+      if (ev.target.classList && ev.target.classList.contains("cm-venue-image")) ev.target.remove();
+    }, true);
+    var search = host.querySelector("#cm-search");
+    if (search) search.addEventListener("input", function () {
+      view.query = search.value;
+      host.querySelector("[data-feed-results]").innerHTML = feedResults();
+      host.querySelector("[data-feed-status]").textContent = feedStatus();
+    });
     host.addEventListener("click", function (ev) {
       var el = ev.target.closest ? ev.target.closest("[data-action]") : null;
       if (!el || !host.contains(el) || el.disabled) return;
@@ -397,8 +451,10 @@
       else if (a === "go-today") { SQUI.go("today"); }
       else if (a === "open-event") { SQUI.go("event", { id: id }); }
       else if (a === "open-group") { SQUI.go("group", { hobbyId: id }); }
-      else if (a === "filter") { view.filter = el.getAttribute("data-f") || "all"; SQUI.refresh(); }
-      else if (a === "toggle-all") { view.showAll = !view.showAll; SQUI.refresh(); }
+      else if (a === "date-filter") { view.when = el.getAttribute("data-v"); SQUI.refresh(); }
+      else if (a === "category") { view.category = el.getAttribute("data-v"); SQUI.refresh(); }
+      else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; SQUI.refresh(); }
+      else if (a === "open-member") { SQUI.go("member", {id:id}); }
       else if (a === "share") {
         if (isTracked(id)) SQUI.go("log", { id: id });
         else { SQUI.toast("Start " + hobbyName(id) + " first, then share a session"); SQUI.go("pack", { id: id }); }
@@ -406,7 +462,8 @@
       else if (a === "rsvp") {
         var e = findEvent(id);
         var on = SQ().toggleRsvp(id);
-        SQUI.toast(on ? "You're going" + (e ? " · " + e.title : "") : "RSVP removed");
+        arrivingEvent = on ? id : null;
+        SQUI.toast(on ? "You joined the group" + (e ? " · " + e.title : "") : "RSVP removed");
         SQUI.refresh();
       }
       else if (a === "checkin") {
@@ -423,5 +480,6 @@
 
   SQUI.register("community", { tab: "community", title: "Community", render: render, mount: mount });
   SQUI.register("group", { tab: "community", title: "Group", render: renderGroup, mount: mount });
+  SQUI.register("member", { tab: "community", title: "Member", render: renderMember, mount: mount });
   SQUI.register("event", { tab: "community", title: "Event", render: renderEvent, mount: mount });
 })();

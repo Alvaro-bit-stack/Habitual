@@ -1,0 +1,149 @@
+{
+  "branch-brook": {
+    "name": "Branch Brook Park",
+    "alt": "Branch Brook Park in Newark",
+    "file": "branch-brook.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Branchbrook_Park.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Branchbrook_Park.jpg",
+    "author": "User:EKoppel",
+    "license": "Public domain",
+    "licenseUrl": "",
+    "description": "",
+    "places": [
+      "Branch Brook Park, Lake Street entrance",
+      "Branch Brook Park tennis courts",
+      "Branch Brook Park, Cherry Blossom Welcome Center"
+    ]
+  },
+  "library": {
+    "name": "Newark Public Library",
+    "alt": "Exterior of the Newark Public Library Main Branch",
+    "file": "library.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Newark_Public_Library,_New_Jersey.jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Newark_Public_Library%2C_New_Jersey.jpg/960px-Newark_Public_Library%2C_New_Jersey.jpg",
+    "author": "Kenneth C. Zirkel",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "description": "Newark Public Library, 5 Washington Street, Newark, New Jersey",
+    "places": [
+      "Newark Public Library, Main Branch",
+      "Newark Public Library, Main Branch community room",
+      "Newark Public Library, Main Branch",
+      "Newark Public Library, Main Branch"
+    ]
+  },
+  "military": {
+    "name": "Military Park",
+    "alt": "Military Park and the surrounding Newark skyline",
+    "file": "military.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Military_Park_Newark_skyline.jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Military_Park_Newark_skyline.jpg/960px-Military_Park_Newark_skyline.jpg",
+    "author": "Atcovi",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "description": "Took this nice photo of Newark from a hotel",
+    "places": [
+      "Military Park chess tables"
+    ]
+  },
+  "riverbank": {
+    "name": "Riverbank Park",
+    "alt": "Path toward the track and field at Riverbank Park",
+    "file": "riverbank.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Riverbank_Park_Newark_td_(2024-05-11)_019.jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Riverbank_Park_Newark_td_%282024-05-11%29_019.jpg/960px-Riverbank_Park_Newark_td_%282024-05-11%29_019.jpg",
+    "author": "Tdorante10",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "description": "A path leading east towards the Track and Field from the main entrance at the center of Riverbank Park, along the Passaic River at Market Street and Ferguson Street in Ironbound, Newark, New Jersey.",
+    "places": [
+      "Riverbank Park turf field, Ironbound"
+    ]
+  },
+  "riverfront": {
+    "name": "Riverfront Park",
+    "alt": "Orange boardwalk at Newark Riverfront Park",
+    "file": "riverfront.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:OrangeBoardwalkRiverfrontParkNewark.jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/OrangeBoardwalkRiverfrontParkNewark.jpg/960px-OrangeBoardwalkRiverfrontParkNewark.jpg",
+    "author": "Djflem",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "description": "Orange Boardwalk Passaic Riverfront Park Newark",
+    "places": [
+      "Riverfront Park boardwalk",
+      "Riverfront Park, main entrance"
+    ]
+  },
+  "south-mountain": {
+    "name": "South Mountain Reservation",
+    "alt": "Hemlock Falls in South Mountain Reservation",
+    "file": "south-mountain.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Hemlock_Falls_SMR_Essex_NJ.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Hemlock_Falls_SMR_Essex_NJ.jpg",
+    "author": "Aplmike at English Wikipedia",
+    "license": "CC BY-SA 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+    "description": "Author:    Michael Kent\nSubject:   Hemlock Falls, South Mountain Reservation, Essex County, NJ\nLocation:  40 45 01 N, 74 17 19 W\n\nDate:      June 4, 2006",
+    "places": [
+      "South Mountain Reservation, Locust Grove trailhead"
+    ]
+  },
+  "weequahic": {
+    "name": "Weequahic Park",
+    "alt": "Pavilion in Weequahic Park",
+    "file": "weequahic.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Newarkmonument2013.jpg",
+    "download": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Newarkmonument2013.jpg",
+    "author": "Antonio cruz wiki",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "description": "A monument building in Weequahic Park of Newark, NJ.",
+    "places": [
+      "Weequahic Park athletic fields",
+      "Weequahic Park tennis courts"
+    ]
+  },
+  "eagle-rock": {
+    "name": "Eagle Rock Reservation",
+    "alt": "Lenape Trail entrance at Eagle Rock Reservation",
+    "file": "eagle-rock.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Lenape_Trail_Eagle_Rock_jeh.jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/Lenape_Trail_Eagle_Rock_jeh.jpg/960px-Lenape_Trail_Eagle_Rock_jeh.jpg",
+    "author": "Jim.henderson",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "description": "Looking east at Lenape Trail entrance on road north of restaurant in Eagle Rock reservation on a sunny midday.",
+    "places": [
+      "Eagle Rock Reservation, main lot"
+    ]
+  },
+  "ironbound": {
+    "name": "Ferry Street, Ironbound",
+    "alt": "Ferry Street in Newark’s Ironbound neighborhood",
+    "file": "ironbound.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Ferry_Street_in_Newark,_NJ_(13672529745).jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Ferry_Street_in_Newark%2C_NJ_%2813672529745%29.jpg/960px-Ferry_Street_in_Newark%2C_NJ_%2813672529745%29.jpg",
+    "author": "Paul Sableman",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "description": "Ferry Street in Newark, NJ",
+    "places": [
+      "Ironbound, Ferry Street at Penn Station"
+    ]
+  },
+  "museum": {
+    "name": "Newark Museum of Art",
+    "alt": "Exterior of the Newark Museum of Art",
+    "file": "museum.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:The_Newark_Museum_of_Art_(55175400957).jpg",
+    "download": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/The_Newark_Museum_of_Art_%2855175400957%29.jpg/960px-The_Newark_Museum_of_Art_%2855175400957%29.jpg",
+    "author": "ajay_suresh",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "description": "Newark, NJ",
+    "places": [
+      "Newark Museum of Art, sculpture garden"
+    ]
+  }
+}

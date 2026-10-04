@@ -1273,9 +1273,34 @@
       }));
       var search = host.querySelector('[data-role="discover-search"]');
       function stage() { return host.querySelector('[data-role="stage"]'); }
+      var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // Burst a blob like a soap bubble: droplets fly out from its rim while it fades.
+      function popBlob(b) {
+        if (reduceMotion) return;
+        var st = stage(), sr = st.getBoundingClientRect(), r = b.getBoundingClientRect();
+        var cx = r.left - sr.left + r.width / 2, cy = r.top - sr.top + r.height / 2;
+        var tint = getComputedStyle(b).getPropertyValue("--tint");
+        for (var i = 0; i < 12; i++) {
+          var a = (Math.PI * 2 * i) / 12 + Math.random() * .4;
+          var d = document.createElement("i");
+          d.className = "bl-drop";
+          var size = 5 + Math.random() * 8;
+          d.style.cssText = "left:" + (cx + Math.cos(a) * r.width / 2 - size / 2) + "px;top:" + (cy + Math.sin(a) * r.height / 2 - size / 2) + "px;width:" + size + "px;height:" + size +
+            "px;--dx:" + (Math.cos(a) * (26 + Math.random() * 30)) + "px;--dy:" + (Math.sin(a) * (26 + Math.random() * 30)) + "px;--tint:" + tint;
+          st.appendChild(d);
+          setTimeout(function (el) { el.remove(); }.bind(null, d), 650);
+        }
+      }
       function setOpen(view) {
+        var was = blobOpen;
         blobOpen = view;
         var st = stage();
+        st.querySelectorAll(".bl-blob").forEach(function (b) {
+          var id = b.getAttribute("data-cat");
+          if (id === "mine" || id === "search") return;
+          if (view && id !== view && !was) popBlob(b);
+          if (!view && was) { b.classList.add("reform"); setTimeout(function () { b.classList.remove("reform"); }, 650); }
+        });
         st.className = "bl-stage" + (view ? " has-open open-" + view : "");
         st.querySelectorAll(".bl-blob").forEach(function (b) {
           var id = b.getAttribute("data-cat"), on = id === view;

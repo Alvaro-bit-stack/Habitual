@@ -14,8 +14,15 @@
     var n = (sk && TIER_STARS[String(sk.tier).toLowerCase()]) || 0;
     if (!n) return "";
     return '<span class="sc-stars" role="img" aria-label="' + sk.tier.charAt(0).toUpperCase() + sk.tier.slice(1) + ", " + n + (n === 1 ? " star" : " stars") + '">' +
-      new Array(n + 1).join(icon("star", 15)) + "</span>";
+      new Array(n + 1).join(GEM) + "</span>";
   }
+  // Diamond star: icy gradient under alternating light/dark facets, a white glint.
+  var GEM = '<svg width="26" height="26" viewBox="2.5 2.5 19 18.5" aria-hidden="true"><defs><linearGradient id="sc-gem" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="#e8fbff"/><stop offset=".4" stop-color="#5cd0f5"/><stop offset=".7" stop-color="#8f7cf0"/><stop offset="1" stop-color="#2d7fd0"/></linearGradient></defs>' +
+    '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="url(#sc-gem)"/>' +
+    '<path d="M12 12.3L12 3.5L14.6 8.9z" fill="#fff" fill-opacity=".55"/><path d="M12 12.3L14.6 8.9L20.5 9.7z" fill="#1d4f8a" fill-opacity=".28"/><path d="M12 12.3L20.5 9.7L16.2 13.8z" fill="#fff" fill-opacity=".55"/><path d="M12 12.3L16.2 13.8L17.2 19.6z" fill="#1d4f8a" fill-opacity=".28"/><path d="M12 12.3L17.2 19.6L12 16.8z" fill="#fff" fill-opacity=".55"/><path d="M12 12.3L12 16.8L6.8 19.6z" fill="#1d4f8a" fill-opacity=".28"/><path d="M12 12.3L6.8 19.6L7.8 13.8z" fill="#fff" fill-opacity=".55"/><path d="M12 12.3L7.8 13.8L3.5 9.7z" fill="#1d4f8a" fill-opacity=".28"/><path d="M12 12.3L3.5 9.7L9.4 8.9z" fill="#fff" fill-opacity=".55"/><path d="M12 12.3L9.4 8.9L12 3.5z" fill="#1d4f8a" fill-opacity=".28"/>' +
+    '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="none" stroke="#1d4f8a" stroke-width=".9" stroke-linejoin="round"/>' +
+    '<path d="M10.2 7.6l.9-1.8" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>';
 
   // ponytail: everyone picks any character for now; map character to the signed-in teammate once accounts exist.
   var CHARACTERS = [

@@ -72,9 +72,6 @@
   }
   var STAGES = ["Seed", "Sprout", "Sapling", "Bloom", "Tree"];
   var CAT_LABEL = { creative: "Creative", active: "Active", technical: "Technical", social: "Social", relaxing: "Relaxing" };
-  var ACC = {
-    creative: "Beret", active: "Headband", technical: "Glasses", social: "Scarf", relaxing: "Sun hat"
-  };
   var SIZES = [
     { k: "tiny", label: "Tiny", xp: 10 },
     { k: "regular", label: "Regular", xp: 25 },
@@ -440,7 +437,6 @@
     { tab: "today", label: "Today", ic: "sun" },
     { tab: "discover", label: "Discover", ic: "compass" },
     { tab: "community", label: "Community", ic: "users" },
-    { tab: "showcase", label: "Showcase", ic: "star" },
     { tab: "me", label: "Me", ic: "user" }
   ];
   function renderNav(tab) {
@@ -578,6 +574,8 @@
       var prevFocus = document.activeElement;
       var prevKey = focusKey(prevFocus);
       root.appendChild(el);
+      // The 3D character (showcase.js) leaps in when it's available; otherwise the 2D Sprout stays.
+      if (!reduced && SQUI.celebrate) { try { SQUI.celebrate(el, { levelUp: !!(lvUp || hLvUp) }); } catch (e) { logErr(e); } }
       var btn = el.querySelector("[data-rw-close]");
       try { btn.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 
@@ -1045,81 +1043,7 @@
   });
 
   /* ------------------------------------------------------------------ ME */
-  var meUI = { confirmReset: false };
-  function renderMe() {
-    var S = sq(), p = S.player();
-    var achs = [];
-    try { achs = S.achievementsList() || []; } catch (e) { achs = []; }
-    var unlocked = achs.filter(function (a) { return a.unlocked; }).length;
-    var accOn = {};
-    (p.accessories || []).forEach(function (a) { accOn[a] = 1; });
-    var nudge = (S.state.user && S.state.user.nudgeTime) || "21:00";
-    var theme = getTheme();
-    var reset = meUI.confirmReset ?
-      '<div class="confirm-box"><div class="h3">Reset everything?</div><p class="small muted">This erases your hobbies, sessions, XP and achievements on this device. It can’t be undone.</p>' +
-      '<div class="row"><button type="button" class="btn sm danger-solid" data-action="reset-yes">Erase and start over</button><button type="button" class="btn sm" data-action="reset-no">Cancel</button></div></div>' :
-      '<button type="button" class="btn ghost block danger" data-action="reset">Reset everything</button>';
-
-    return '<div class="screen stack-lg sq-me">' +
-      '<div class="me-hero">' + mascot(p.stage, { mood: "happy", size: 168, accessories: p.accessories || [] }) +
-      '<div class="eyebrow">Your Sprout</div><h1 class="h1 me-stage">' + esc(p.stageName || STAGES[p.stage]) + "</h1>" +
-      '<div class="row" style="justify-content:center"><span class="h3">Level ' + p.level + '</span><span class="num small muted">' + p.xp + " XP</span></div>" +
-      '<div style="width:100%;max-width:300px"><div class="progress xp"><div class="progress-bar" style="width:' + pct(p.xpIntoLevel, p.xpForNext) + '%"></div></div>' +
-      '<div class="hb-xp num"><span>' + p.xpIntoLevel + " / " + p.xpForNext + "</span><span>to Lv " + (p.level + 1) + "</span></div></div>" +
-      (p.stage < 4 ? '<p class="small muted">Grows into ' + stageArticle(STAGES[p.stage + 1]) + STAGES[p.stage + 1] + " at level " + [3, 5, 8, 12][p.stage] + "</p>" : '<p class="small muted">Fully grown. Keep going.</p>') +
-      "</div>" +
-
-      '<section class="stack"><div><h2 class="h3">Accessories</h2><p class="small muted">Log 3 sessions in a category to unlock its accessory.</p></div>' +
-      '<div class="me-acc" style="justify-content:flex-start">' + Object.keys(ACC).map(function (k) {
-        return '<span class="acc-tag' + (accOn[k] ? " on" : "") + '">' + icon(accOn[k] ? k : "lock", 15) + esc(ACC[k]) + '<span class="muted" style="font-weight:500">· ' + esc(CAT_LABEL[k]) + "</span></span>";
-      }).join("") + "</div></section>" +
-
-      '<section class="me-stats">' +
-      '<div><span class="num">' + p.totalSessions + '</span><span class="eyebrow">Sessions</span></div>' +
-      '<div><span class="num">' + p.weekSessions + '</span><span class="eyebrow">This week</span></div>' +
-      '<div><span class="num">' + p.trackedCount + '</span><span class="eyebrow">Hobbies</span></div>' +
-      '<div><span class="num">' + p.xp + '</span><span class="eyebrow">Total XP</span></div></section>' +
-
-      '<button type="button" class="card tap row-link" data-action="achievements"><span class="ic">' + icon("trophy", 22) + "</span>" +
-      '<span style="flex:1;min-width:0"><span class="h3" style="display:block">Achievements</span><span class="small muted"><span class="num">' + unlocked + "</span> of <span class=\"num\">" + achs.length + "</span> unlocked</span></span>" +
-      icon("chevron-right", 20) + "</button>" +
-
-      '<section class="stack"><div><h2 class="h3">Tiny-win nudge</h2><p class="small muted">Pick when you usually reach for your phone. We’ll suggest a tiny win then. Reminders arrive in the full app; here we just save your time.</p></div>' +
-      '<div class="nudge-row"><label class="sr-only" for="me-nudge">Nudge time</label><input class="input" type="time" id="me-nudge" value="' + esc(nudge) + '">' +
-      '<button type="button" class="btn" data-action="nudge">Save</button></div></section>' +
-
-      '<section class="stack"><h2 class="h3">Appearance</h2><div class="seg" role="radiogroup" aria-label="Theme">' +
-      [["system", "System"], ["light", "Light"], ["dark", "Dark"]].map(function (o) {
-        return '<button type="button" role="radio" aria-checked="' + (theme === o[0]) + '" class="' + (theme === o[0] ? "on" : "") + '" data-action="theme" data-t="' + o[0] + '">' + o[1] + "</button>";
-      }).join("") + "</div></section>" +
-
-      '<section class="stack"><hr class="sq-dashrule"><button type="button" class="btn block" data-action="seed">Load sample data</button>' + reset + "</section>" +
-      "</div>";
-  }
-  register("me", {
-    tab: "me", title: "Me",
-    render: renderMe,
-    mount: function (root) {
-      onClick(root, {
-        achievements: function () { go("achievements"); },
-        nudge: function () {
-          var v = (root.querySelector("#me-nudge") || {}).value;
-          if (!v) { toast("Pick a time first"); return; }
-          sq().state.user.nudgeTime = v;
-          sq().save();
-          toast("Nudge time saved for " + v);
-        },
-        theme: function (b) { setTheme(b.getAttribute("data-t")); refresh(); },
-        seed: function () { sq().seedDemo(); go("today", {}, { reset: true }); toast("Sample data loaded"); },
-        reset: function () { meUI.confirmReset = true; refresh(); var c = mainEl().querySelector("[data-action=reset-no]"); if (c) c.focus(); },
-        "reset-no": function () { meUI.confirmReset = false; refresh(); },
-        "reset-yes": function () { meUI.confirmReset = false; sq().reset(); go("welcome", {}, { reset: true }); }
-      });
-    }
-  });
-
   /* ------------------------------------------------------------------ ACHIEVEMENTS */
-  var ACH_CATS = [["starter", "Getting started"], ["consistency", "Consistency"], ["comeback", "Comebacks"], ["skill", "Skills"], ["social", "Community"]];
   function fmtLong(s) { var d = parseDate(s); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
   register("achievements", {
     tab: "me", title: "Achievements",
@@ -1127,20 +1051,18 @@
       var list = [];
       try { list = sq().achievementsList() || []; } catch (e) { list = []; }
       var n = list.filter(function (a) { return a.unlocked; }).length;
-      var known = {};
-      ACH_CATS.forEach(function (c) { known[c[0]] = 1; });
-      var cats = ACH_CATS.slice();
-      list.forEach(function (a) { if (a.category && !known[a.category]) { known[a.category] = 1; cats.push([a.category, a.category]); } });
-      var groups = cats.map(function (c) {
-        var items = list.filter(function (a) { return (a.category || "starter") === c[0]; });
-        if (!items.length) return "";
-        return '<section class="stack"><h2 class="eyebrow">' + esc(c[1]) + '</h2><div class="ach-grid">' + items.map(function (a) {
-          var on = !!a.unlocked;
-          return '<div class="ach' + (on ? "" : " locked") + '"><span class="ach-badge">' + icon(on ? "trophy" : "lock", 20) + "</span>" +
-            '<span class="ach-name">' + esc(a.name) + '</span><span class="ach-desc">' + esc(a.desc) + "</span>" +
-            (on ? '<span class="ach-date">Earned ' + esc(fmtLong(a.unlocked)) + "</span>" : '<span class="ach-date">Locked</span>') + "</div>";
-        }).join("") + "</div></section>";
-      }).join("");
+      var card = function (a) {
+        var on = !!a.unlocked;
+        return '<div class="ach' + (on ? "" : " locked") + '"><span class="ach-badge">' + icon(on ? "trophy" : "lock", 20) + "</span>" +
+          '<span class="ach-name">' + esc(a.name) + '</span><span class="ach-desc">' + esc(a.desc) + "</span>" +
+          (on ? '<span class="ach-date">Earned ' + esc(fmtLong(a.unlocked)) + "</span>" : "") + "</div>";
+      };
+      var earned = list.filter(function (a) { return a.unlocked; }).sort(function (x, y) { return x.unlocked < y.unlocked ? 1 : x.unlocked > y.unlocked ? -1 : 0; });
+      var locked = list.filter(function (a) { return !a.unlocked; });
+      var groups =
+        '<section class="stack"><h2 class="h3">Earned</h2>' + (earned.length ? '<div class="ach-grid">' + earned.map(card).join("") + "</div>" :
+          '<p class="small muted">Nothing yet. Log your first session to earn one.</p>') + "</section>" +
+        (locked.length ? '<section class="stack"><div><h2 class="h3">Still to earn</h2><p class="small muted">Each one says how to get it.</p></div><div class="ach-grid">' + locked.map(card).join("") + "</div></section>" : "");
       return '<div class="screen stack-lg sq-ach"><div class="screen-head">' + backBtn() +
         '<div><h1 class="h2">Achievements</h1><div class="small muted"><span class="num">' + n + "</span> of <span class=\"num\">" + list.length + "</span> unlocked</div></div></div>" +
         (groups || '<div class="empty">No achievements yet.</div>') + "</div>";
@@ -1177,5 +1099,6 @@
   SQUI.mascot = mascot;
   SQUI.money = money;
   SQUI.setTheme = setTheme;
+  SQUI.getTheme = getTheme;
   SQUI.current = function () { return current ? { name: current.name, params: current.params } : null; };
 })();

@@ -8,7 +8,7 @@ if (app && !/^[a-z0-9-]{2,60}$/.test(app)) throw new Error('APP_IDENTITY must be
 const store=new SqlStore();
 const pool=await store.pool();
 try {
-  for (const file of ['001-initial.sql','002-friends-paths.sql']) await pool.request().batch(await readFile(new URL('../sql/'+file,import.meta.url),'utf8'));
+  for (const file of ['001-initial.sql','002-friends-paths.sql','003-profile-hobbies.sql']) await pool.request().batch(await readFile(new URL('../sql/'+file,import.meta.url),'utf8'));
   if (app) {
     await pool.request().batch(`IF DATABASE_PRINCIPAL_ID('${app}') IS NULL CREATE USER [${app}] FROM EXTERNAL PROVIDER;`);
     for (const [table, rights] of Object.entries(GRANTS)) await pool.request().batch(`GRANT ${rights} ON dbo.${table} TO [${app}];`);

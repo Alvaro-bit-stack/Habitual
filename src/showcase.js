@@ -355,7 +355,11 @@
         var on = c.id === cur;
         return '<button type="button" role="radio" aria-checked="' + on + '" class="sc-pick' + (on ? " on" : "") + '" data-action="pick" data-id="' + c.id + '">' +
           '<span class="cm-mii" data-character="' + c.id + '" style="--mii-size:52px" aria-hidden="true"></span><span>' + esc(c.name) + "</span></button>";
-      }).join("") + "</div></details></section>" +
+      }).join("") + "</div></details>" +
+      // Friends: accepted friendships only; tap for your code, requests and shared hobbies.
+      '<button type="button" class="sc-friends" data-action="friends"><span class="sc-friends-ic" aria-hidden="true">' + icon("users", 20) + "</span>" +
+      '<span class="sc-choose-l">Friends</span><span class="sc-choose-v" data-role="friend-count">' + friendCountText(cachedFriendList()) + "</span>" +
+      '<span class="sc-choose-c" aria-hidden="true">' + icon("chevron-right", 18) + "</span></button></section>" +
 
       // Hobbies
       '<section class="stack"><h2 class="h3">Your hobbies</h2>' +
@@ -408,18 +412,127 @@
     return "My Sidequest progress. Level " + p.level + ", " + p.totalSessions + " sessions.\n" + lines.join("\n");
   }
 
+  // ---------------------------------------------------------------- friends
+  // Friends live in the cloud account (backend /api/friends). Only accepted friendships count.
+  var fr = { data: null, at: 0, err: "", confirm: null };
+  function cloud() { return G.SQCloud; }
+  function cachedFriendList() { var C = cloud(); return fr.data || (C && C.signedIn && C.signedIn() ? C.cachedFriends() : null); }
+  function friendCountText(d) {
+    if (!d) return "Add friends";
+    return d.friends.length + (d.friends.length === 1 ? " friend" : " friends") + (d.incoming.length ? " · " + d.incoming.length + " new" : "");
+  }
+  function refreshFriends(done, force) {
+    var C = cloud();
+    if (!C || !C.signedIn || !C.signedIn() || (!force && Date.now() - fr.at < 2000)) return;
+    fr.at = Date.now();
+    C.loadFriends().then(function (d) { if (d) { fr.data = d; fr.err = ""; done(d); } }, function (e) { fr.err = e.message || "Couldn’t load friends"; done(fr.data); });
+  }
+  function mii(id, size) { return '<span class="cm-mii" data-character="' + esc(id || "neo") + '" style="--mii-size:' + size + 'px" aria-hidden="true"></span>'; }
+  function myHobbyKeys() {
+    var S = sq(), keys = {};
+    S.state.tracked.forEach(function (t) { var h = S.getHobby(t.hobbyId); keys[t.hobbyId] = 1; if (h) keys["n:" + h.name.toLowerCase()] = 1; });
+    return keys;
+  }
+  function friendCard(f, mine) {
+    var hobbies = f.hobbies || [], shared = hobbies.filter(function (h) { return mine[h.id] || mine["n:" + h.name.toLowerCase()]; });
+    var other = hobbies.filter(function (h) { return shared.indexOf(h) < 0; }).slice(0, 3);
+    var lv = sq().levelFor(f.xp || 0).level;
+    return '<li class="card sc-friend">' + mii(f.character, 44) + '<div class="sc-friend-body"><div class="row"><span class="h3">' + esc(f.name) + '</span><span class="sc-lv num">Lv ' + lv + "</span></div>" +
+      (shared.length ? '<div class="sc-shared"><span class="small muted">You both do</span>' + shared.map(function (h) { return '<span class="sc-chip">' + SQUI.hobbyIcon(h.id, 16) + esc(h.name) + "</span>"; }).join("") + "</div>"
+        : '<p class="small muted">No shared hobbies yet</p>') +
+      (other.length ? '<p class="small muted">Also into ' + other.map(function (h) { return esc(h.name); }).join(", ") + "</p>" : "") +
+      (fr.confirm === f.code ? '<div class="row"><button type="button" class="btn sm danger-solid" data-action="fr-remove-yes" data-code="' + esc(f.code) + '">Remove friend</button><button type="button" class="btn sm" data-action="fr-remove-no">Keep</button></div>'
+        : '<button type="button" class="btn ghost sm sc-friend-x" data-action="fr-remove" data-code="' + esc(f.code) + '" aria-label="Remove ' + esc(f.name) + '">' + icon("close", 16) + "</button>") +
+      "</div></li>";
+  }
+  function renderFriends() {
+    var S = sq(), C = cloud();
+    var head = '<div class="screen-head"><button type="button" class="back-btn" data-action="back" aria-label="Back">' + icon("chevron-left", 22) + '</button><h1 class="h2">Friends</h1></div>';
+    function note(title, text, cta) { return '<div class="screen stack-lg sq-friends">' + head + '<div class="empty stack"><div class="h3">' + title + '</div><p class="small">' + text + "</p>" + (cta || "") + "</div></div>"; }
+    if (S.isGuest && S.isGuest()) return note("Friends need an account", "Guest mode doesn’t keep anything, so friends aren’t available. Choose Get started next time to save your progress, then sign in.");
+    if (!C || !C.enabled()) return note("Friends need the online app", "Open Hobitual at hobitual.club to add friends.");
+    if (!C.signedIn()) return note("Sign in to add friends", "Friends are linked to your account. Sign in with any email. We send you a 6-digit code, no password.",
+      '<div class="row" style="justify-content:center"><button type="button" class="btn primary" data-action="fr-signin">Sign in with email</button></div>');
+    var d = cachedFriendList() || { code: "", friends: [], incoming: [], outgoing: [] }, mine = myHobbyKeys();
+    return '<div class="screen stack-lg sq-friends">' + head +
+      '<section class="card stack sc-code"><span class="small muted">Your friend code</span><span class="sc-code-v num" aria-label="Your friend code ' + esc(d.code.split("").join(" ")) + '">' + esc(d.code || "········") + "</span>" +
+      '<div class="row"><button type="button" class="btn sm" data-action="fr-copy">Copy</button><button type="button" class="btn sm" data-action="fr-share">' + icon("spark", 16) + " Share</button></div>" +
+      '<p class="small muted">Send it to a friend. You’re friends once one of you adds the other’s code and the other accepts.</p></section>' +
+      '<form class="stack" data-role="fr-add"><label class="h3" for="fr-code">Add a friend</label><div class="nudge-row">' +
+      '<input class="input" id="fr-code" name="code" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Their 8-character code">' +
+      '<button type="submit" class="btn primary">Send</button></div></form>' +
+      (fr.err ? '<p class="small" role="alert">' + esc(fr.err) + "</p>" : "") +
+      (d.incoming.length ? '<section class="stack"><h2 class="h3">Requests</h2><ul class="stack sc-friend-list">' + d.incoming.map(function (f) {
+        return '<li class="card sc-friend">' + mii(f.character, 40) + '<div class="sc-friend-body"><span class="h3">' + esc(f.name) + '</span><span class="small muted">wants to be friends</span>' +
+          '<div class="row"><button type="button" class="btn sm primary" data-action="fr-accept" data-code="' + esc(f.code) + '">Accept</button><button type="button" class="btn sm" data-action="fr-decline" data-code="' + esc(f.code) + '">Decline</button></div></div></li>';
+      }).join("") + "</ul></section>" : "") +
+      '<section class="stack"><h2 class="h3">Your friends <span class="small muted num">' + d.friends.length + "</span></h2>" +
+      (d.friends.length ? '<ul class="stack sc-friend-list">' + d.friends.map(function (f) { return friendCard(f, mine); }).join("") + "</ul>"
+        : '<p class="small muted">No friends yet. Share your code to get started.</p>') + "</section>" +
+      (d.outgoing.length ? '<section class="stack"><h2 class="h3">Sent</h2><ul class="stack sc-friend-list">' + d.outgoing.map(function (f) {
+        return '<li class="card sc-friend">' + mii(f.character, 36) + '<div class="sc-friend-body"><span class="h3">' + esc(f.name) + '</span><span class="small muted">Waiting for them to accept</span></div>' +
+          '<button type="button" class="btn ghost sm" data-action="fr-cancel" data-code="' + esc(f.code) + '">Cancel</button></li>';
+      }).join("") + "</ul></section>" : "") +
+      "</div>";
+  }
+  SQUI.register("friends", {
+    tab: "me", title: "Friends",
+    render: renderFriends,
+    mount: function (root) {
+      var host = root.firstElementChild, C = cloud();
+      refreshFriends(function () { SQUI.refresh(); });
+      function act(promise, ok) {
+        promise.then(function (r) { fr.err = ""; fr.confirm = null; if (ok) ok(r); refreshFriends(function () { SQUI.refresh(); }, true); },
+          function (e) { fr.err = e.message || "Something went wrong"; SQUI.refresh(); });
+      }
+      host.addEventListener("submit", function (ev) {
+        if (!ev.target.matches('[data-role="fr-add"]')) return;
+        ev.preventDefault();
+        var code = String(new FormData(ev.target).get("code") || "").toUpperCase().replace(/[\s-]/g, "");
+        if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) { fr.err = "Friend codes are 8 letters and numbers."; SQUI.refresh(); return; }
+        act(C.addFriend(code), function (r) { SQUI.toast(r.status === "friends" ? "You’re now friends" : "Request sent"); });
+      });
+      host.addEventListener("click", function (ev) {
+        var b = ev.target.closest && ev.target.closest("[data-action]");
+        if (!b) return;
+        var a = b.getAttribute("data-action"), code = b.getAttribute("data-code"), d = cachedFriendList();
+        if (a === "back") SQUI.back();
+        else if (a === "fr-signin") {
+          SQUI.go("me", {}, { reset: true });
+          setTimeout(function () { if (C.beginSignIn()) { var p = document.querySelector("[data-cloud-panel]"); if (p) p.scrollIntoView({ block: "center" }); var i = document.querySelector("[data-cloud-email]"); if (i) i.focus(); } }, 60);
+        }
+        else if (a === "fr-copy" && d && d.code) {
+          if (navigator.clipboard) navigator.clipboard.writeText(d.code).then(function () { SQUI.toast("Code copied"); }, function () { SQUI.toast("Couldn’t copy"); });
+        }
+        else if (a === "fr-share" && d && d.code) {
+          var text = "Add me on Hobitual, where we make our hobbies a habit! My friend code is " + d.code + ". https://hobitual.club";
+          if (navigator.share) navigator.share({ title: "Add me on Hobitual", text: text }).catch(function () { /* cancelled */ });
+          else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { SQUI.toast("Invite copied"); });
+        }
+        else if (a === "fr-accept") act(C.answerFriend(code, true), function () { SQUI.toast("You’re now friends"); });
+        else if (a === "fr-decline") act(C.answerFriend(code, false));
+        else if (a === "fr-cancel") act(C.removeFriend(code));
+        else if (a === "fr-remove") { fr.confirm = code; SQUI.refresh(); }
+        else if (a === "fr-remove-no") { fr.confirm = null; SQUI.refresh(); }
+        else if (a === "fr-remove-yes") act(C.removeFriend(code), function () { SQUI.toast("Friend removed"); });
+      });
+    }
+  });
+
   SQUI.register("me", {
     tab: "me", title: "Me",
     render: render,
     mount: function (root) {
       var host = root.firstElementChild; // #app-main persists across screens; bind to this screen's own node
       mountStage(host.querySelector(".sc-stage"), characterId());
+      refreshFriends(function (d) { var el = host.querySelector('[data-role="friend-count"]'); if (el) el.textContent = friendCountText(d); });
       host.addEventListener("click", function (ev) {
         var b = ev.target.closest && ev.target.closest("[data-action]");
         if (!b) return;
         var a = b.getAttribute("data-action"), S = sq();
         if (a === "pick") { S.state.user.character = b.getAttribute("data-id"); S.save(); SQUI.refresh(); }
         else if (a === "achievements") SQUI.go("achievements");
+        else if (a === "friends") SQUI.go("friends");
         else if (a === "hobby") SQUI.go("hobby", { id: b.getAttribute("data-id") });
         else if (a === "discover") SQUI.go("discover", {}, { reset: true });
         else if (a === "share") {

@@ -37,7 +37,7 @@ export class FileStore {
   // ---- friends ----
   profile(user,fields){return this.change(()=>{
     const p=this.data.profiles;let me=p[user.id];
-    if(!me){let code;do code=newCode();while(Object.values(p).some(x=>x.code===code));me=p[user.id]={code,name:user.name,character:null,xp:0};}
+    if(!me){let code;do code=newCode();while(Object.values(p).some(x=>x.code===code));me=p[user.id]={code,name:user.name,character:null,xp:0,hobbies:[]};}
     if(fields)Object.assign(me,fields);
     return me;
   });}
@@ -45,7 +45,7 @@ export class FileStore {
   async friends(id){await this.queue;const out={friends:[],incoming:[],outgoing:[]};
     for(const [k,f] of Object.entries(this.data.friendships)){const [a,b]=k.split('|');if(a!==id&&b!==id)continue;
       const p=this.data.profiles[a===id?b:a],card={code:p.code,name:p.name,character:p.character};
-      if(f.accepted)out.friends.push({...card,xp:p.xp});else(f.by===id?out.outgoing:out.incoming).push(card);}
+      if(f.accepted)out.friends.push({...card,xp:p.xp,hobbies:p.hobbies||[]});else(f.by===id?out.outgoing:out.incoming).push(card);}
     return structuredClone(out);}
   requestFriend(id,code){return this.change(()=>{
     const other=this.byCode(friendCode(code));if(!other)throw new ApiError(404,'No one has that friend code');

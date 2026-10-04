@@ -60,3 +60,17 @@
 .sc-choose[open] .sc-choose-c { transform: rotate(90deg); }
 .sc-choose .sc-picker { padding: 0 10px 10px; max-width: none; }
 @media (prefers-reduced-motion: reduce) { .sc-choose-c { transition: none; } }
+
+/* Friends row (under Character) and the Friends screen */
+.sc-friends { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 420px; min-height: 48px; padding: 6px 12px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sc-friends:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.sc-friends-ic { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); }
+.sc-code { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.sc-code-v { font-size: 30px; font-weight: 800; letter-spacing: 4px; }
+.sc-friend-list { list-style: none; margin: 0; padding: 0; }
+.sc-friend { position: relative; display: flex; align-items: flex-start; gap: 12px; }
+.sc-friend-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; }
+.sc-friend-body .row { gap: 8px; }
+.sc-friend-x { position: absolute; top: 8px; right: 8px; }
+.sc-shared { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--leaf) 18%, var(--surface)); color: var(--ink); font-size: 13px; font-weight: 700; }

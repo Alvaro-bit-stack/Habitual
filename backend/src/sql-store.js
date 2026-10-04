@@ -8,6 +8,7 @@ export function sqlConfig(env = process.env) {
     authentication:{type:'azure-active-directory-default',options:env.AZURE_CLIENT_ID ? {clientId:env.AZURE_CLIENT_ID} : {}},
     options:{encrypt:true,trustServerCertificate:false}, pool:{max:5,min:0,idleTimeoutMillis:30000},requestTimeout:15000};
 }
+const parseHobbies = text => { try { const v = JSON.parse(text || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
 export class SqlStore {
   constructor(config = sqlConfig()) { this.config=config; this.pending=null; }
   async pool() {
@@ -65,7 +66,7 @@ export class SqlStore {
   async profile(user, fields) {
     return this.transaction(async tx=>{
       const q=()=>new sql.Request(tx).input('id',sql.VarChar(64),user.id);
-      let me=(await q().query('SELECT Code,Name,Character,Xp FROM dbo.Profiles WITH (UPDLOCK,HOLDLOCK) WHERE UserId=@id')).recordset[0];
+      let me=(await q().query('SELECT Code,Name,Character,Xp,Hobbies FROM dbo.Profiles WITH (UPDLOCK,HOLDLOCK) WHERE UserId=@id')).recordset[0];
       if (!me) {
         for (let tries=0;;tries++) {
           const code=newCode();
@@ -75,20 +76,20 @@ export class SqlStore {
         }
       }
       if (fields) {
-        await q().input('name',sql.NVarChar(100),fields.name).input('ch',sql.VarChar(20),fields.character).input('xp',sql.Int,fields.xp)
-          .query('UPDATE dbo.Profiles SET Name=@name,Character=@ch,Xp=@xp,UpdatedAt=SYSUTCDATETIME() WHERE UserId=@id');
+        await q().input('name',sql.NVarChar(100),fields.name).input('ch',sql.VarChar(20),fields.character).input('xp',sql.Int,fields.xp).input('hb',sql.NVarChar(4000),JSON.stringify(fields.hobbies||[]))
+          .query('UPDATE dbo.Profiles SET Name=@name,Character=@ch,Xp=@xp,Hobbies=@hb,UpdatedAt=SYSUTCDATETIME() WHERE UserId=@id');
         me={...me,Name:fields.name,Character:fields.character,Xp:fields.xp};
       }
       return {code:me.Code,name:me.Name,character:me.Character,xp:me.Xp};
     });
   }
   async friends(id) {
-    const rows=(await (await this.pool()).request().input('id',sql.VarChar(64),id).query(`SELECT f.Accepted,f.RequestedBy,p.Code,p.Name,p.Character,p.Xp
+    const rows=(await (await this.pool()).request().input('id',sql.VarChar(64),id).query(`SELECT f.Accepted,f.RequestedBy,p.Code,p.Name,p.Character,p.Xp,p.Hobbies
       FROM dbo.Friendships f JOIN dbo.Profiles p ON p.UserId=CASE WHEN f.UserA=@id THEN f.UserB ELSE f.UserA END
       WHERE f.UserA=@id OR f.UserB=@id ORDER BY p.Name`)).recordset;
     const out={friends:[],incoming:[],outgoing:[]};
     for (const r of rows) { const card={code:r.Code,name:r.Name,character:r.Character};
-      if (r.Accepted) out.friends.push({...card,xp:r.Xp}); else (r.RequestedBy===id?out.outgoing:out.incoming).push(card); }
+      if (r.Accepted) out.friends.push({...card,xp:r.Xp,hobbies:parseHobbies(r.Hobbies)}); else (r.RequestedBy===id?out.outgoing:out.incoming).push(card); }
     return out;
   }
   async otherId(tx, code) {

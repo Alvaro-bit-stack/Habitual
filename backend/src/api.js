@@ -1,7 +1,13 @@
-import {ApiError, validateState, validateEvent, characters} from './validation.js';
+import {ApiError, validateState, validateEvent, characters, hobbyNames} from './validation.js';
 import {generatePath, validatePathRequest} from './paths.js';
 const DAY = 86400000, AI_DAILY = Number(process.env.AI_DAILY_LIMIT) || 10;
 const response = (status, data) => ({status, jsonBody:data, headers:{'Cache-Control':'no-store','Content-Type':'application/json','X-Content-Type-Options':'nosniff'}});
+// The hobby list friends can see: tracked hobbies by id and display name, capped and trimmed.
+export function sharedHobbies(state) {
+  const custom = Object.fromEntries(state.custom.map(h => [h.id, h.name]));
+  return state.tracked.slice(0, 20).map(t => ({id:String(t.hobbyId).slice(0, 40), name:String(hobbyNames[t.hobbyId] || custom[t.hobbyId] || '').trim().slice(0, 40)}))
+    .filter(h => h.name);
+}
 export function createApi(store, authenticate, {makePath = generatePath, login = null} = {}) {
   return async (request, context = {error:()=>{}}) => {
     try {
@@ -29,7 +35,7 @@ export function createApi(store, authenticate, {makePath = generatePath, login =
         const saved = await store.putState(user.id, version, data);
         if (!saved) return response(409, {error:'Progress changed on another device', remote:await store.getState(user.id)});
         // What friends see. Best effort: the progress is already saved, and the next save retries this.
-        try { await store.profile(user, {name:data.user.name.trim().slice(0,100) || 'Member', character:characters.includes(data.user.character) ? data.user.character : null, xp:Math.min(2147483647, Math.floor(data.user.xp))}); }
+        try { await store.profile(user, {name:data.user.name.trim().slice(0,100) || 'Member', character:characters.includes(data.user.character) ? data.user.character : null, xp:Math.min(2147483647, Math.floor(data.user.xp)), hobbies:sharedHobbies(data)}); }
         catch (e) { context.error('Profile sync failed', e.name); }
         return response(200, saved);
       }

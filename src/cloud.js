@@ -61,7 +61,11 @@
   }
   async function finishSignIn(){
     var user=await request('/me');
+    // A brand-new account (no cloud copy, nothing on this device for it) starts from this device's
+    // progress, so signing in never looks like losing your hobbies. Existing accounts keep their own.
+    var fresh=!read('habitual.account.'+user.id,null),device=read('sidequest.v1',null);
     if(!owner||owner.id!==user.id)activate(user);else{owner=user;write('habitual.cloud.owner',user);}
+    if(fresh&&device&&device.onboarded){var remote=await request('/me/state');if(remote.revision===0){backup(persisted());replace(device);}}
     refresh();await sync();
   }
   async function loadEvents(){
@@ -178,5 +182,17 @@
   G.addEventListener('focus',function(){sync();});
   // Sync occasionally while open; no background permission or hidden polling service.
   setInterval(function(){if(document.visibilityState==='visible'&&owner)sync();},30000);
-  G.SQCloud={init:init,panel:panel,attend:attend,sync:sync};
+  // Friends (Me tab). The last list is cached per account so the count shows offline.
+  function signedIn(){return !!(owner&&config.enabled&&(config.localDemo||session()));}
+  async function loadFriends(){
+    var user=owner;var data=await request('/friends');
+    if(!owner||owner.id!==user.id)return null;
+    write(key+'.friends',data);return data;
+  }
+  function beginSignIn(){if(!config.enabled)return false;stage='email';tell(status);return true;}
+  G.SQCloud={init:init,panel:panel,attend:attend,sync:sync,signedIn:signedIn,enabled:function(){return !!config.enabled;},beginSignIn:beginSignIn,
+    cachedFriends:function(){return owner?read(key+'.friends',null):null;},loadFriends:loadFriends,
+    addFriend:function(code){return request('/friends','POST',{code:code});},
+    answerFriend:function(code,accept){return request('/friends/'+encodeURIComponent(code),'PUT',{accept:accept});},
+    removeFriend:function(code){return request('/friends/'+encodeURIComponent(code),'DELETE');}};
 })(typeof globalThis!=='undefined'?globalThis:window);

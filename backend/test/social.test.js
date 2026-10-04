@@ -32,9 +32,13 @@ test('two people adding each other become friends; friends see the saved name an
   const bob = await codeOf(api, 'bob'), alice = await codeOf(api, 'alice');
   await call(api, 'friends', 'POST', {code:bob});
   assert.equal((await call(api, 'friends', 'POST', {code:alice}, 'bob')).jsonBody.status, 'friends');
-  const s = {version:1, onboarded:true, user:{name:'Alice R', xp:120, character:'avatar2'}, tracked:[], custom:[], sessions:[], achievements:{}, rsvps:[], checkins:[]};
+  const s = {version:1, onboarded:true, user:{name:'Alice R', xp:120, character:'avatar2'}, tracked:[{hobbyId:'guitar', goal:2, xp:0, milestones:[]}, {hobbyId:'c-knit', goal:2, xp:0, milestones:[]}], custom:[{id:'c-knit', name:'Knitting'}], sessions:[], achievements:{}, rsvps:[], checkins:[]};
   assert.equal((await api(new Request('https://habitual.test/api/me/state', {method:'PUT', headers:{Authorization:'alice', 'If-Match':'"0"'}, body:JSON.stringify(s)}))).status, 200);
-  assert.deepEqual((await call(api, 'friends', 'GET', undefined, 'bob')).jsonBody.friends[0], {code:alice, name:'Alice R', character:'avatar2', xp:120});
+  assert.deepEqual((await call(api, 'friends', 'GET', undefined, 'bob')).jsonBody.friends[0], {code:alice, name:'Alice R', character:'avatar2', xp:120, hobbies:[{id:'guitar', name:'Guitar'}, {id:'c-knit', name:'Knitting'}]});
+  // Requests that are not accepted never show hobbies or XP.
+  const carol = await codeOf(api, 'carol');
+  await call(api, 'friends', 'POST', {code:carol});
+  assert.deepEqual(Object.keys((await call(api, 'friends')).jsonBody.outgoing[0]).sort(), ['character', 'code', 'name']);
 });
 
 test('guided paths: catalog hobbies are cached, custom names are not, and the daily budget holds', async () => {

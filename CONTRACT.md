@@ -422,6 +422,19 @@ appearance, sample data, two-step reset). Character customization is paused unti
   character in via `SQUI.celebrate`. The model is preloaded 2 s after startup so the first one is instant.
 - **three.js r147** loads from jsDelivr (on the Me tab or by the preload) (see "Always online" in section 1).
 
+**Friends (built):** a Friends row sits under Character, above Your hobbies, showing the count of
+accepted friends (and new requests). It opens the `friends` screen (`src/showcase.js`):
+- your 8-character friend code, with Copy and Share buttons;
+- add by code;
+- accept or decline incoming requests, and cancel sent ones;
+- friends with their character, level and "You both do" shared hobbies;
+- remove a friend.
+
+It uses `SQCloud.loadFriends / addFriend / answerFriend / removeFriend` (`src/cloud.js`) and the
+backend `/api/friends`. A friendship counts only after the other person accepts. Friends need
+an account: guests and signed-out users see a prompt to sign in with email. On the first
+sign-in to a brand-new account, this device's progress moves into it.
+
 ## 7. Working together
 
 - `main` is protected: one short-lived branch per task, small PRs, one approval, tests passing.

@@ -11,8 +11,11 @@
   var CHARACTERS = [
     { id: "neo", name: "Neo" },
     { id: "adrian", name: "Adrian" },
-    { id: "alvaro", name: "Alvaro" }
-  ];
+    { id: "alvaro", name: "Alvaro" },
+    { id: "avatar1", name: "Lizzy" },
+    { id: "avatar2", name: "Gracie" },
+    { id: "avatar3", name: "Olivia" }
+  ]; // also listed in shell.js (CHAR_NAMES) and community.js (AVATARS); sprites in src/assets/avatars/manifest.json
   var MOVES = ["JoyfulJump", "SillyDance", "Breakdance", "GoalkeeperDive", "StandardWalk", "DrunkWalk"];
   var THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.147.0/";
   var THREE_FILES = ["build/three.min.js", "examples/js/loaders/GLTFLoader.js", "examples/js/controls/OrbitControls.js"];
@@ -285,9 +288,10 @@
       '<p class="sc-move small muted" aria-live="polite">' + (happyToday() ? "Tap " + esc(who.name) + " to see a move" : "Log a session today to cheer " + esc(who.name) + " up") + "</p>" +
       '<div class="sc-level"><div class="row"><span class="h3">Level ' + p.level + '</span><span class="spacer"></span><span class="small muted"><span class="num">' + p.xpIntoLevel + " / " + p.xpForNext + "</span> XP to level " + (p.level + 1) + "</span></div>" +
       '<div class="progress xp" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '"><div class="progress-bar" style="width:' + pct(p.xpIntoLevel, p.xpForNext) + '%"></div></div></div>' +
-      '<div class="seg" role="radiogroup" aria-label="Character">' + CHARACTERS.map(function (c) {
+      '<div class="sc-picker" role="radiogroup" aria-label="Character">' + CHARACTERS.map(function (c) {
         var on = c.id === cur;
-        return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-action="pick" data-id="' + c.id + '">' + esc(c.name) + "</button>";
+        return '<button type="button" role="radio" aria-checked="' + on + '" class="sc-pick' + (on ? " on" : "") + '" data-action="pick" data-id="' + c.id + '">' +
+          '<span class="cm-mii" data-character="' + c.id + '" style="--mii-size:52px" aria-hidden="true"></span><span>' + esc(c.name) + "</span></button>";
       }).join("") + "</div></section>" +
 
       // Stats; the last tile opens the achievements list

@@ -271,7 +271,7 @@
   function levelFilterOn() { return view.category === 'for-you' || view.category === 'all'; }
   var CATEGORIES = [['going', 'Going', 'calendar'], ['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users']];
 
-  var AVATARS = ['neo', 'adrian', 'alvaro'];
+  var AVATARS = ['neo', 'adrian', 'alvaro', 'avatar1', 'avatar2', 'avatar3'];
   function selectedAvatar() {
     var id = SQ().state.user.character;
     return AVATARS.indexOf(id) >= 0 ? id : 'neo';

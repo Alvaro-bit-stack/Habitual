@@ -4,7 +4,7 @@ Usage: blender -b -P mixamo_merge.py -- <out.glb> <textures dir> <clip.fbx> [<cl
   (in <tripo src dir>) is fitted with a copy of the Mixamo skeleton (joints moved to its neck, shoulder
   line, torso width and arm span) and skinned to it; <textures dir> should then be the target's textures.
 - The first FBX must be downloaded "With Skin"; the others may be "Without Skin".
-- Clip names come from the file names minus the character prefix: neoJoyfulJump.fbx -> "JoyfulJump".
+- Clip names come from the file names minus the character prefix: neoJoyfulJump.fbx / avatar2JoyfulJump.fbx / Avatar1JoyfulJump.fbx -> "JoyfulJump".
 - Hips travel along the floor is removed (vertical motion kept) so clips play in place.
 - Mixamo only gets the color map (it rejects roughness/metallic), so the full Tripo material is
   rebuilt here from <textures dir> (Color.jpg, Normal.png, *_roughness.*, *_metallic.*)."""
@@ -26,7 +26,7 @@ for i, f in enumerate(files):
     new = [o for o in bpy.data.objects if o not in before]
     a = next(o for o in new if o.type == "ARMATURE")
     act = a.animation_data.action
-    act.name = re.sub(r"^[a-z]+", "", os.path.splitext(os.path.basename(f))[0]) or act.name  # neoJoyfulJump -> JoyfulJump
+    act.name = re.sub(r"^(?:[a-z]+|[A-Z][a-z]*[0-9]+)[0-9]*", "", os.path.splitext(os.path.basename(f))[0]) or act.name  # neoJoyfulJump -> JoyfulJump
     act.use_fake_user = True
     actions.append(act)
     if i == 0:
@@ -64,10 +64,14 @@ if target:
         z = lambda f: zmin + f * H
         tw = max(abs(v.x) for v in vs if z(0.30) <= v.z < z(0.42))       # torso half-width (belly band)
         armv = [v for v in vs if abs(v.x) > tw * 1.15 and z(0.35) < v.z < z(0.85)]
-        arm_z = sum(v.z for v in armv) / len(armv)                         # shoulder line
         span = max(abs(v.x) for v in armv)
-        neck = min((max([abs(v.x) for v in vs if z(f) <= v.z < z(f + 0.01) and abs(v.x) < tw * 1.3] or [9]), z(f + 0.005))
-                   for f in [0.62 + k * 0.005 for k in range(40)])[1]       # narrowest slice = neck
+        # Arm line from forearms and hands only: long hair hangs out beside the shoulders and would pull it up.
+        outer = [v for v in armv if abs(v.x) > span * 0.6]
+        arm_z = sum(v.z for v in outer) / len(outer)
+        # Neck = narrowest slice, front half only (faces -Y), so hair falling behind the neck doesn't widen it.
+        front = [v for v in vs if v.y < cy and abs(v.x) < tw * 1.3]
+        neck = min((max([abs(v.x) for v in front if z(f) <= v.z < z(f + 0.01)] or [9]), z(f + 0.005))
+                   for f in [0.62 + k * 0.005 for k in range(40)])[1]
         return dict(z=[zmin, arm_z, neck, zmin + H], tw=tw, span=span, cy=cy)
 
     src_l = landmarks([mesh.matrix_world @ v.co for v in mesh.data.vertices])

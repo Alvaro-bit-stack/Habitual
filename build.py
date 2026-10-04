@@ -30,9 +30,10 @@ def venue_script():
 
 
 def avatar_styles():
-    # Six reusable sprite assets are embedded once, rather than once per event/person.
+    # Each character's two sprites are embedded once, rather than once per event/person.
     parts = []
-    for character in ["neo", "adrian", "alvaro"]:
+    manifest = json.loads((SRC / "assets" / "avatars" / "manifest.json").read_text())
+    for character in manifest["characters"]:
         assets = {}
         for pose in ["idle", "run"]:
             image = (SRC / "assets" / "avatars" / f"{character}-{pose}.png").read_bytes()

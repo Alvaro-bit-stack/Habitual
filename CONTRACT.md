@@ -356,7 +356,7 @@ SkillQuestion = { id, prompt, options: [{ value, label, points: 0..3 }] }
 
 **State** (new top-level field; add it to `fresh()` and `normalize()`):
 ```
-skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced"|"expert",
+skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced",
                        score: 0..100, answers: { [questionId]: value }, evaluatedAt: "YYYY-MM-DD" } }
 ```
 
@@ -364,7 +364,7 @@ skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced"|"expert"
 ```
 SQ.evaluateSkill(hobbyId, answers) -> { tier, score, reasons: string[], eventLevel }
    // saves to state.skills, then returns. eventLevel maps tier to EventDef.level:
-   //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced/expert → "Experienced"
+   //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced → "Experienced"
 SQ.skill(hobbyId) -> state.skills[hobbyId] | null
 SQ.setSkill(hobbyId, tier) -> saves a self-reported tier (source: "self") from onboarding
    // Implemented: state.skills, SQ.skill, SQ.setSkill and level-matched tasks (hobbyStats().nextTinyWin,
@@ -378,7 +378,7 @@ Does re-evaluating award XP or an achievement? Do custom hobbies get a generic c
 
 **Who reads it:**
 - Me page (built): stars beside each hobby's `Lv` pill from `SQ.skill(id).tier` (falls back to
-  `state.skills[id]`): new/beginner none, intermediate 1, advanced 2, expert 3. The tier is the
+  `state.skills[id]`): new/beginner none, intermediate 1, advanced 2. The tier is the
   user's own answer; it never changes hobby XP or level, which start at 0 for everyone. The
   player's overall level comes only from time spent in the app.
 - Community: highlight events whose `level` matches `eventLevel`.

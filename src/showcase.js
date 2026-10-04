@@ -7,7 +7,7 @@
   if (typeof document === "undefined") return;
   var SQUI = G.SQUI, esc = SQUI.esc, icon = SQUI.icon;
   // Self-rated skill tier (from the skill check) -> stars beside the hobby level. Levels start at 0 for everyone.
-  var TIER_STARS = { intermediate: 1, advanced: 2, expert: 3 };
+  var TIER_STARS = { intermediate: 1, advanced: 2 };
   function tier(id) {
     var sk = null;
     try { sk = sq().skill ? sq().skill(id) : (sq().state.skills || {})[id]; } catch (x) {}

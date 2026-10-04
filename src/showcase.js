@@ -8,14 +8,24 @@
   var SQUI = G.SQUI, esc = SQUI.esc, icon = SQUI.icon;
   // Self-rated skill tier (from the skill check) -> stars beside the hobby level. Levels start at 0 for everyone.
   var TIER_STARS = { intermediate: 1, advanced: 2, expert: 3 };
-  function stars(id) {
+  function tier(id) {
     var sk = null;
     try { sk = sq().skill ? sq().skill(id) : (sq().state.skills || {})[id]; } catch (x) {}
-    var n = (sk && TIER_STARS[String(sk.tier).toLowerCase()]) || 0;
+    return sk && sk.tier ? String(sk.tier).toLowerCase() : null;
+  }
+  function stars(id) {
+    var t = tier(id), n = TIER_STARS[t] || 0;
     if (!n) return "";
-    return '<span class="sc-stars" role="img" aria-label="' + sk.tier.charAt(0).toUpperCase() + sk.tier.slice(1) + ", " + n + (n === 1 ? " star" : " stars") + '">' +
+    return '<span class="sc-stars" role="img" aria-label="' + t.charAt(0).toUpperCase() + t.slice(1) + ", " + n + (n === 1 ? " star" : " stars") + '">' +
       new Array(n + 1).join(GEM) + "</span>";
   }
+  // Subtext for the hobby screen: "Intermediate skill level" + its stars; empty until the skill check is done.
+  SQUI.skillLine = function (id) {
+    var t = tier(id);
+    if (!t) return "";
+    var label = t === "new" ? "Getting started" : t.charAt(0).toUpperCase() + t.slice(1);
+    return '<div class="sc-skill small muted"><span>' + esc(label) + " skill level</span>" + stars(id).replace('role="img"', 'aria-hidden="true"') + "</div>";
+  };
   // Diamond star: icy gradient under alternating light/dark facets, a white glint.
   var GEM = '<svg width="26" height="26" viewBox="2.5 2.5 19 18.5" aria-hidden="true"><defs><linearGradient id="sc-gem" x1="0" y1="0" x2="1" y2="1">' +
     '<stop offset="0" stop-color="#e8fbff"/><stop offset=".4" stop-color="#5cd0f5"/><stop offset=".7" stop-color="#8f7cf0"/><stop offset="1" stop-color="#2d7fd0"/></linearGradient></defs>' +

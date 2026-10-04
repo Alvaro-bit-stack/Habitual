@@ -436,18 +436,20 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 .td-next-go { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; white-space: nowrap; }
 .td-next-done .td-next-k { color: var(--ink-2); }
 
-/* Daily streak (Today) */
+/* Daily streak (Today): only the flame changes. --heat 0..1 drives its color, core, glow and size. */
 .td-streak { --flame: #FF8A1F; display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; column-gap: 10px; padding: 14px 18px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
-.td-streak-flame { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; color: var(--ink-2); background: var(--surface-2); }
-.td-streak-flame svg { fill: currentColor; stroke: none; }
-.td-streak-num { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; color: var(--ink-2); min-width: 1ch; }
+.td-streak-flame { --heat: 0; display: grid; place-items: center; width: 52px; height: 52px; }
+.td-streak-flame svg { overflow: visible; transform-origin: 50% 90%; transform: scale(calc(0.86 + 0.26 * var(--heat)));
+  filter: drop-shadow(0 0 calc(2px + 12px * var(--heat)) color-mix(in srgb, #FFB020 calc(85% * var(--heat)), transparent)); transition: transform .6s ease, filter .6s ease; }
+.td-streak-flame .fl-outer { fill: color-mix(in srgb, #FF7A00 calc(100% * var(--heat)), #FFD0A1); transition: fill .6s ease; }
+.td-streak-flame .fl-core { fill: color-mix(in srgb, #FFE13A calc(100% * var(--heat)), #FFF1DC); opacity: calc(0.35 + 0.65 * var(--heat)); transition: fill .6s ease, opacity .6s ease; }
+.td-streak-num { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; color: var(--ink); min-width: 1ch; }
+.td-streak.zero .td-streak-num { color: var(--ink-2); }
+.td-streak.zero .fl-outer { fill: #B9C1CB; }
+.td-streak.zero .fl-core { fill: #DCE1E7; opacity: .5; }
+.td-streak.zero .td-streak-flame svg { filter: none; }
 .td-streak-txt { display: flex; flex-direction: column; min-width: 0; }
 .td-streak-k { font-weight: 800; font-size: 17px; color: var(--ink); }
 .td-streak-sub { font-size: 13px; color: var(--ink-2); }
-.td-streak.lit { background: linear-gradient(135deg, color-mix(in srgb, var(--flame) 14%, var(--surface)), var(--surface) 70%); border-color: color-mix(in srgb, var(--flame) 40%, var(--line)); }
-.td-streak.lit .td-streak-flame { color: #fff; background: linear-gradient(180deg, #FFB33D, var(--flame)); box-shadow: 0 6px 16px color-mix(in srgb, var(--flame) 35%, transparent); }
-.td-streak.lit .td-streak-num { color: var(--flame); }
-.td-streak:not(.lit):not(.zero) .td-streak-flame { color: var(--flame); background: color-mix(in srgb, var(--flame) 12%, var(--surface)); }
-.td-streak:not(.lit):not(.zero) .td-streak-num { color: var(--ink); }
-@media (prefers-reduced-motion: no-preference) { .td-streak.lit .td-streak-flame svg { animation: td-flicker 2.4s ease-in-out infinite; transform-origin: 50% 90%; } }
-@keyframes td-flicker { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.06) rotate(-3deg); } }
+@media (prefers-reduced-motion: no-preference) { .td-streak:not(.zero) .td-streak-flame svg path { animation: td-flicker 2.4s ease-in-out infinite; transform-origin: 50% 90%; transform-box: fill-box; } }
+@keyframes td-flicker { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.05) rotate(-2deg); } }

@@ -270,7 +270,10 @@ a comeback hobby first, then a hobby not logged today, then the one furthest fro
 Tapping it logs that hobby's next tiny win/step. No hobbies → a Choose button; everything done → "All caught up".
 Below it, the daily streak (Duolingo style): flame + days in a row with at least one session.
 `SQ.player().dailyStreak` / `.streakDoneToday`; the streak survives today until midnight if yesterday counted.
-Gray at 0, orange outline when it's alive but not yet done today, lit orange once you log today.
+Only the flame changes: `SQ.flameHeat()` (0..1) sets its color, glow and size via `--heat`.
+Peak brightness grows with the streak (day 1 ≈ 0.46, full at day 50, then holds). On a day you
+haven't logged yet it dwindles with the clock (to 30% of peak by midnight); logging restores the peak.
+Gray when there's no streak. The Today screen refreshes --heat every minute.
 Community shows a lock until the user tracks a hobby.
 
 **Onboarding and discovery:** a fresh app opens `pick`; navigation stays hidden until the user

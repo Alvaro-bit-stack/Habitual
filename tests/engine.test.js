@@ -568,6 +568,24 @@ function suite(source) {
     eq(SQ.player().dailyStreak, 0, "a missed day resets it");
   });
 
+  test("streak flame: brighter with longer streaks (max by day 50), dwindles through an unlogged day", () => {
+    const { SQ } = L({ now: D(2026, 1, 1, 12) });
+    SQ.addHobby("painting");
+    eq(SQ.flameHeat(), 0, "no streak, no flame");
+    SQ.logSession("painting", { size: "tiny" });
+    const day1 = SQ.flameHeat();
+    assert(day1 > 0.4 && day1 < 0.6, "day 1 is warm but not full: " + day1);
+    SQ._now = D(2026, 1, 2, 1);
+    const early = SQ.flameHeat();
+    SQ._now = D(2026, 1, 2, 22);
+    const late = SQ.flameHeat();
+    assert(early > late && late > 0, "the flame dwindles as an unlogged day goes on");
+    SQ.logSession("painting", { size: "tiny" });
+    assert(SQ.flameHeat() > day1, "logging restores it, a bit brighter than day 1");
+    for (let d = 3; d <= 60; d++) { SQ._now = D(2026, 1, d, 12); SQ.logSession("painting", { size: "tiny" }); if (d === 50) eq(SQ.flameHeat(), 1, "full brightness at day 50"); }
+    eq(SQ.flameHeat(), 1, "and it holds after day 50");
+  });
+
   run(source === "stub" ? "stub" : "real data", T);
 }
 

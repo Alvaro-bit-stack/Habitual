@@ -735,6 +735,17 @@
     if (h < 22) return "Good evening";
     return "Winding down";
   }
+  // Streak flame: outer flame + hot core. Its brightness comes from --heat (0..1) set by SQ.flameHeat().
+  function flameSvg() {
+    return '<svg viewBox="0 0 48 48" width="48" height="48" focusable="false">' +
+      '<path class="fl-outer" d="M24 3c1.6 6.6 11 10.4 11 20.4a11 11 0 0 1-22 0c0-4.8 2.4-8 4.8-10 .4 3.6 2 5.6 4.4 6.6C21.2 13.4 22.6 8 24 3z"/>' +
+      '<path class="fl-core" d="M24 22c.8 3 5 4.6 5 9a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.6.2 1.6 1 2.6 2 3-.4-2.6.2-5 .8-7.4z"/></svg>';
+  }
+  // While Today is open, let the flame keep dwindling as the day goes on.
+  if (typeof setInterval === "function" && typeof document !== "undefined") setInterval(function () {
+    var f = document.querySelector(".td-streak-flame");
+    try { if (f && sq().flameHeat) f.style.setProperty("--heat", sq().flameHeat().toFixed(3)); } catch (e) { /* ignore */ }
+  }, 60000);
   function renderToday() {
     var S = sq(), st0 = S.state, p = S.player();
     var today = todayStr();
@@ -803,8 +814,9 @@
       "</div>" + nextUp + "</header>";
 
     var sd = p.dailyStreak || 0, lit = p.streakDoneToday;
+    var heat = sq().flameHeat ? sq().flameHeat() : (lit ? 1 : 0);
     var week = '<div class="td-streak' + (lit ? " lit" : "") + (sd ? "" : " zero") + '" role="status" aria-label="' + sd + ' day streak' + (lit ? "" : sd ? ", log today to keep it" : "") + '">' +
-      '<span class="td-streak-flame" aria-hidden="true">' + icon("flame", 34) + "</span>" +
+      '<span class="td-streak-flame" aria-hidden="true" style="--heat:' + heat.toFixed(3) + '">' + flameSvg() + "</span>" +
       '<span class="td-streak-num num">' + sd + "</span>" +
       '<span class="td-streak-txt"><span class="td-streak-k">day streak</span>' +
       '<span class="td-streak-sub">' + (lit ? "You showed up today" : sd ? "Log today to keep it going" : "Log a session to start one") + "</span></span></div>";

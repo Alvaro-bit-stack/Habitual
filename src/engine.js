@@ -352,6 +352,20 @@
     return { days: n, doneToday: doneToday };
   }
 
+  // How bright the streak flame burns, 0..1. The streak length sets the peak: day 1 is warm but
+  // modest, and it grows to full brightness by day 50, then holds. On a day you haven't logged yet,
+  // the flame dwindles as the hours pass (down to 30% of its peak by midnight); logging restores it.
+  var FLAME_MAX_DAY = 50;
+  function flameHeat() {
+    ensure();
+    var ds = dailyStreak();
+    if (!ds.days) return 0;
+    var peak = 0.45 + 0.55 * Math.min(ds.days, FLAME_MAX_DAY) / FLAME_MAX_DAY;
+    if (ds.doneToday) return peak;
+    var n = nowDate(), dayFrac = (n.getHours() * 60 + n.getMinutes()) / 1440;
+    return peak * (1 - 0.7 * dayFrac);
+  }
+
   function player() {
     ensure();
     var lv = levelFor(state.user.xp);
@@ -808,6 +822,7 @@
     communityUnlocked: communityUnlocked,
     hobbyStats: hobbyStats,
     player: player,
+    flameHeat: flameHeat,
     levelFor: levelFor,
     match: match,
     achievementsList: achievementsList,

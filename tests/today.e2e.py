@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Browser test for the Today header: your character, level, and the "Up next" pick for today.
+"""Browser test for the Today header: greeting, level, and the "Up next" pick for today.
 
 Run: python3 tests/today.e2e.py   (builds first if dist/Habitual.html is missing)
 Set SHOTS=<dir> to also save screenshots.
@@ -44,14 +44,13 @@ def main():
         # Fresh player: no hobbies yet
         page.evaluate('SQ.reset && SQ.reset(); SQ.state.onboarded = true; SQ.state.user.character = "adrian"; SQ.save(); SQUI.go("today")')
         page.wait_for_timeout(200)
-        check(page.locator(".td-card .cm-mii[data-character=adrian]").count() == 1, "the header shows the character you picked")
+        check(page.locator(".td-card .cm-mii").count() == 0, "the header has no character")
         check(page.locator('.td-next [data-action="pick"]').count() == 1, "with no hobbies, Up next points to choosing one")
         shot(page, "today-empty")
 
         # Demo player mid-week
         page.evaluate('SQ.seedDemo(); SQ.state.user.character = "alvaro"; SQ.save(); SQUI.go("today")')
         page.wait_for_timeout(200)
-        check(page.locator(".td-card .cm-mii[data-character=alvaro]").count() == 1, "switching character updates the header")
         check(page.locator(".td-mascot").count() == 0, "the old Sprout header is gone")
         go = page.locator('.td-next [data-action="tiny"]')
         check(go.count() == 1, "Up next offers one thing to do today")

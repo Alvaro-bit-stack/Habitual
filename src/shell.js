@@ -779,9 +779,7 @@
       days += '<span class="td-day' + (dates[d] ? " done" : "") + (d === today ? " today" : "") + '"><i></i>' + DOWS[i].charAt(0) + "</span>";
     }
 
-    // Header: your character is the spotlight, with the one thing worth doing today right under it.
-    var CHAR_NAMES = { neo: "Neo", adrian: "Adrian", alvaro: "Alvaro" };
-    var cid = CHAR_NAMES[(st0.user || {}).character] ? st0.user.character : "neo";
+    // Header: greeting, level and XP, with the one thing worth doing today right under it.
     var pick = null, pickScore = -1;
     trackedList.forEach(function (t) {
       var s = stats(t.hobbyId), h = hobby(t.hobbyId);
@@ -804,8 +802,7 @@
       nextUp = '<div class="td-next td-next-done"><span class="td-next-k">All caught up</span><span class="td-next-l">' + (loggedToday ? "You showed up today. Anything extra is a bonus." : "Every weekly goal is met.") + "</span></div>";
     }
     var head = '<header class="td-card">' +
-      '<div class="td-card-char"><span class="cm-mii" data-character="' + cid + '" style="--mii-size:150px" aria-hidden="true"></span></div>' +
-      '<div class="td-card-body"><div class="eyebrow">' + esc(CHAR_NAMES[cid]) + "</div>" +
+      '<div class="td-card-body">' +
       '<h1 class="h1 td-greet">' + esc(greeting()) + "</h1>" +
       '<div class="td-level"><span class="lv">Level ' + p.level + '</span><span class="num small muted">' + p.xp + " XP</span></div>" +
       '<div class="progress xp" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '">' +

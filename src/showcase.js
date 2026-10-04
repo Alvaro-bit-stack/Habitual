@@ -334,15 +334,6 @@
           '<span class="cm-mii" data-character="' + c.id + '" style="--mii-size:52px" aria-hidden="true"></span><span>' + esc(c.name) + "</span></button>";
       }).join("") + "</div></section>" +
 
-      // Stats; the last tile opens the achievements list
-      '<section class="sc-stats" aria-label="Your stats">' +
-      '<div class="sc-stat"><span class="sc-val num">' + p.totalSessions + '</span><span class="sc-lbl">Sessions</span></div>' +
-      '<div class="sc-stat"><span class="sc-val num">' + timeText(minutes) + '</span><span class="sc-lbl">Time spent</span></div>' +
-      '<div class="sc-stat"><span class="sc-val num">' + best + '<span class="sc-unit">' + (best === 1 ? " wk" : " wks") + '</span></span><span class="sc-lbl">Best streak</span></div>' +
-      '<button type="button" class="sc-stat sc-stat-tap" data-action="achievements">' +
-      '<span class="sc-val num">' + earned.length + '<span class="sc-unit"> of ' + achs.length + "</span></span>" +
-      '<span class="sc-lbl">Achievements<span class="sc-go" aria-hidden="true">' + icon("chevron-right", 18) + "</span></span></button></section>" +
-
       // Hobbies
       '<section class="stack"><h2 class="h3">Your hobbies</h2>' +
       (shelf.length ? '<div class="stack">' + shelf.map(function (x) {
@@ -356,6 +347,15 @@
         '<div class="empty stack"><div class="h3">No hobbies yet</div><p class="small">Track a hobby and log a session to see it here.</p>' +
         '<div class="row" style="justify-content:center"><button type="button" class="btn sm primary" data-action="discover">Find a hobby</button></div></div>') +
       "</section>" +
+      // Stats; the last tile opens the achievements list
+      '<section class="sc-stats" aria-label="Your stats">' +
+      '<div class="sc-stat"><span class="sc-val num">' + p.totalSessions + '</span><span class="sc-lbl">Sessions</span></div>' +
+      '<div class="sc-stat"><span class="sc-val num">' + timeText(minutes) + '</span><span class="sc-lbl">Time spent</span></div>' +
+      '<div class="sc-stat"><span class="sc-val num">' + best + '<span class="sc-unit">' + (best === 1 ? " wk" : " wks") + '</span></span><span class="sc-lbl">Best streak</span></div>' +
+      '<button type="button" class="sc-stat sc-stat-tap" data-action="achievements">' +
+      '<span class="sc-val num">' + earned.length + '<span class="sc-unit"> of ' + achs.length + "</span></span>" +
+      '<span class="sc-lbl">Achievements<span class="sc-go" aria-hidden="true">' + icon("chevron-right", 18) + "</span></span></button></section>" +
+
       (shelf.length ? '<button type="button" class="btn block" data-action="share">' + icon("spark", 18) + " Share my progress</button>" : "") +
 
       // Settings

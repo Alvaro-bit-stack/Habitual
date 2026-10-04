@@ -374,9 +374,9 @@ Does re-evaluating award XP or an achievement? Do custom hobbies get a generic c
 ## 6. Me page — `src/showcase.js`, `src/showcase.css`
 
 The `me` tab, top to bottom: the 3D character with name, level and XP bar to the next level;
-a character picker; four stat tiles (sessions, time spent, best streak, and an Achievements tile
-showing "11 of 16" that opens `achievements`); every tracked hobby with
-level, XP bar, sessions and streak (tap to open it); a share button; and Settings (nudge time,
+a character picker; every tracked hobby with
+level, XP bar, sessions and streak (tap to open it); four stat tiles (sessions, time spent, best streak,
+and an Achievements tile showing "11 of 16" that opens `achievements`); a share button; and Settings (nudge time,
 appearance, sample data, two-step reset). Character customization is paused until new models exist.
 
 - **Backdrop:** the Me stage shows a city street at night (`src/assets/me-street.jpg`, portrait),

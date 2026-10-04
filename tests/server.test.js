@@ -4,7 +4,7 @@
 const assert = require("node:assert/strict");
 const {
   createServer, normalizeRequest, extractText, extractSources, validateResearch, researchHobby,
-  hobbyGuide, youtubeId, mentionsProduct, pageText, siteOf
+  hobbyGuide, youtubeId, firstJsonObject, mentionsProduct, pageText, siteOf
 } = require("../server.js");
 
 let passed = 0;
@@ -181,6 +181,20 @@ function sampleRaw() {
     assert.deepEqual(out.gear, {});
     assert.deepEqual(out.crashCourse, []);
     assert.equal(out.tasks[0].title, "Learn a barre chord transition");
+  });
+
+  await test("almost-JSON from Gemini is cleaned up or salvaged", () => {
+    const cited = '{"tasks":[{"title":"Learn Em [x]","why":"Reddit says so"} [1], {"title":"Learn G","why":"ok" [cite: 2, 3]},],"overview":"a"} trailing words';
+    const a = firstJsonObject("Sure!\n```json\n" + cited + "\n```");
+    assert.deepEqual(a.tasks.map((t) => t.title), ["Learn Em [x]", "Learn G"]);
+    assert.equal(a.overview, "a");
+    const cut = '{"hobby":"Guitar","tasks":[{"title":"One","minutes":10},{"title":"Two","minutes":15},{"title":"Thr';
+    const b = firstJsonObject(cut);
+    assert.deepEqual(b.tasks.map((t) => t.title), ["One", "Two"], "a cut-off answer keeps its complete items");
+    assert.equal(b.hobby, "Guitar");
+    const newline = '{"why":"line one\nline two"}';
+    assert.equal(firstJsonObject(newline).why, "line one line two");
+    assert.throws(() => firstJsonObject("no json here"), /No JSON object/);
   });
 
   await test("product names are matched by brand and model words", () => {

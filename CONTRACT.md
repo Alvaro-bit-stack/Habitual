@@ -278,7 +278,10 @@ Gray when there's no streak. The Today screen refreshes --heat every minute.
 Community shows a lock until the user tracks a hobby.
 
 **Onboarding and discovery:** a fresh app opens `pick`, a single pipeline with navigation hidden.
-It first asks one question per screen for the profile: name, email, then location (city and country),
+It opens on a Habitual splash (taps or 1.8s move on), then "Choose your character" with two
+existing characters labelled only "Option 1" / "Option 2" (saved as `state.user.character`), a short
+intro, and then the chosen character asks each question in a speech bubble with a progress ring:
+name, email, then location (city and country),
 saved on `state.user` as `name`, `email` and `location: {city, country}` (`pick` {step:"name"|"email"|"location"}).
 Today greets the user by first name. The hobbies step then asks "What hobbies do you already do?": the user types each hobby (no option list) and picks a
 level (`new`, `beginner`, `intermediate`, `advanced`), or skips. Typed names map to a catalog hobby when

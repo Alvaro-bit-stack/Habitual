@@ -717,36 +717,76 @@
     for (var k in EXTRA) if (EXTRA[k].name.toLowerCase() === q || k === q) return { id: null, name: EXTRA[k].name, category: EXTRA[k].category };
     return { id: null, name: titleCase(name.replace(/\s+/g, " ").trim()).slice(0, 40), category: "creative" };
   }
-  var FIRST_RUN_STEPS = ["name", "email", "location", "hobbies", "next"];
-  function stepEyebrow(step) {
-    if (onboarded() && step === "hobbies") return "Your hobbies";
-    return "Step " + (FIRST_RUN_STEPS.indexOf(step) + 1) + " of " + FIRST_RUN_STEPS.length;
+  // First run: splash, pick a guide character, a short intro, then five questions the guide asks.
+  var splashTimer = null;
+  var FIRST_RUN_STEPS = ["splash", "character", "intro", "name", "email", "location", "hobbies", "next"];
+  var QUESTION_STEPS = ["name", "email", "location", "hobbies", "next"];
+  var GUIDES = ["adrian", "avatar1"]; // shown as "Option 1" / "Option 2"
+  function guideId() {
+    var c = SQ.state && SQ.state.user && SQ.state.user.character;
+    return GUIDES.indexOf(c) >= 0 || c ? c : GUIDES[0];
+  }
+  function mii(id, size, cls) {
+    return '<span class="cm-mii ' + (cls || "") + '" data-character="' + e(id) + '" style="--mii-size:' + size + 'px" aria-hidden="true"></span>';
+  }
+  function guideSays(text, big) {
+    return '<div class="ob-guide' + (big ? " is-big" : "") + '">' + mii(guideId(), big ? 170 : 118, "ob-guide-mii") +
+      '<div class="ob-say" role="heading" aria-level="1">' + text + "</div></div>";
+  }
+  function progressRing(step) {
+    var i = QUESTION_STEPS.indexOf(step);
+    if (i < 0 || onboarded()) return "";
+    var frac = (i + 1) / QUESTION_STEPS.length, c = 2 * Math.PI * 13;
+    return '<span class="ob-ring" role="progressbar" aria-label="Question ' + (i + 1) + " of " + QUESTION_STEPS.length + '" aria-valuemin="1" aria-valuemax="' + QUESTION_STEPS.length + '" aria-valuenow="' + (i + 1) + '">' +
+      '<svg viewBox="0 0 32 32" width="32" height="32"><circle cx="16" cy="16" r="13" class="ob-ring-bg"/><circle cx="16" cy="16" r="13" class="ob-ring-fg" stroke-dasharray="' +
+      (c * frac).toFixed(1) + " " + c.toFixed(1) + '"/></svg></span>';
   }
   function obShell(step, inner, cta) {
-    var canBack = onboarded() || FIRST_RUN_STEPS.indexOf(step) > 0;
+    var canBack = onboarded() || FIRST_RUN_STEPS.indexOf(step) > 1;
     return '<div class="screen ob" data-dc="onboard" data-step="' + step + '"><div class="stack-lg">' +
-      (canBack ? '<div class="screen-head">' + backBtn() + "</div>" : "") + inner + "</div>" +
-      (cta ? '<div class="dc-cta ob-cta">' + cta + "</div>" : "") + "</div>";
+      ((canBack || progressRing(step)) ? '<div class="ob-top">' + (canBack ? backBtn() : "") + progressRing(step) + "</div>" : "") +
+      inner + "</div>" + (cta ? '<div class="dc-cta ob-cta">' + cta + "</div>" : "") + "</div>";
   }
-  function obQuestion(step, title, sub, fields, cta) {
-    return obShell(step, '<header class="ob-head"><div class="eyebrow">' + stepEyebrow(step) + '</div><h1 class="h1">' + title + "</h1>" +
-      (sub ? '<p class="muted">' + sub + "</p>" : "") + "</header>" +
+  function obQuestion(step, say, fields, cta) {
+    return obShell(step, guideSays(say) +
       '<form class="stack ob-q" data-role="ob-q" novalidate>' + fields + '<p class="small dc-err" data-role="ob-err" hidden></p>' +
-      '<button type="submit" class="btn primary block">' + (cta || "Continue") + "</button></form>", "");
+      '<button type="submit" class="btn primary block ob-go">' + (cta || "Continue") + "</button></form>", "");
+  }
+  function splashStep() {
+    return '<div class="screen ob-splash" data-dc="onboard" data-step="splash"><button type="button" class="ob-splash-hit" data-action="ob-splash" aria-label="Start">' +
+      '<span class="ob-splash-art" aria-hidden="true"><span class="ob-trail"></span>' + mii(guideId(), 180, "ob-flyer") + "</span>" +
+      '<span class="ob-wordmark">Habitual</span><span class="ob-tagline">Trade the scroll for something you love</span></button></div>';
+  }
+  function characterStep() {
+    var cur = SQ.state.user.character;
+    return obShell("character", '<header class="ob-head ob-center"><h1 class="h1">Choose your character</h1><p class="muted">They’ll guide you through setup and cheer you on.</p></header>' +
+      '<div class="ob-options" role="radiogroup" aria-label="Character">' + GUIDES.map(function (id, i) {
+        var on = cur === id;
+        return '<button type="button" role="radio" aria-checked="' + on + '" class="ob-option' + (on ? " on" : "") + '" data-action="ob-char" data-id="' + id + '">' +
+          mii(id, 150) + '<span class="ob-option-label">Option ' + (i + 1) + "</span></button>";
+      }).join("") + "</div>",
+      '<button type="button" class="btn primary block ob-go" data-action="ob-char-go"' + (GUIDES.indexOf(cur) >= 0 ? "" : " disabled") + ">Continue</button>");
+  }
+  function introStep() {
+    return obShell("intro", '<div class="ob-intro">' + '<div class="ob-say ob-say-up" role="heading" aria-level="1">Just <strong>5 quick questions</strong> and you’ll be ready for your next hobby!</div>' +
+      mii(guideId(), 190, "ob-guide-mii ob-wave") + "</div>",
+      '<button type="button" class="btn primary block ob-go" data-action="ob-intro-go">Continue</button>');
   }
   function profileStep(step) {
     var u = (SQ.state && SQ.state.user) || {};
     if (step === "name") {
       var nm = u.name && u.name !== "You" ? u.name : "";
-      return obQuestion(step, "What should we call you?", "This is the name you’ll see on Today and in Community.",
-        '<label class="dc-field"><span class="small muted">Name</span><input class="dc-input" name="name" maxlength="40" autocomplete="name" placeholder="Your name" value="' + e(nm) + '"></label>');
+      return obQuestion(step, "How would you like us to call you?",
+        '<label class="dc-field"><span class="sr-only">Name</span><input class="dc-input ob-big-input" name="name" maxlength="40" autocomplete="name" placeholder="Your name" value="' + e(nm) + '"></label>');
     }
+    var first = String(u.name || "").split(" ")[0];
     if (step === "email") {
-      return obQuestion(step, "What’s your email?", "We use it for your account. It’s never shown to other people.",
-        '<label class="dc-field"><span class="small muted">Email</span><input class="dc-input" name="email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="you@example.com" value="' + e(u.email || "") + '"></label>');
+      return obQuestion(step, "Nice to meet you" + (first ? ", " + e(first) : "") + "! What’s your email?",
+        '<label class="dc-field"><span class="sr-only">Email</span><input class="dc-input ob-big-input" name="email" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="you@example.com" value="' + e(u.email || "") + '"></label>' +
+        '<p class="small muted ob-note">Used for your account. Never shown to other people.</p>');
     }
     var loc = u.location || {};
-    return obQuestion(step, "Where are you based?", "We use your city to suggest local events and groups.",
+    return obQuestion(step, "Where are you based? I’ll find events and groups near you.",
       '<div class="ob-two"><label class="dc-field"><span class="small muted">City</span><input class="dc-input" name="city" maxlength="60" autocomplete="address-level2" placeholder="e.g. Newark" value="' + e(loc.city || "") + '"></label>' +
       '<label class="dc-field"><span class="small muted">Country</span><input class="dc-input" name="country" maxlength="60" autocomplete="country-name" placeholder="e.g. United States" value="' + e(loc.country || "") + '"></label></div>');
   }
@@ -785,8 +825,8 @@
   }
   function obHobbiesStep() {
     var first = !onboarded(), n = OB.list.length;
-    var inner = '<header class="ob-head"><div class="eyebrow">' + stepEyebrow("hobbies") + '</div><h1 class="h1">What hobbies do you already do?</h1>' +
-      '<p class="muted">Type one in and tell us how far along you are. We’ll set up your first tasks to match.</p></header>' +
+    var inner = (first ? guideSays("What hobbies do you already do? Add each one with your level.")
+      : '<header class="ob-head"><div class="eyebrow">Your hobbies</div><h1 class="h1">What hobbies do you already do?</h1><p class="muted">Add each one with your level.</p></header>') +
       obBubble() +
       '<form class="card ob-form stack" data-role="ob-form" novalidate>' +
       '<label class="dc-field"><span class="small muted">Hobby</span><input class="dc-input" data-role="ob-name" maxlength="40" placeholder="e.g. Guitar" autocomplete="off" enterkeyhint="done"></label>' +
@@ -799,8 +839,7 @@
   }
   function obNextStep() {
     var n = ((SQ.state && SQ.state.tracked) || []).length;
-    return obShell("next", '<header class="ob-head"><div class="eyebrow">' + stepEyebrow("next") + '</div><h1 class="h1">Want to start a new hobby?</h1>' +
-      '<p class="muted">' + (n ? "Your hobbies are set up. You can also explore something new." : "No problem. Let’s find one you’ll enjoy.") + "</p></header>" +
+    return obShell("next", guideSays((n ? "You’re all set! " : "No problem! ") + "Want to start a new hobby?") +
       '<div class="stack ob-choices">' +
       '<button type="button" class="card tap dc-choice" data-action="ob-yes"><span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("compass", 26) + "</span>" +
       '<span class="dc-choice-text"><span class="dc-choice-title">Yes, show me hobbies</span><span class="dc-choice-sub">Explore by category in Discover</span></span>' +
@@ -812,20 +851,32 @@
   SQUI.register("pick", {
     get tab() { return null; }, title: "Your hobbies",
     render: function (params) {
-      var step = (params && params.step) || (onboarded() ? "hobbies" : "name");
+      var step = (params && params.step) || (onboarded() ? "hobbies" : "splash");
+      if (step === "splash") return splashStep();
+      if (step === "character") return characterStep();
+      if (step === "intro") return introStep();
       if (step === "next") return obNextStep();
       if (step !== "hobbies") return profileStep(step);
       if (!OB) OB = { list: [], tier: "beginner", fresh: -1 };
       return obHobbiesStep();
     },
     mount: function (root, params) {
-      var step = (params && params.step) || (onboarded() ? "hobbies" : "name");
+      var step = (params && params.step) || (onboarded() ? "hobbies" : "splash");
       var idx = FIRST_RUN_STEPS.indexOf(step);
+      function goStep(next) { SQUI.go("pick", { step: next }, { replace: true }); }
       var host = bind(root, "[data-dc]", common({
         back: function () {
-          if (!onboarded() && idx > 0) { SQUI.go("pick", { step: FIRST_RUN_STEPS[idx - 1] }, { replace: true }); return; }
+          if (!onboarded() && idx > 1) { goStep(FIRST_RUN_STEPS[idx - 1]); return; }
           OB = null; SQUI.back();
         },
+        "ob-splash": function () { if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; } goStep("character"); },
+        "ob-char": function (t) {
+          SQ.state.user.character = t.getAttribute("data-id"); SQ.save();
+          host.querySelectorAll(".ob-option").forEach(function (b) { var on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+          var go = host.querySelector('[data-action="ob-char-go"]'); if (go) go.disabled = false;
+        },
+        "ob-char-go": function () { goStep("intro"); },
+        "ob-intro-go": function () { goStep("name"); },
         "ob-level": function (t) {
           OB.tier = t.getAttribute("data-tier");
           host.querySelectorAll(".ob-level").forEach(function (b) { var on = b === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
@@ -850,6 +901,14 @@
         "ob-yes": function () { OB = null; SQUI.go("discover", {}, { reset: true }); },
         "ob-no": function () { OB = null; SQUI.go("today", {}, { reset: true }); }
       }));
+      if (step === "splash") {
+        splashTimer = setTimeout(function () {
+          splashTimer = null;
+          var cur = SQUI.current && SQUI.current();
+          if (cur && cur.name === "pick" && (!cur.params || !cur.params.step || cur.params.step === "splash")) goStep("character");
+        }, 1800);
+        return;
+      }
       var q = host.querySelector('[data-role="ob-q"]');
       if (q) {
         var firstInput = q.querySelector("input");

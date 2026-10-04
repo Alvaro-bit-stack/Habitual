@@ -1133,8 +1133,8 @@
     render: renderHobby,
     mount: function (root, params) {
       var id = params.id;
-      var kitHost = root.querySelector('[data-role="kit"]'), kh = hobby(id);
-      if (kitHost && kh && SQUI.starterKit) SQUI.starterKit(kitHost, kh.name);
+      var kitHost = root.querySelector('[data-role="kit"]');
+      if (kitHost && SQUI.hobbyPlan) SQUI.hobbyPlan(kitHost, id);
       onClick(root, {
         back: function () { back(); },
         track: function () {

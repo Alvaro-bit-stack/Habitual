@@ -586,6 +586,26 @@ function suite(source) {
     eq(SQ.flameHeat(), 1, "and it holds after day 50");
   });
 
+  test("researched tasks for a hobby's level drive its next task, and reset when the level changes", () => {
+    const store = memStorage();
+    const { SQ } = L({ storage: store, now: D(2026, 9, 1) });
+    SQ.addHobby("painting");
+    SQ.setSkill("painting", "beginner");
+    eq(SQ.setSkillTasks("painting", "intermediate", [{ label: "x", minutes: 10 }]), null, "tasks for another level are ignored");
+    SQ.setSkillTasks("painting", "beginner", [{ label: "Paint a mug from life", minutes: 25, why: "People say still lifes teach shapes" }, { label: "Mix a value scale", minutes: 500 }, { label: "" }]);
+    let st = SQ.hobbyStats("painting");
+    eq(st.nextTinyWin.label, "Paint a mug from life");
+    eq(st.nextTinyWin.researched, true);
+    SQ.logSession("painting", { size: "regular" });
+    st = SQ.hobbyStats("painting");
+    eq(st.nextTinyWin.label, "Mix a value scale");
+    eq(st.nextTinyWin.minutes, 120);
+    const again = L({ storage: store, now: D(2026, 9, 2) }).SQ;
+    eq(again.skill("painting").tasks.length, 2, "tasks survive a reload");
+    SQ.setSkill("painting", "advanced");
+    eq(SQ.skill("painting").tasks, undefined, "a new level starts without the old level's tasks");
+  });
+
   run(source === "stub" ? "stub" : "real data", T);
 }
 

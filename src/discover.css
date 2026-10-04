@@ -614,3 +614,16 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .kit-src-ic { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #dcf5e6; color: #0f6b3a; }
 .kit-note { line-height: 1.6; }
 .kit-note .kit-badge { vertical-align: middle; margin-right: 2px; }
+
+/* Level picker and the researched plan (tasks) */
+.plan-level { display: flex; flex-direction: column; gap: 6px; }
+.plan-level .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kit-seg-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.plan-task .dc-session-body p { margin: 4px 0 0; }
+.plan-task-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.plan-task-top .dc-row-name { min-width: 0; overflow-wrap: anywhere; }
+.plan-task-top .num { flex: none; }
+.plan-why { font-style: italic; }
+.plan-src { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--ink-2); }
+.plan-src svg { color: #0f6b3a; stroke-width: 3; }
+.plan-src a { color: var(--ink); }

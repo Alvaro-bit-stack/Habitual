@@ -27,7 +27,7 @@ function sampleRaw() {
 (async () => {
   await test("request normalization and validation", () => {
     assert.deepEqual(normalizeRequest({ hobby: "  Trail   running ", budget: "250", currency: "USD" }), {
-      hobby: "Trail running", location: "United States", experience: "beginner", currency: "USD", budget: 250
+      hobby: "Trail running", location: "United States", experience: "beginner", currency: "USD", budget: 250, level: "beginner"
     });
     assert.throws(() => normalizeRequest({ hobby: "!" }), /recognizable|at least/);
     assert.throws(() => normalizeRequest({ hobby: "Running", budget: 20000 }), /Budget/);
@@ -101,45 +101,41 @@ function sampleRaw() {
     assert.equal(youtubeId("https://www.youtube.com/watch?v=short"), null);
   });
 
-  await test("hobby guide keeps verified videos and links, drops the rest", async () => {
-    const raw = {
+  await test("beginner guide: crash course of real videos and tasks with checked sources", async () => {
+    const plan = {
       hobby: "Bouldering", overview: "Start at a gym.",
-      community: [
-        { insight: "Footwork matters more than arm strength.", source: "r/bouldering", url: "https://www.reddit.com/r/bouldering/comments/real" },
-        { insight: "Rent shoes first.", source: "Forum", url: "https://forum.example/fake" }
+      tasks: [
+        { title: "Climb ten easy problems with quiet feet", details: "Place each foot silently.", minutes: 30, why: "r/bouldering says footwork first.",
+          sources: [{ site: "r/bouldering", url: "https://www.reddit.com/r/bouldering/comments/real" }, { site: "Made up", url: "https://forum.example/fake" }] },
+        { title: "Rest between attempts", details: "", minutes: 500, why: "", sources: [] }
       ],
-      gear: {
-        entry: { label: "Entry level", products: [{ name: "Tarantulace", brand: "La Sportiva", price: 89, retailer: "REI", url: "https://shop.example/tarantulace", why: "Comfortable." }] },
-        mid: { label: "Mid tier", products: [{ name: "Momentum", brand: "Black Diamond", price: 99, retailer: "", url: "https://made-up.example/x", why: "Popular." }] },
-        high: { label: "High end", products: [] }
-      },
-      videos: [
+      crashCourse: [
         { title: "Model title", channel: "Model channel", url: "https://www.youtube.com/watch?v=AAAAAAAAAAA" },
         { title: "Hallucinated", channel: "Nobody", url: "https://www.youtube.com/watch?v=BBBBBBBBBBB" },
         { title: "Duplicate", channel: "X", url: "https://youtu.be/AAAAAAAAAAA" },
         { title: "Not YouTube", channel: "X", url: "https://vimeo.com/123" }
-      ],
-      firstSteps: [{ title: "Book an intro", details: "Most gyms run one." }]
+      ]
     };
-    let geminiCalls = 0;
+    const kits = { hobby: "Bouldering", gear: { budget: { products: [{ name: "Tarantulace", brand: "La Sportiva", price: 89, retailer: "REI", url: "https://shop.example/tarantulace", why: "Comfortable." }] }, premium: { products: [] } } };
+    const prompts = [];
     const fetchImpl = async (url, init) => {
       if (url.includes("generativelanguage.googleapis.com")) {
-        geminiCalls++;
         const body = JSON.parse(init.body);
+        const prompt = body.contents[0].parts[0].text;
+        prompts.push(prompt);
         assert.deepEqual(body.tools, [{ google_search: {} }]);
-        if (/Skip video ids/.test(body.contents[0].parts[0].text)) {
-          assert.match(body.contents[0].parts[0].text, /YouTube tutorial videos/);
+        if (/Skip video ids/.test(prompt)) {
+          assert.match(prompt, /crash-course/);
           return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ videos: [{ title: "More", channel: "C", url: "https://www.youtube.com/watch?v=DDDDDDDDDDD" }] }) }] } }] }) };
         }
-        assert.match(body.contents[0].parts[0].text, /Reddit/);
-        return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "Here you go:\n```json\n" + JSON.stringify(raw) + "\n```" }] },
+        const out = /starter kits/.test(prompt) ? kits : plan;
+        return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "Here you go:\n```json\n" + JSON.stringify(out) + "\n```" }] },
           groundingMetadata: { groundingChunks: [
             { web: { title: "reddit.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc" } },
             { web: { title: "youtube.com", uri: "https://vertexaisearch.cloud.google.com/grounding-api-redirect/yt" } }
           ] } }] }) };
       }
       if (url.startsWith("https://vertexaisearch.cloud.google.com/")) {
-        assert.equal(init.redirect, "manual");
         const loc = url.endsWith("/yt") ? "https://www.youtube.com/watch?v=CCCCCCCCCCC" : "https://www.reddit.com/r/bouldering/comments/real";
         return { ok: false, status: 302, headers: { get: (h) => h === "location" ? loc : null } };
       }
@@ -147,24 +143,44 @@ function sampleRaw() {
         const ok = /AAAAAAAAAAA|CCCCCCCCCCC|DDDDDDDDDDD/.test(url);
         return { ok, status: ok ? 200 : 404, json: async () => ({ title: "Real video title", author_name: "Real channel" }) };
       }
-      if (url === "https://www.reddit.com/r/bouldering/comments/real" || url === "https://shop.example/tarantulace") return { ok: true, status: 200 };
+      if (url === "https://shop.example/tarantulace") return { ok: true, status: 200 };
+      if (url === "https://www.reddit.com/r/bouldering/comments/real") return { ok: false, status: 403 };
       return { ok: false, status: 404 };
     };
-    const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
-    assert.equal(geminiCalls, 3, "kits and extras in parallel, then one search for more videos");
-    assert.deepEqual(out.videos.map((v) => v.id), ["AAAAAAAAAAA", "CCCCCCCCCCC", "DDDDDDDDDDD"]);
-    assert.equal(out.videos[0].url, "https://www.youtube.com/watch?v=AAAAAAAAAAA");
-    assert.equal(out.sources[0].url, "https://www.reddit.com/r/bouldering/comments/real");
-    assert.equal(out.sources[0].publisher, "reddit.com");
-    assert.equal(out.videos[0].title, "Real video title");
-    assert.equal(out.videos[0].channel, "Real channel");
-    assert.equal(out.gear.entry.products[0].url, "https://shop.example/tarantulace");
-    assert.equal(out.gear.mid.products[0].url, null);
-    assert.equal(out.gear.mid.products[0].name, "Momentum");
-    assert.equal(out.community[0].url, "https://www.reddit.com/r/bouldering/comments/real");
-    assert.equal(out.community[1].url, null);
-    assert.equal(out.grounded, true);
-    assert.equal("rawUrl" in out.gear.entry.products[0], false);
+    const out = await hobbyGuide({ hobby: "Bouldering", level: "beginner" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
+    assert.equal(prompts.length, 3, "kits and plan in parallel, then one search for more videos");
+    assert.ok(prompts.some((p) => /starter kits/.test(p) && /budget/.test(p) && /premium/.test(p)));
+    assert.ok(prompts.some((p) => /crashCourse/.test(p) && /complete beginner/.test(p)));
+    assert.equal(out.level, "beginner");
+    assert.deepEqual(out.crashCourse.map((v) => v.id), ["AAAAAAAAAAA", "CCCCCCCCCCC", "DDDDDDDDDDD"]);
+    assert.equal(out.crashCourse[0].title, "Real video title");
+    assert.equal(out.gear.budget.label, "Budget start");
+    assert.equal(out.gear.budget.products[0].url, "https://shop.example/tarantulace");
+    assert.equal(out.gear.premium.label, "Premium start");
+    assert.equal(out.tasks.length, 2);
+    assert.deepEqual(out.tasks[0].sources.map((x) => x.url), ["https://www.reddit.com/r/bouldering/comments/real"], "a blocked page Gemini searched is kept; a made-up page is dropped");
+    assert.equal(out.tasks[1].minutes, 120);
+    assert.equal("videos" in out || "community" in out || "firstSteps" in out, false);
+  });
+
+  await test("intermediate and advanced guides are tasks only", async () => {
+    const prompts = [];
+    const fetchImpl = async (url, init) => {
+      if (!url.includes("generativelanguage.googleapis.com")) return { ok: false, status: 404 };
+      const prompt = JSON.parse(init.body).contents[0].parts[0].text;
+      prompts.push(prompt);
+      const raw = { hobby: "Guitar", overview: "x", tasks: [{ title: "Learn a barre chord transition", details: "F to Bb", minutes: 20, why: "w", sources: [] }],
+        crashCourse: [{ url: "https://www.youtube.com/watch?v=AAAAAAAAAAA" }], gear: { budget: { products: [{ name: "Should be ignored", price: 1 }] } } };
+      return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(raw) }] } }] }) };
+    };
+    const out = await hobbyGuide({ hobby: "Guitar", level: "intermediate" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
+    assert.equal(prompts.length, 1, "no kits request");
+    assert.match(prompts[0], /intermediate hobbyist/);
+    assert.doesNotMatch(prompts[0], /crashCourse|starter kits/);
+    assert.equal(out.level, "intermediate");
+    assert.deepEqual(out.gear, {});
+    assert.deepEqual(out.crashCourse, []);
+    assert.equal(out.tasks[0].title, "Learn a barre chord transition");
   });
 
   await test("product names are matched by brand and model words", () => {
@@ -185,14 +201,13 @@ function sampleRaw() {
     const raw = {
       hobby: "Bouldering", overview: "Start at a gym.", community: [],
       gear: {
-        entry: { label: "whatever", products: [
+        budget: { label: "whatever", products: [
           { name: "Tarantulace", brand: "La Sportiva", price: 89, retailer: "REI", url: "https://www.rei.com/product/tarantulace", why: "Comfy.",
             sources: [{ site: "Reddit", url: "https://www.reddit.com/r/bouldering/comments/shoes" }, { site: "Review", url: "https://www.outdoorgearlab.com/shoes" }, { site: "REI", url: "https://www.rei.com/learn/shoes" }] },
           { name: "Momentum", brand: "Black Diamond", price: 99, retailer: "Store", url: "https://store.example/wrong-page", why: "Popular.",
             sources: [{ site: "Blog", url: "https://blog.example/nothing-about-it" }, { site: "Made up", url: "https://made-up.example/x" }] }
         ] },
-        mid: { products: [{ name: "Chalk bag 2", brand: "Metolius", price: 25, retailer: "", url: "", why: "Classic.", sources: [] }] },
-        high: { products: [] }
+        premium: { products: [{ name: "Chalk bag 2", brand: "Metolius", price: 25, retailer: "", url: "", why: "Classic.", sources: [] }] }
       },
       videos: [], firstSteps: []
     };
@@ -216,8 +231,8 @@ function sampleRaw() {
         if (/Skip video ids/.test(body.contents[0].parts[0].text)) return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "{\"videos\":[]}" }] } }] }) };
         const prompt = body.contents[0].parts[0].text;
         assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingLevel: "low" });
-        if (/starter kits/.test(prompt)) { assert.match(prompt, /Beginner kit/); assert.match(prompt, /different websites/); assert.doesNotMatch(prompt, /firstSteps/); }
-        else { assert.match(prompt, /firstSteps/); assert.doesNotMatch(prompt, /starter kits/); }
+        if (/starter kits/.test(prompt)) { assert.match(prompt, /different websites/); assert.doesNotMatch(prompt, /crashCourse/); }
+        else { assert.match(prompt, /tasks/); assert.doesNotMatch(prompt, /starter kits/); }
         return { ok: true, json: async () => payload };
       }
       if (url.endsWith("/grounding-api-redirect/mp")) return { ok: false, status: 302, headers: { get: (h) => h === "location" ? "https://www.mountainproject.com/forum/topic/123" : null } };
@@ -226,10 +241,10 @@ function sampleRaw() {
       return { ok: false, status: 404 };
     };
     const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
-    const [shoe, harness] = out.gear.entry.products;
-    assert.equal(out.gear.entry.label, "Beginner kit");
-    assert.equal(out.gear.mid.label, "Step-up kit");
-    assert.equal(out.gear.entry.total, 188);
+    const [shoe, harness] = out.gear.budget.products;
+    assert.equal(out.gear.budget.label, "Budget start");
+    assert.equal(out.gear.premium.label, "Premium start");
+    assert.equal(out.gear.budget.total, 188);
     assert.equal(shoe.url, "https://www.rei.com/product/tarantulace");
     assert.equal(shoe.linkType, "product");
     assert.equal(shoe.buyUrl, shoe.url);
@@ -241,7 +256,7 @@ function sampleRaw() {
     assert.match(harness.buyUrl, /^https:\/\/www\.google\.com\/search\?tbm=shop&q=Black%20Diamond%20Momentum$/);
     assert.deepEqual(harness.sources, [], "pages that do not name it, or do not exist, are not sources");
     assert.equal(harness.verified, false);
-    const chalk = out.gear.mid.products[0];
+    const chalk = out.gear.premium.products[0];
     assert.equal(chalk.sourceCount, 1);
     assert.equal(chalk.verified, false, "one grounded site is a source, not cross-verification");
     assert.equal("rawSources" in shoe, false);
@@ -272,11 +287,11 @@ function sampleRaw() {
       const body = JSON.parse(init.body);
       seen.push(!!(body.generationConfig && body.generationConfig.thinkingConfig));
       if (body.generationConfig && body.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: "thinking_level is not supported" } }) };
-      const raw = { hobby: "Chess", gear: { entry: { products: [{ name: "Tournament set", brand: "", price: 30 }] } }, videos: [], firstSteps: [] };
+      const raw = { hobby: "Chess", gear: { budget: { products: [{ name: "Tournament set", brand: "", price: 30 }] } }, tasks: [] };
       return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(raw) }] } }] }) };
     };
     const out = await hobbyGuide({ hobby: "Chess" }, { apiKey: "k", fetchImpl, cache: new Map(), model: undefined, quiet: true });
-    assert.equal(out.gear.entry.products[0].name, "Tournament set");
+    assert.equal(out.gear.budget.products[0].name, "Tournament set");
     assert.ok(seen.indexOf(true) >= 0 && seen.indexOf(false) >= 0);
   });
 

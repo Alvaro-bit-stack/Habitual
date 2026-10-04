@@ -146,6 +146,8 @@
       out[id] = { tier: v.tier, score: typeof v.score === "number" && isFinite(v.score) ? v.score : TIERS.indexOf(v.tier) * 33,
         answers: v.answers && typeof v.answers === "object" ? v.answers : {}, evaluatedAt: isDateStr(v.evaluatedAt) ? v.evaluatedAt : today(),
         source: v.source === "check" ? "check" : "self" };
+      var tasks = cleanTasks(v.tasks);
+      if (tasks.length) out[id].tasks = tasks;
     });
     return out;
   }
@@ -352,7 +354,7 @@
       daysSince: cb.daysSince,
       inComeback: cb.inComeback,
       ladderIndex: ladder,
-      nextTinyWin: (state.skills[id] && !cb.inComeback) ? tierTask(h, state.skills[id].tier, list.length) : (tw[Math.min(ladder, tw.length - 1)] || null),
+      nextTinyWin: (state.skills[id] && !cb.inComeback) ? tierTask(h, state.skills[id].tier, list.length, state.skills[id]) : (tw[Math.min(ladder, tw.length - 1)] || null),
       skillTier: state.skills[id] ? state.skills[id].tier : null,
       heat: heat,
       recent: list.slice().reverse().slice(0, 20)
@@ -557,6 +559,24 @@
     return state.skills[id];
   }
   function skill(id) { ensure(); return state.skills[id] || null; }
+  // Practice tasks researched for this hobby at its current level (from the Gemini guide).
+  function cleanTasks(raw) {
+    return (Array.isArray(raw) ? raw : []).slice(0, 6).map(function (t) {
+      var label = t && typeof t.label === "string" ? t.label.trim().slice(0, 100) : "";
+      var minutes = Math.max(5, Math.min(120, Math.round(Number(t && t.minutes) || 15)));
+      return label ? { label: label, minutes: minutes, why: t && typeof t.why === "string" ? t.why.slice(0, 240) : "" } : null;
+    }).filter(Boolean);
+  }
+  function setSkillTasks(id, tier, tasks) {
+    ensure();
+    var sk = state.skills[id];
+    if (!sk || sk.tier !== tier) return null;
+    var clean = cleanTasks(tasks);
+    if (!clean.length) return null;
+    sk.tasks = clean;
+    save();
+    return clean;
+  }
 
   // Today's task for a hobby at a given expertise. Hobby-specific where we have one, otherwise a
   // generic task for the tier; the two alternate so the suggestion changes from day to day.
@@ -579,7 +599,11 @@
     intermediate: "Work on one weak spot in {h}",
     advanced: "Do a focused {h} session on a hard skill"
   };
-  function tierTask(h, tier, n) {
+  function tierTask(h, tier, n, sk) {
+    if (sk && sk.tasks && sk.tasks.length) {
+      var t = sk.tasks[n % sk.tasks.length];
+      return { label: t.label, minutes: t.minutes, why: t.why, researched: true };
+    }
     var own = TIER_TASKS[h.id] && TIER_TASKS[h.id][tier];
     var generic = GENERIC_TASKS[tier].replace("{h}", h.name.toLowerCase());
     return { label: own && n % 2 === 0 ? own : generic, minutes: TIER_MINUTES[tier] };
@@ -870,6 +894,7 @@
     setGoal: setGoal,
     setSkill: setSkill,
     skill: skill,
+    setSkillTasks: setSkillTasks,
     logSession: logSession,
     tickMilestone: tickMilestone,
     events: events,

@@ -889,6 +889,7 @@
             if (!id) return;
             if (!SQ.isTracked(id)) rewards.push(SQ.addHobby(id, { goal: it.tier === "advanced" ? 4 : it.tier === "intermediate" ? 3 : 2 }));
             SQ.setSkill(id, it.tier);
+            ensureTasks(id, SQ.getHobby(id) ? SQ.getHobby(id).name : it.name, it.tier);
           });
           finishOnboarding();
           OB = null;
@@ -1255,47 +1256,61 @@
       '<div class="bl-field">' + BLOB_CATS.map(catBlob).join("") + searchBlob() + mineBlob() + "</div></div>";
   }
 
-  // ---------- Gemini hobby guide (real products, real videos, community tips) ----------
-  var GUIDE_KEY = "habitual.hobbyGuides.v2", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
+  // ---------- Gemini hobby guide ----------
+  // Beginner: a crash course (5 YouTube videos), a budget and a premium starter kit, and tasks.
+  // Intermediate / advanced: tasks only. Guides are cached per hobby and level for a week.
+  var GUIDE_KEY = "habitual.hobbyGuides.v3", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
+  var GUIDE_LEVELS = [["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"]];
+  function guideLevel(tier) { return tier === "intermediate" || tier === "advanced" ? tier : "beginner"; }
+  function guideKey(name, level) { return name.toLowerCase() + "|" + guideLevel(level); }
   var guidePending = {};
   function guideStore() {
     try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; } catch (x) { return {}; }
   }
-  function cachedGuide(name) {
-    var row = guideStore()[name.toLowerCase()];
+  function cachedGuide(name, level) {
+    var row = guideStore()[guideKey(name, level)];
     return row && row.at && Date.now() - row.at < GUIDE_TTL ? row.guide : null;
   }
-  function saveGuide(name, guide) {
+  function saveGuide(name, level, guide) {
     try {
       var all = guideStore(), keys = Object.keys(all);
       if (keys.length > 30) keys.sort(function (a, b) { return all[a].at - all[b].at; }).slice(0, keys.length - 30).forEach(function (k) { delete all[k]; });
-      all[name.toLowerCase()] = { at: Date.now(), guide: guide };
+      all[guideKey(name, level)] = { at: Date.now(), guide: guide };
       localStorage.setItem(GUIDE_KEY, JSON.stringify(all));
     } catch (x) { /* storage optional */ }
   }
-  function fetchGuide(name) {
-    var hit = cachedGuide(name);
+  function fetchGuide(name, level) {
+    level = guideLevel(level);
+    var hit = cachedGuide(name, level);
     if (hit) return Promise.resolve(hit);
     if (location.protocol === "file:" || location.hostname.indexOf("claude") >= 0) {
       var off = new Error("offline"); off.offline = true; return Promise.reject(off);
     }
-    var k = name.toLowerCase();
+    var k = guideKey(name, level);
     if (!guidePending[k]) {
-      guidePending[k] = fetch("/api/hobby-guide", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hobby: name, location: "United States", currency: "USD" }) })
+      guidePending[k] = fetch("/api/hobby-guide", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hobby: name, level: level, location: "United States", currency: "USD" }) })
         .then(function (res) {
           return res.json().catch(function () { return {}; }).then(function (body) {
             if (!res.ok) { var err = new Error(body.error || "Guide request failed."); err.offline = res.status === 404 || !body.error; throw err; }
             return body;
           });
         }, function () { var err = new Error("offline"); err.offline = true; throw err; })
-        .then(function (g) { saveGuide(name, g); return g; })
+        .then(function (g) { saveGuide(name, level, g); return g; })
         .finally(function () { delete guidePending[k]; });
     }
     return guidePending[k];
   }
-  var guideTier = "entry";
+  var guideTier = "budget";
+  // Researched tasks become the hobby's tasks on Today when it is tracked at that level.
+  function applyGuideTasks(id, level, g) {
+    if (!id || !g || !(g.tasks || []).length || !SQ.setSkillTasks) return;
+    SQ.setSkillTasks(id, guideLevel(level), g.tasks.map(function (t) { return { label: t.title, minutes: t.minutes, why: t.why }; }));
+  }
+  function ensureTasks(id, name, level) {
+    fetchGuide(name, level).then(function (g) { applyGuideTasks(id, level, g); if (SQUI.current && SQUI.current().name === "today") SQUI.refresh(); }, function () { /* tasks fall back to built-in ones */ });
+  }
   function usd(n) { return n ? "$" + Number(n).toLocaleString() : ""; }
-  var KITS = [["entry", "Beginner", "Everything you need to start, for the least money"], ["mid", "Step up", "Better gear, worth it once you’re hooked"], ["high", "Premium", "Equipment serious hobbyists keep for years"]];
+  var KITS = [["budget", "Budget", "The cheapest sensible way to start"], ["premium", "Premium", "A more premium start with gear that lasts"]];
   function verifyBadge(p) {
     var n = p.sourceCount || 0;
     if (p.verified) return '<span class="kit-badge is-verified">' + SQUI.icon("check", 13) + "Cross-verified · " + n + " sites</span>";
@@ -1326,8 +1341,8 @@
     if (!kits.length) return "";
     if (!kits.some(function (t) { return t[0] === guideTier; })) guideTier = kits[0][0];
     function total(t) { var k = g.gear[t[0]]; return k.total || k.products.reduce(function (n, p) { return n + (p.price || 0); }, 0); }
-    return '<section class="stack kit"><div><h3 class="h3">Your starter kit</h3><p class="small muted">Gemini read reviews, Reddit threads and forums and picked real products, so you don’t have to.</p></div>' +
-      '<div class="seg kit-seg" role="tablist" aria-label="Starter kit">' + kits.map(function (t) {
+    return '<section class="stack kit"><div><h3 class="h3">Starter kit</h3><p class="small muted">Gemini read reviews, Reddit threads and forums and picked real products, so you don’t have to.</p></div>' +
+      '<div class="seg kit-seg kit-seg-2" role="tablist" aria-label="Starter kit">' + kits.map(function (t) {
         var on = t[0] === guideTier;
         return '<button type="button" role="tab" class="' + (on ? "on" : "") + '" aria-selected="' + on + '" data-tier="' + t[0] + '"><span>' + t[1] + "</span>" +
           (total(t) ? '<span class="num kit-seg-total">' + e(usd(total(t))) + "</span>" : "") + "</button>";
@@ -1335,7 +1350,7 @@
       kits.map(function (t) {
         var k = g.gear[t[0]], ver = k.products.filter(function (p) { return p.verified; }).length;
         return '<div class="stack kit-panel" data-tier-panel="' + t[0] + '"' + (t[0] === guideTier ? "" : " hidden") + ">" +
-          '<div class="kit-summary"><div><strong>' + e(t[1]) + " kit</strong><span class=\"small muted\">" + e(t[2]) + "</span></div>" +
+          '<div class="kit-summary"><div><strong>' + e(t[1]) + " start</strong><span class=\"small muted\">" + e(t[2]) + "</span></div>" +
           (total(t) ? '<div class="kit-total"><span class="num">' + e(usd(total(t))) + '</span><span class="small muted">' + k.products.length + " item" + (k.products.length === 1 ? "" : "s") + "</span></div>" : "") + "</div>" +
           k.products.map(productCard).join("") +
           '<p class="small muted">' + ver + " of " + k.products.length + " pick" + (k.products.length === 1 ? "" : "s") + " cross-verified</p></div>";
@@ -1359,29 +1374,39 @@
       '<span class="bl-video-text"><strong>' + e(v.title) + '</strong><span class="small muted">' + e(v.channel) + "</span>" +
       (v.whatYouLearn ? '<span class="small">' + e(v.whatYouLearn) + "</span>" : "") + "</span></a>";
   }
+  function tasksSection(g) {
+    var lv = guideLevel(g.level);
+    var items = (g.tasks || []).map(function (t, i) {
+      var srcs = (t.sources || []).map(function (src) {
+        return '<a href="' + e(src.url) + '" target="_blank" rel="noopener noreferrer">' + e(src.site || src.title) + "</a>";
+      }).join(" · ");
+      return '<li class="dc-session plan-task"><span class="dc-session-n num" aria-hidden="true">' + (i + 1) + '</span><div class="dc-session-body">' +
+        '<div class="plan-task-top"><span class="dc-row-name">' + e(t.title) + '</span><span class="num small muted">' + e(t.minutes) + " min</span></div>" +
+        (t.details ? "<p>" + e(t.details) + "</p>" : "") +
+        (t.why ? '<p class="small muted plan-why">' + e(t.why) + "</p>" : "") +
+        (srcs ? '<p class="small plan-src">' + SQUI.icon("check", 12) + srcs + "</p>" : "") + "</div></li>";
+    }).join("");
+    if (!items) return "";
+    return '<section class="stack"><div><h3 class="h3">Tasks for ' + (lv === "beginner" ? "beginners" : lv === "intermediate" ? "intermediate players" : "advanced players") + "</h3>" +
+      '<p class="small muted">What people at this level say actually worked for them. These become your tasks on Today.</p></div><ol class="dc-sessions">' + items + "</ol></section>";
+  }
+  function crashCourse(g) {
+    var vids = g.crashCourse || [];
+    if (guideLevel(g.level) !== "beginner" || !vids.length) return "";
+    return '<section class="stack"><div><h3 class="h3">Crash course: how to get started</h3><p class="small muted">' + vids.length + " beginner videos, in order.</p></div>" +
+      '<div class="stack">' + vids.map(videoCard).join("") + "</div></section>";
+  }
   function renderGuide(g) {
-    var community = (g.community || []).map(function (c) {
-      return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + '</span><span>' + e(c.insight) +
-        (c.source ? ' <span class="small muted">— ' + (c.url ? '<a href="' + e(c.url) + '" target="_blank" rel="noopener noreferrer">' + e(c.source) + "</a>" : e(c.source)) + "</span>" : "") + "</span></li>";
-    }).join("");
-    var steps = (g.firstSteps || []).map(function (s, i) {
-      return '<li class="dc-session"><span class="dc-session-n num" aria-hidden="true">' + (i + 1) + '</span><div class="dc-session-body"><div class="dc-row-name">' + e(s.title) + "</div><p>" + e(s.details) + "</p></div></li>";
-    }).join("");
-    var sources = (g.sources || []).slice(0, 8).map(function (s) {
-      return '<li><a href="' + e(s.url) + '" target="_blank" rel="noopener noreferrer">' + e(s.title || s.publisher) + "</a></li>";
-    }).join("");
+    var beginner = guideLevel(g.level) === "beginner";
     return (g.overview ? '<p class="bl-sheet-blurb">' + e(g.overview) + "</p>" : "") +
-      (community ? '<section class="stack"><h3 class="h3">What hobbyists tell beginners</h3><ul class="dc-tips">' + community + "</ul></section>" : "") +
-      gearTiers(g) +
-      ((g.videos || []).length ? '<section class="stack"><h3 class="h3">Tutorial videos</h3><div class="stack">' + g.videos.map(videoCard).join("") + "</div></section>" : "") +
-      (steps ? '<section class="stack"><h3 class="h3">Your first week</h3><ol class="dc-sessions">' + steps + "</ol></section>" : "") +
-      (sources ? '<details class="bl-sources"><summary class="small">Sources Gemini read</summary><ul>' + sources + "</ul></details>" : "");
+      (beginner ? crashCourse(g) + gearTiers(g) : "") + tasksSection(g);
   }
   function guideLoading() {
     return '<div class="card dc-ai-loading" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span><div><div class="h3">Researching with Gemini</div>' +
-      '<p class="small muted">Reading Reddit threads, forums and reviews, picking real products for three starter kits and checking every source. This can take up to a minute.</p></div></div>';
+      '<p class="small muted">Reading Reddit threads, forums and reviews and checking every source. This can take up to a minute.</p></div></div>';
   }
-  function guideFallback(it, err) {
+  function guideFallback(it, err, level) {
+    if (guideLevel(level) !== "beginner") it = { gear: [] };
     var lo = 0, hi = 0;
     (it.gear || []).forEach(function (g) { lo += g[1][0]; hi += g[1][1]; });
     var msg = err && err.offline
@@ -1395,16 +1420,19 @@
   }
 
   // The hobby screen shows the same starter kit for hobbies you track.
-  SQUI.starterKit = function (host, name) {
-    if (!host || !name) return;
+  SQUI.hobbyPlan = function (host, id) {
+    var h = SQ.getHobby(id);
+    if (!host || !h) return;
+    var sk = SQ.skill && SQ.skill(id), level = guideLevel(sk && sk.tier);
     bindKitTabs(host);
     host.innerHTML = guideLoading();
-    fetchGuide(name).then(function (g) {
-      if (host.isConnected) host.innerHTML = gearTiers(g) || "";
+    fetchGuide(h.name, level).then(function (g) {
+      if (sk && !(sk.tasks || []).length) applyGuideTasks(id, level, g);
+      if (host.isConnected) host.innerHTML = renderGuide(g);
     }, function (err) {
       if (!host.isConnected) return;
-      host.innerHTML = '<div class="card bl-guide-note" role="note"><div class="h3">Starter kit</div><p class="small muted">' +
-        e(err && err.offline ? "Real product picks come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
+      host.innerHTML = '<div class="card bl-guide-note" role="note"><div class="h3">' + (level === "beginner" ? "Crash course and starter kit" : "Your tasks") + '</div><p class="small muted">' +
+        e(err && err.offline ? "These come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
     });
   };
 
@@ -1422,11 +1450,20 @@
       it.category === "active" ? "Active" : "Low-key"
     ];
   }
+  var sheetLevel = "beginner";
+  function levelPicker(level) {
+    return '<div class="plan-level"><span class="small muted">Your level</span><div class="seg" role="radiogroup" aria-label="Your level">' + GUIDE_LEVELS.map(function (l) {
+      var on = l[0] === level;
+      return '<button type="button" role="radio" class="' + (on ? "on" : "") + '" aria-checked="' + on + '" data-level="' + l[0] + '">' + l[1] + "</button>";
+    }).join("") + "</div></div>";
+  }
   function openBlobSheet(key, id, onAdd) {
     closeBlobSheet();
     var it = (key && blobItem(key)) || mineItems().filter(function (m) { return m.id === id; })[0];
     if (!it) return;
     var mine = inMine(it);
+    var have = it.id && SQ.skill && SQ.skill(it.id);
+    if (have) sheetLevel = guideLevel(have.tier);
     var wrap = document.createElement("div");
     wrap.className = "bl-sheet-wrap";
     wrap.innerHTML = '<div class="cm-sheet-backdrop" data-close></div>' +
@@ -1440,6 +1477,7 @@
       ((it.free || []).length ? '<section class="stack"><h3 class="h3">Free ways to start</h3><ul class="dc-tips">' + it.free.map(function (f) {
         return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + "</span><span>" + e(f) + "</span></li>";
       }).join("") + "</ul></section>" : "") +
+      levelPicker(sheetLevel) +
       '<div class="stack-lg" data-role="guide">' + guideLoading() + "</div>" +
       '<div class="bl-sheet-cta">' +
       (mine ? '<button type="button" class="btn primary block" data-sheet="open">' + SQUI.icon("check", 18) + " In My hobbies · Open tracker</button>"
@@ -1451,10 +1489,11 @@
     bindKitTabs(guideHost);
     function load() {
       guideHost.innerHTML = guideLoading();
-      fetchGuide(it.name).then(function (g) {
-        if (wrap.isConnected) guideHost.innerHTML = renderGuide(g);
+      var level = sheetLevel;
+      fetchGuide(it.name, level).then(function (g) {
+        if (wrap.isConnected && level === sheetLevel) guideHost.innerHTML = renderGuide(g);
       }, function (err) {
-        if (wrap.isConnected) guideHost.innerHTML = guideFallback(it, err);
+        if (wrap.isConnected && level === sheetLevel) guideHost.innerHTML = guideFallback(it, err, level);
       });
     }
     if (!it.own) load(); else guideHost.innerHTML = "";
@@ -1465,18 +1504,29 @@
     wrap.addEventListener("click", function (ev) {
       if (ev.target.closest("[data-close]")) { closeBlobSheet(); return; }
       if (ev.target.closest("[data-tier]")) return;
+      var lv = ev.target.closest("[data-level]");
+      if (lv) {
+        sheetLevel = lv.getAttribute("data-level");
+        wrap.querySelectorAll("[data-level]").forEach(function (x) { var on = x === lv; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
+        if (!it.own) load();
+        return;
+      }
       var b = ev.target.closest("[data-sheet]");
       if (!b) return;
       var act = b.getAttribute("data-sheet");
-      if (act === "add") { closeBlobSheet(); onAdd(it); }
+      if (act === "add") { closeBlobSheet(); it.level = sheetLevel; onAdd(it); }
       else if (act === "retry") load();
       else if (act === "open") { closeBlobSheet(); SQUI.go("hobby", { id: it.id }); }
     });
   }
+  // Adding a hobby saves the level you picked (Beginner when dragged in) and loads that level's tasks.
   function addBlobHobby(it) {
     var id = it.catalog ? it.id : (it.id || SQ.addCustomHobby(it.name, it.category));
     if (SQ.isTracked(id)) return { id: id, reward: null };
     var reward = SQ.addHobby(id, { goal: 2, viaStarter: !!it.catalog });
+    var level = guideLevel(it.level || "beginner");
+    if (SQ.setSkill && !(SQ.skill(id) && SQ.skill(id).tier === level)) SQ.setSkill(id, level);
+    ensureTasks(id, it.name, level);
     finishOnboarding();
     return { id: id, reward: reward };
   }

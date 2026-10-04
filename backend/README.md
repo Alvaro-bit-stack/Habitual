@@ -32,6 +32,17 @@ The local server binds only to `127.0.0.1`, rejects foreign Origin/Host headers,
 | `GET /api/events` | Up to 200 future events, counts and this user's confirmed RSVP |
 | `POST /api/events` | Create a dated event; host identity comes from the token |
 | `PUT /api/events/:id/attendance` | `{ "going": true/false }`; idempotent, capacity checked under a serializable SQL transaction |
+| `GET /api/friends` | `{ code, friends:[{code,name,character,xp}], incoming:[…], outgoing:[…] }`; your 8-character friend code is created on first use |
+| `POST /api/friends` | `{ "code": "ABCD2345" }` sends a request; if they already asked you, you become friends. Max 50 pending |
+| `PUT /api/friends/:code` | `{ "accept": true/false }` answers an incoming request |
+| `DELETE /api/friends/:code` | Removes a friend or cancels a request (either side) |
+| `POST /api/path` | `{ hobbyId \| hobbyName, tier: "new"\|"beginner"\|"intermediate"\|"advanced" }` → Gemini practice path `{ hobby, tier, steps:[{title,detail,minutes}], cached }`. Catalog hobbies are cached 14 days and shared; custom names are never cached. 10 Gemini calls per user per day (`AI_DAILY_LIMIT`) |
+
+Friends see only your app name, character and XP, refreshed whenever your progress saves. The Gemini key is read on the server only.
+
+## Hosting (current): one App Service
+
+`infra/main.bicep` + `infra/deploy.sh <name> [region]` run **`server.js`** on Azure App Service. It serves the app, the Gemini Discover guides and this API under one origin, so there is no CORS. Azure SQL uses the free serverless offer and Entra-only sign-in. The web app's managed identity gets row access to the tables and nothing else. The Gemini key sits in Key Vault, and FTP/basic-auth deploys are off. The Functions entry (`src/functions.js`) still works if the team later prefers Functions. Accounts switch on when the web app has `AUTH_ISSUER`, `AUTH_JWKS_URI`, `AUTH_AUDIENCE`, `AUTH_AUTHORITY`, `SPA_CLIENT_ID` and `SPA_SCOPE`; until then `/api/me|events|friends|path` answer 503 and the app runs device-only.
 
 Events use `title`, `place`, `hobbyId`, `level`, `spots`, and `startsAt` (ISO timestamp with a timezone). Live event creation is available through the API; there is not yet an organizer creation screen. When signed in, Community uses these events instead of the demo catalog, and RSVP animations run only after confirmation. Live check-in/XP awards, shared group posts, delivered invitations, and messaging are not implemented by this first backend; the current sample/local versions remain separate. Profile XP is a **private, client-reported progress backup**, not trusted public rankings or rewards.
 

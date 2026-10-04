@@ -24,6 +24,20 @@ if (fs.existsSync(LOCAL_ENV)) {
 }
 const DIST = path.join(ROOT, "dist");
 const PORT = integerEnv("PORT", 8787, 1, 65535);
+const HOST = process.env.HOST || "127.0.0.1";               // 0.0.0.0 on Azure App Service
+const TRUST_PROXY = process.env.TRUST_PROXY === "1";        // set on Azure only: trust X-Forwarded-For
+// Accounts, saves, friends, events and guided paths (backend/). On only when Entra + SQL are configured.
+const CLOUD = !!(process.env.AUTH_ISSUER && process.env.SQL_SERVER && process.env.SPA_CLIENT_ID);
+const AUTH_ORIGIN = CLOUD && process.env.AUTH_AUTHORITY ? " " + new URL(process.env.AUTH_AUTHORITY).origin : "";
+let cloudApi = null;
+function getCloudApi() {
+  if (!cloudApi) cloudApi = Promise.all([import("./backend/src/api.js"), import("./backend/src/auth.js"), import("./backend/src/sql-store.js")])
+    .then(([api, auth, store]) => api.createApi(new store.SqlStore(), auth.createAuthenticator()))
+    .catch((e) => { cloudApi = null; throw e; });
+  return cloudApi;
+}
+const STATIC = { "auth.html": "text/html; charset=utf-8", "sw.js": "text/javascript; charset=utf-8",
+  "manifest.webmanifest": "application/manifest+json", "icon.svg": "image/svg+xml" };
 const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const CACHE_TTL_MS = integerEnv("RESEARCH_CACHE_TTL_MS", 24 * 60 * 60 * 1000, 60000, 7 * 24 * 60 * 60 * 1000);
 const RATE_LIMIT_MAX = integerEnv("RESEARCH_RATE_LIMIT", 10, 1, 1000);
@@ -650,11 +664,12 @@ function securityHeaders(contentType) {
   return {
     "content-type": contentType,
     "cache-control": contentType.startsWith("application/json") ? "no-store" : "no-cache",
-    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'",
+    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'" + AUTH_ORIGIN + "; img-src 'self' data: blob: https://i.ytimg.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'",
     "referrer-policy": "no-referrer",
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
-    "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()"
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    ...(TRUST_PROXY ? { "strict-transport-security": "max-age=31536000" } : {})
   };
 }
 
@@ -664,6 +679,9 @@ function sendJson(res, status, value) {
 }
 
 function requestIp(req) {
+  // Behind App Service every request arrives from its front end; the client is the first X-Forwarded-For hop.
+  const hop = TRUST_PROXY && String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  if (hop) return hop.replace(/^\[?([^\]]+?)\]?(:\d+)?$/, "$1");
   return req.socket && req.socket.remoteAddress || "unknown";
 }
 
@@ -684,13 +702,13 @@ function sameOrigin(req) {
   try { return new URL(origin).host === req.headers.host; } catch (_) { return false; }
 }
 
-function readJson(req) {
+function readJson(req, limit = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let bytes = 0;
     const chunks = [];
     req.on("data", (chunk) => {
       bytes += chunk.length;
-      if (bytes > MAX_BODY_BYTES) {
+      if (bytes > limit) {
         const error = clientError("Request is too large.");
         error.status = 413;
         reject(error);
@@ -732,7 +750,37 @@ async function handler(req, res) {
       return sendJson(res, status, { error: message });
     }
   }
+  if (requestUrl.pathname === "/cloud-config.json" && req.method === "GET") {
+    return sendJson(res, 200, CLOUD ? { enabled: true, apiBase: "/api", clientId: process.env.SPA_CLIENT_ID,
+      authority: process.env.AUTH_AUTHORITY, scope: process.env.SPA_SCOPE } : { enabled: false });
+  }
+  if (/^\/api\/(me|events|friends|path)(\/|$)/.test(requestUrl.pathname)) {
+    if (!CLOUD) return sendJson(res, 503, { error: "Accounts are not set up on this server." });
+    if (!sameOrigin(req)) return sendJson(res, 403, { error: "Cross-origin requests are not allowed." });
+    let body = "";
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      try { body = JSON.stringify(await readJson(req, 1100000)); }
+      catch (error) { return sendJson(res, error.status || 400, { error: error.message }); }
+    }
+    try {
+      const api = await getCloudApi();
+      const result = await api(new Request(requestUrl, { method: req.method, headers: { authorization: req.headers.authorization || "", "if-match": req.headers["if-match"] || "" }, ...(body ? { body } : {}) }), { error: (...a) => console.error(...a) });
+      res.writeHead(result.status, securityHeaders("application/json; charset=utf-8"));
+      return res.end(JSON.stringify(result.jsonBody));
+    } catch (error) {
+      console.error("Cloud API unavailable", error && error.name);
+      return sendJson(res, 503, { error: "Could not save right now. Please retry." });
+    }
+  }
   if (req.method !== "GET" && req.method !== "HEAD") return sendJson(res, 405, { error: "Method not allowed." });
+  const extra = requestUrl.pathname.replace(/^\/+/, "");
+  if (STATIC[extra]) {
+    const fullExtra = path.join(DIST, extra);
+    if (!fs.existsSync(fullExtra)) return sendJson(res, 404, { error: "Not found." });
+    res.writeHead(200, securityHeaders(STATIC[extra]));
+    if (req.method === "HEAD") return res.end();
+    return fs.createReadStream(fullExtra).pipe(res);
+  }
 
   const assetMatch = /^\/assets\/hobbies\/([a-z]+\.jpg)$/.exec(requestUrl.pathname);
   if (assetMatch) {
@@ -764,7 +812,7 @@ async function handler(req, res) {
 function createServer() { return http.createServer(handler); }
 
 if (require.main === module) {
-  createServer().listen(PORT, "127.0.0.1", () => {
+  createServer().listen(PORT, HOST, () => {
     console.log(`Sidequest server: http://127.0.0.1:${PORT}`);
     console.log(`Gemini research: ${process.env.GEMINI_API_KEY ? "configured" : "not configured"}`);
   });

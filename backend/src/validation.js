@@ -1,7 +1,17 @@
 export class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
-export const hobbies = ['drawing','running','tennis','guitar','photography','cooking','hiking','soccer','knitting','bouldering','chess','gardening'];
+// Keep in step with SQ_DATA.hobbies (src/data.js) and the character list in src/showcase.js.
+export const hobbyNames = {guitar:'Guitar',soccer:'Soccer',tennis:'Tennis',painting:'Painting',photography:'Photography',running:'Running',sewing:'Sewing',journaling:'Journaling',piano:'Piano',basketball:'Basketball'};
+export const hobbies = Object.keys(hobbyNames);
+export const characters = ['neo','adrian','alvaro','avatar1','avatar2','avatar3'];
+export const tiers = ['new','beginner','intermediate','advanced'];
+export const FRIEND_CODE = /^[A-HJ-NP-Z2-9]{8}$/; // no 0/O/1/I, so codes read aloud cleanly
+export function friendCode(value) {
+  const code = typeof value === 'string' ? value.trim().toUpperCase().replace(/[\s-]/g, '') : '';
+  if (!FRIEND_CODE.test(code)) throw new ApiError(400, 'Friend codes are 8 letters and numbers');
+  return code;
+}
 const object = x => x && typeof x === 'object' && !Array.isArray(x);
 export function validateState(s) {
   if (!object(s) || s.version !== 1 || !object(s.user) || typeof s.onboarded !== 'boolean') throw new ApiError(400, 'Invalid progress format');
@@ -11,7 +21,7 @@ export function validateState(s) {
   for (const h of s.custom) if (!object(h) || typeof h.id !== 'string' || typeof h.name !== 'string') throw new ApiError(400, 'Invalid custom hobby');
   for (const x of s.sessions) if (!object(x) || typeof x.id !== 'string' || typeof x.hobbyId !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(x.date) || !['tiny','regular','big'].includes(x.size)) throw new ApiError(400, 'Invalid session');
   if (typeof s.user.name !== 'string' || s.user.name.length > 100 || !Number.isFinite(s.user.xp) || s.user.xp < 0) throw new ApiError(400, 'Invalid profile');
-  if (s.user.character && !['neo','adrian','alvaro'].includes(s.user.character)) throw new ApiError(400, 'Unknown avatar');
+  if (s.user.character && !characters.includes(s.user.character)) throw new ApiError(400, 'Unknown avatar');
   const text = JSON.stringify(s);
   if (Buffer.byteLength(text) > 1024 * 1024) throw new ApiError(413, 'Progress is too large');
   return JSON.parse(text); // Private backup only; never use client XP to authorize or rank users.

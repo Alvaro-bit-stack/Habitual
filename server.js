@@ -26,13 +26,20 @@ const DIST = path.join(ROOT, "dist");
 const PORT = integerEnv("PORT", 8787, 1, 65535);
 const HOST = process.env.HOST || "127.0.0.1";               // 0.0.0.0 on Azure App Service
 const TRUST_PROXY = process.env.TRUST_PROXY === "1";        // set on Azure only: trust X-Forwarded-For
-// Accounts, saves, friends, events and guided paths (backend/). On only when Entra + SQL are configured.
-const CLOUD = !!(process.env.AUTH_ISSUER && process.env.SQL_SERVER && process.env.SPA_CLIENT_ID);
-const AUTH_ORIGIN = CLOUD && process.env.AUTH_AUTHORITY ? " " + new URL(process.env.AUTH_AUTHORITY).origin : "";
+// Accounts (email-code sign-in), saves, friends, events and guided paths (backend/).
+// On only when SQL, the session key and the Azure email sender are all configured.
+// A Key Vault reference that failed to resolve arrives as the literal "@Microsoft.KeyVault(...)" text,
+// which is public knowledge; signing sessions with it would let anyone forge a login. Stay off instead.
+const unresolved = (v) => !v || /^@Microsoft\.KeyVault\(/i.test(v);
+const CLOUD = !unresolved(process.env.SESSION_SECRET) && !unresolved(process.env.ACS_CONNECTION) && !!(process.env.SQL_SERVER && process.env.MAIL_FROM);
+if (!CLOUD && process.env.SQL_SERVER) console.error("Accounts are off: SESSION_SECRET or ACS_CONNECTION is missing or did not resolve from Key Vault.");
 let cloudApi = null;
 function getCloudApi() {
-  if (!cloudApi) cloudApi = Promise.all([import("./backend/src/api.js"), import("./backend/src/auth.js"), import("./backend/src/sql-store.js")])
-    .then(([api, auth, store]) => api.createApi(new store.SqlStore(), auth.createAuthenticator()))
+  if (!cloudApi) cloudApi = Promise.all([import("./backend/src/api.js"), import("./backend/src/email-login.js"), import("./backend/src/sql-store.js")])
+    .then(([api, mail, store]) => {
+      const login = mail.createEmailLogin({ secret: process.env.SESSION_SECRET, send: mail.acsMailer(process.env.ACS_CONNECTION, process.env.MAIL_FROM) });
+      return api.createApi(new store.SqlStore(), login.authenticate, { login });
+    })
     .catch((e) => { cloudApi = null; throw e; });
   return cloudApi;
 }
@@ -706,7 +713,7 @@ function securityHeaders(contentType) {
   return {
     "content-type": contentType,
     "cache-control": contentType.startsWith("application/json") ? "no-store" : "no-cache",
-    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'" + AUTH_ORIGIN + "; img-src 'self' data: blob: https://i.ytimg.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'",
+    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'self'",
     "referrer-policy": "no-referrer",
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
@@ -794,10 +801,9 @@ async function handler(req, res) {
     }
   }
   if (requestUrl.pathname === "/cloud-config.json" && req.method === "GET") {
-    return sendJson(res, 200, CLOUD ? { enabled: true, apiBase: "/api", clientId: process.env.SPA_CLIENT_ID,
-      authority: process.env.AUTH_AUTHORITY, scope: process.env.SPA_SCOPE } : { enabled: false });
+    return sendJson(res, 200, CLOUD ? { enabled: true, apiBase: "/api", login: "email" } : { enabled: false });
   }
-  if (/^\/api\/(me|events|friends|path)(\/|$)/.test(requestUrl.pathname)) {
+  if (/^\/api\/(auth|me|events|friends|path)(\/|$)/.test(requestUrl.pathname)) {
     if (!CLOUD) return sendJson(res, 503, { error: "Accounts are not set up on this server." });
     if (!sameOrigin(req)) return sendJson(res, 403, { error: "Cross-origin requests are not allowed." });
     let body = "";
@@ -807,7 +813,7 @@ async function handler(req, res) {
     }
     try {
       const api = await getCloudApi();
-      const result = await api(new Request(requestUrl, { method: req.method, headers: { authorization: req.headers.authorization || "", "if-match": req.headers["if-match"] || "" }, ...(body ? { body } : {}) }), { error: (...a) => console.error(...a) });
+      const result = await api(new Request(requestUrl, { method: req.method, headers: { authorization: req.headers.authorization || "", "if-match": req.headers["if-match"] || "", "x-client-ip": requestIp(req) }, ...(body ? { body } : {}) }), { error: (...a) => console.error(...a) });
       res.writeHead(result.status, securityHeaders("application/json; charset=utf-8"));
       return res.end(JSON.stringify(result.jsonBody));
     } catch (error) {

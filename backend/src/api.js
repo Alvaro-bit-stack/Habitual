@@ -2,19 +2,22 @@ import {ApiError, validateState, validateEvent, characters} from './validation.j
 import {generatePath, validatePathRequest} from './paths.js';
 const DAY = 86400000, AI_DAILY = Number(process.env.AI_DAILY_LIMIT) || 10;
 const response = (status, data) => ({status, jsonBody:data, headers:{'Cache-Control':'no-store','Content-Type':'application/json','X-Content-Type-Options':'nosniff'}});
-export function createApi(store, authenticate, {makePath = generatePath} = {}) {
+export function createApi(store, authenticate, {makePath = generatePath, login = null} = {}) {
   return async (request, context = {error:()=>{}}) => {
     try {
       const path = new URL(request.url).pathname.replace(/^\/api\/?/, '').replace(/\/$/, '');
       const method = request.method.toUpperCase();
       if (path === 'health' && method === 'GET') return response(200, {ok:true});
-      const user = await authenticate(request);
       async function body() {
         if (Number(request.headers.get('content-length')) > 1100000) throw new ApiError(413,'Request too large');
         const text = await request.text();
         if (Buffer.byteLength(text) > 1100000) throw new ApiError(413,'Request too large');
         try { return JSON.parse(text); } catch { throw new ApiError(400,'Invalid JSON'); }
       }
+      // Email sign-in: the only routes that work without a session.
+      if (login && path === 'auth/start' && method === 'POST') return response(202, await login.start((await body())?.email, request.headers.get('x-client-ip') || 'unknown'));
+      if (login && path === 'auth/verify' && method === 'POST') { const b = await body(); return response(200, await login.verify(b?.email, b?.code)); }
+      const user = await authenticate(request);
       if (path === 'me' && method === 'GET') return response(200, user);
       if (path === 'me/state' && method === 'GET') return response(200, await store.getState(user.id));
       if (path === 'me/state' && method === 'PUT') {

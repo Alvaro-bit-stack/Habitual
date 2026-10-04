@@ -23,6 +23,13 @@ KEY="$KEY" node -e 'process.stdout.write(JSON.stringify({geminiApiKey:{value:pro
 az deployment group create -g "$RG" -f infra/main.bicep -o none \
   -p name="$NAME" sqlLocation="$SQL_LOCATION" adminLogin="$(cut -f1 <<<"$ME")" adminObjectId="$(cut -f2 <<<"$ME")" -p @"$SECRETS"
 rm -f "$SECRETS"
+echo "== Session signing key (created once; kept across deploys)"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if az keyvault secret show --vault-name "$NAME-kv" -n session-key --query id -o none 2>/dev/null; then break; fi
+  az keyvault secret set --vault-name "$NAME-kv" -n session-key --value "$(openssl rand -base64 48)" -o none 2>/dev/null && break
+  sleep 30 # the new vault role can take a few minutes to apply
+done
+az keyvault secret show --vault-name "$NAME-kv" -n session-key --query id -o none || { echo "Could not create the session key; accounts stay off. Re-run in a few minutes."; exit 1; }
 SQL=$(az sql server show -g "$RG" -n "$NAME-db" --query fullyQualifiedDomainName -o tsv)
 
 echo "== Database schema and app access (temporary firewall opening for this Mac)"

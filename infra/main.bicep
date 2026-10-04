@@ -45,6 +45,41 @@ resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empt
   properties: { value: geminiApiKey }
 }
 
+// Azure Communication Services sends the sign-in codes. Starts on a free Azure-managed sender
+// address; a custom domain (hobitual.club) can be linked later for higher sending limits.
+resource emailService 'Microsoft.Communication/emailServices@2023-04-01' = {
+  name: '${name}-email'
+  location: 'global'
+  properties: { dataLocation: 'United States' }
+}
+resource emailDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = {
+  parent: emailService
+  name: 'AzureManagedDomain'
+  location: 'global'
+  properties: { domainManagement: 'AzureManaged', userEngagementTracking: 'Disabled' }
+}
+resource comms 'Microsoft.Communication/communicationServices@2023-04-01' = {
+  name: '${name}-comms'
+  location: 'global'
+  properties: { dataLocation: 'United States', linkedDomains: [emailDomain.id] }
+}
+resource acsSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'acs-connection'
+  properties: { value: comms.listKeys().primaryConnectionString }
+}
+// The session signing key is created once by deploy.sh (never in this template, so redeploys
+// don't sign everyone out). The admin may manage secrets; the web app may only read them.
+resource kvAdmin 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: vault
+  name: guid(vault.id, adminObjectId, 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')
+    principalId: adminObjectId
+    principalType: 'User'
+  }
+}
+
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: '${name}-db'
   location: sqlLocation
@@ -104,6 +139,9 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'false' }
         { name: 'SQL_SERVER', value: sqlServer.properties.fullyQualifiedDomainName }
         { name: 'SQL_DATABASE', value: db.name }
+        { name: 'ACS_CONNECTION', value: '@Microsoft.KeyVault(SecretUri=${vault.properties.vaultUri}secrets/acs-connection)' }
+        { name: 'MAIL_FROM', value: 'DoNotReply@${emailDomain.properties.mailFromSenderDomain}' }
+        { name: 'SESSION_SECRET', value: '@Microsoft.KeyVault(SecretUri=${vault.properties.vaultUri}secrets/session-key)' }
       ], empty(geminiApiKey) ? [] : [
         { name: 'GEMINI_API_KEY', value: '@Microsoft.KeyVault(SecretUri=${vault.properties.vaultUri}secrets/gemini-api-key)' }
       ])

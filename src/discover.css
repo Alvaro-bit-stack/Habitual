@@ -663,3 +663,8 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .as-tasks li > span.small:last-child { display: block; }
 .as-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .as-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+
+/* Crash-course thumbnail fallback */
+.bl-video-thumb.no-thumb { background: linear-gradient(135deg, #ff5f5f, #c8102e); }
+.bl-video-thumb.no-thumb::after { content: attr(data-channel); position: absolute; left: 8px; right: 8px; bottom: 6px; color: #fff; font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bl-video-thumb .bl-video-play { z-index: 1; }

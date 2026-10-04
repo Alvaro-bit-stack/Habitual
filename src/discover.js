@@ -1339,9 +1339,17 @@
       host.querySelectorAll("[data-tier-panel]").forEach(function (pn) { pn.hidden = pn.getAttribute("data-tier-panel") !== guideTier; });
     });
   }
+  // A thumbnail that cannot load (blocked, offline, or a removed video) becomes a tinted tile with the
+  // channel name instead of an empty box.
+  if (typeof document !== "undefined") document.addEventListener("error", function (ev) {
+    var img = ev.target;
+    if (!img || img.tagName !== "IMG" || !img.parentNode || !img.parentNode.classList || !img.parentNode.classList.contains("bl-video-thumb")) return;
+    img.parentNode.classList.add("no-thumb");
+    img.remove();
+  }, true);
   function videoCard(v) {
     return '<a class="card tap bl-video" href="' + e(v.url) + '" target="_blank" rel="noopener noreferrer">' +
-      '<span class="bl-video-thumb"><img src="' + e(v.thumbnail) + '" alt="" loading="lazy"><span class="bl-video-play">' + SQUI.icon("play", 22) + "</span></span>" +
+      '<span class="bl-video-thumb" data-channel="' + e(v.channel || "YouTube") + '"><img src="' + e(v.thumbnail || ("https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg")) + '" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="bl-video-play">' + SQUI.icon("play", 22) + "</span></span>" +
       '<span class="bl-video-text"><strong>' + e(v.title) + '</strong><span class="small muted">' + e(v.channel) + "</span>" +
       (v.whatYouLearn ? '<span class="small">' + e(v.whatYouLearn) + "</span>" : "") + "</span></a>";
   }

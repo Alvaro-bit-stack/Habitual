@@ -770,14 +770,6 @@
         "</article>";
     }).join("");
 
-    // week dots (any session per day)
-    var mon = weekKey(today), days = "";
-    var dates = {};
-    (st0.sessions || []).forEach(function (x) { dates[x.date] = 1; });
-    for (var i = 0; i < 7; i++) {
-      var d = addDays(mon, i);
-      days += '<span class="td-day' + (dates[d] ? " done" : "") + (d === today ? " today" : "") + '"><i></i>' + DOWS[i].charAt(0) + "</span>";
-    }
 
     // Header: greeting, level and XP, with the one thing worth doing today right under it.
     var pick = null, pickScore = -1;
@@ -810,8 +802,12 @@
       '<div class="td-xpline num"><span>' + p.xpIntoLevel + " / " + p.xpForNext + "</span><span>to Lv " + (p.level + 1) + "</span></div>" +
       "</div>" + nextUp + "</header>";
 
-    var week = '<div class="td-week"><span><strong class="num">' + p.weekSessions + '</strong> <span class="muted">session' + (p.weekSessions === 1 ? "" : "s") + " this week</span></span>" +
-      '<span class="td-days" aria-hidden="true">' + days + "</span></div>";
+    var sd = p.dailyStreak || 0, lit = p.streakDoneToday;
+    var week = '<div class="td-streak' + (lit ? " lit" : "") + (sd ? "" : " zero") + '" role="status" aria-label="' + sd + ' day streak' + (lit ? "" : sd ? ", log today to keep it" : "") + '">' +
+      '<span class="td-streak-flame" aria-hidden="true">' + icon("flame", 34) + "</span>" +
+      '<span class="td-streak-num num">' + sd + "</span>" +
+      '<span class="td-streak-txt"><span class="td-streak-k">day streak</span>' +
+      '<span class="td-streak-sub">' + (lit ? "You showed up today" : sd ? "Log today to keep it going" : "Log a session to start one") + "</span></span></div>";
 
     var body;
     if (!trackedList.length) {

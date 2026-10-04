@@ -268,6 +268,9 @@ Bottom nav (shell): Today · Discover · Community · Me, hidden when a screen's
 Today header (shell): greeting, level and XP bar (no character). Under it, "Up next" offers one thing to do today:
 a comeback hobby first, then a hobby not logged today, then the one furthest from its weekly goal.
 Tapping it logs that hobby's next tiny win/step. No hobbies → a Choose button; everything done → "All caught up".
+Below it, the daily streak (Duolingo style): flame + days in a row with at least one session.
+`SQ.player().dailyStreak` / `.streakDoneToday`; the streak survives today until midnight if yesterday counted.
+Gray at 0, orange outline when it's alive but not yet done today, lit orange once you log today.
 Community shows a lock until the user tracks a hobby.
 
 **Onboarding and discovery:** a fresh app opens `pick`; navigation stays hidden until the user

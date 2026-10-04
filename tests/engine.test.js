@@ -551,6 +551,23 @@ function suite(source) {
     assert(l >= 4 && l <= 5);
   });
 
+  test("daily streak counts consecutive days and survives until today ends", () => {
+    const { SQ } = L({ now: D(2026, 9, 1) });
+    SQ.addHobby("painting");
+    eq(SQ.player().dailyStreak, 0); eq(SQ.player().streakDoneToday, false);
+    for (let d = 1; d <= 3; d++) { SQ._now = D(2026, 9, d); SQ.logSession("painting", { size: "tiny" }); }
+    eq(SQ.player().dailyStreak, 3); eq(SQ.player().streakDoneToday, true);
+    SQ.logSession("painting", { size: "tiny" });
+    eq(SQ.player().dailyStreak, 3, "two sessions on one day count once");
+    SQ._now = D(2026, 9, 4);
+    eq(SQ.player().dailyStreak, 3, "still alive the next day before logging");
+    eq(SQ.player().streakDoneToday, false);
+    SQ.logSession("painting", { size: "tiny" });
+    eq(SQ.player().dailyStreak, 4);
+    SQ._now = D(2026, 9, 6);
+    eq(SQ.player().dailyStreak, 0, "a missed day resets it");
+  });
+
   run(source === "stub" ? "stub" : "real data", T);
 }
 

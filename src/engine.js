@@ -341,6 +341,17 @@
     };
   }
 
+  // Daily streak: consecutive days with at least one session. It stays alive through today
+  // if yesterday counted, so the number doesn't drop to 0 before you've had a chance to log.
+  function dailyStreak() {
+    var days = {};
+    state.sessions.forEach(function (s) { days[s.date] = 1; });
+    var t = today(), doneToday = !!days[t];
+    var d = doneToday ? t : addDays(t, -1), n = 0;
+    while (days[d]) { n++; d = addDays(d, -1); }
+    return { days: n, doneToday: doneToday };
+  }
+
   function player() {
     ensure();
     var lv = levelFor(state.user.xp);
@@ -358,6 +369,8 @@
       accessories: CATEGORIES.filter(function (c) { return (perCat[c] || 0) >= 3; }),
       totalSessions: state.sessions.length,
       weekSessions: week,
+      dailyStreak: dailyStreak().days,
+      streakDoneToday: dailyStreak().doneToday,
       trackedCount: state.tracked.length
     };
   }

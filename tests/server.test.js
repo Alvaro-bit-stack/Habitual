@@ -4,7 +4,7 @@
 const assert = require("node:assert/strict");
 const {
   createServer, normalizeRequest, extractText, extractSources, validateResearch, researchHobby,
-  hobbyGuide, youtubeId, firstJsonObject, mentionsProduct, pageText, siteOf
+  hobbyGuide, youtubeId, firstJsonObject, hobbyAssistant, mentionsProduct, pageText, siteOf
 } = require("../server.js");
 
 let passed = 0;
@@ -195,6 +195,33 @@ function sampleRaw() {
     const newline = '{"why":"line one\nline two"}';
     assert.equal(firstJsonObject(newline).why, "line one line two");
     assert.throws(() => firstJsonObject("no json here"), /No JSON object/);
+  });
+
+  await test("assistant answers with checked product links and optional tasks", async () => {
+    let sent;
+    const fetchImpl = async (url, init) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        sent = JSON.parse(init.body);
+        const raw = { reply: "Try these cheaper picks [1].", products: [
+            { brand: "Yamaha", name: "FG800", price: 199, retailer: "Store", url: "https://shop.example/fg800", why: "Solid top." },
+            { brand: "Fender", name: "CD-60S", price: 199, retailer: "", url: "https://made-up.example/x", why: "" }],
+          tasks: [{ title: "One minute changes", details: "", minutes: 3, why: "" }] };
+        return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "```json\n" + JSON.stringify(raw) + "\n```" }] } }] }) };
+      }
+      if (url === "https://shop.example/fg800") return { ok: true, status: 200, text: async () => "<title>Yamaha FG800 Acoustic</title>" };
+      return { ok: false, status: 404 };
+    };
+    const out = await hobbyAssistant({ hobby: "Guitar", level: "beginner", question: "Anything cheaper?",
+      history: [{ role: "user", text: "hi" }, { role: "assistant", text: "Hello!" }],
+      context: { products: ["Yamaha FG800J"], tasks: ["Do One Minute Changes"] } }, { apiKey: "k", fetchImpl, model: "m" });
+    assert.equal(out.reply, "Try these cheaper picks [1].");
+    assert.equal(out.products[0].url, "https://shop.example/fg800");
+    assert.equal(out.products[1].linkType, "search");
+    assert.equal(out.tasks[0].minutes, 5);
+    assert.deepEqual(sent.contents.map((c) => c.role), ["user", "model", "user"]);
+    assert.match(sent.contents[2].parts[0].text, /Yamaha FG800J/);
+    assert.match(sent.contents[2].parts[0].text, /Anything cheaper\?/);
+    await assert.rejects(() => hobbyAssistant({ hobby: "Guitar", question: "" }, { apiKey: "k", fetchImpl, model: "m" }), /Ask a question/);
   });
 
   await test("product names are matched by brand and model words", () => {

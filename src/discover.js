@@ -900,7 +900,6 @@
             if (!id) return;
             if (!SQ.isTracked(id)) rewards.push(SQ.addHobby(id, { goal: it.tier === "advanced" ? 4 : it.tier === "intermediate" ? 3 : 2 }));
             SQ.setSkill(id, it.tier);
-            ensureTasks(id, SQ.getHobby(id) ? SQ.getHobby(id).name : it.name, it.tier);
           });
           finishOnboarding();
           OB = null;
@@ -1267,59 +1266,20 @@
       '<div class="bl-field">' + BLOB_CATS.map(catBlob).join("") + searchBlob() + mineBlob() + "</div></div>";
   }
 
-  // ---------- Gemini hobby guide ----------
-  // Beginner: a crash course (5 YouTube videos), a budget and a premium starter kit, and tasks.
-  // Intermediate / advanced: tasks only. Guides are cached per hobby and level for a week.
-  var GUIDE_KEY = "habitual.hobbyGuides.v3", GUIDE_TTL = 7 * 24 * 60 * 60 * 1000;
+  // ---------- Hobby plans ----------
+  // Built-in, researched plans (src/plans.js). Beginner: a 5-video crash course, a Budget and a Premium
+  // starter kit, and tasks. Intermediate / advanced: tasks only. Gemini is the assistant on top.
   var GUIDE_LEVELS = [["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"]];
   function guideLevel(tier) { return tier === "intermediate" || tier === "advanced" ? tier : "beginner"; }
-  function guideKey(name, level) { return name.toLowerCase() + "|" + guideLevel(level); }
-  var guidePending = {};
-  function guideStore() {
-    try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; } catch (x) { return {}; }
-  }
-  function cachedGuide(name, level) {
-    var row = guideStore()[guideKey(name, level)];
-    return row && row.at && Date.now() - row.at < GUIDE_TTL ? row.guide : null;
-  }
-  function saveGuide(name, level, guide) {
-    try {
-      var all = guideStore(), keys = Object.keys(all);
-      if (keys.length > 30) keys.sort(function (a, b) { return all[a].at - all[b].at; }).slice(0, keys.length - 30).forEach(function (k) { delete all[k]; });
-      all[guideKey(name, level)] = { at: Date.now(), guide: guide };
-      localStorage.setItem(GUIDE_KEY, JSON.stringify(all));
-    } catch (x) { /* storage optional */ }
-  }
-  function fetchGuide(name, level) {
+  function planFor(id) { var all = window.SQ_PLANS || {}; return (id && all[id]) || null; }
+  function planGuide(id, level) {
+    var p = planFor(id);
+    if (!p) return null;
     level = guideLevel(level);
-    var hit = cachedGuide(name, level);
-    if (hit) return Promise.resolve(hit);
-    if (location.protocol === "file:" || location.hostname.indexOf("claude") >= 0) {
-      var off = new Error("offline"); off.offline = true; return Promise.reject(off);
-    }
-    var k = guideKey(name, level);
-    if (!guidePending[k]) {
-      guidePending[k] = fetch("/api/hobby-guide", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ hobby: name, level: level, location: "United States", currency: "USD" }) })
-        .then(function (res) {
-          return res.json().catch(function () { return {}; }).then(function (body) {
-            if (!res.ok) { var err = new Error(body.error || "Guide request failed."); err.offline = res.status === 404 || !body.error; throw err; }
-            return body;
-          });
-        }, function () { var err = new Error("offline"); err.offline = true; throw err; })
-        .then(function (g) { saveGuide(name, level, g); return g; })
-        .finally(function () { delete guidePending[k]; });
-    }
-    return guidePending[k];
+    var beginner = level === "beginner";
+    return { level: level, gear: beginner ? p.gear : {}, crashCourse: beginner ? p.crashCourse : [], tasks: p.tasks[level] || [] };
   }
   var guideTier = "budget";
-  // Researched tasks become the hobby's tasks on Today when it is tracked at that level.
-  function applyGuideTasks(id, level, g) {
-    if (!id || !g || !(g.tasks || []).length || !SQ.setSkillTasks) return;
-    SQ.setSkillTasks(id, guideLevel(level), g.tasks.map(function (t) { return { label: t.title, minutes: t.minutes, why: t.why }; }));
-  }
-  function ensureTasks(id, name, level) {
-    fetchGuide(name, level).then(function (g) { applyGuideTasks(id, level, g); if (SQUI.current && SQUI.current().name === "today") SQUI.refresh(); }, function () { /* tasks fall back to built-in ones */ });
-  }
   function usd(n) { return n ? "$" + Number(n).toLocaleString() : ""; }
   var KITS = [["budget", "Budget", "The cheapest sensible way to start"], ["premium", "Premium", "A more premium start with gear that lasts"]];
   function verifyBadge(p) {
@@ -1385,7 +1345,7 @@
       '<span class="bl-video-text"><strong>' + e(v.title) + '</strong><span class="small muted">' + e(v.channel) + "</span>" +
       (v.whatYouLearn ? '<span class="small">' + e(v.whatYouLearn) + "</span>" : "") + "</span></a>";
   }
-  function tasksSection(g) {
+  function tasksSection(g, title) {
     var lv = guideLevel(g.level);
     var items = (g.tasks || []).map(function (t, i) {
       var srcs = (t.sources || []).map(function (src) {
@@ -1398,8 +1358,8 @@
         (srcs ? '<p class="small plan-src">' + SQUI.icon("check", 12) + srcs + "</p>" : "") + "</div></li>";
     }).join("");
     if (!items) return "";
-    return '<section class="stack"><div><h3 class="h3">Tasks for ' + (lv === "beginner" ? "beginners" : lv === "intermediate" ? "intermediate players" : "advanced players") + "</h3>" +
-      '<p class="small muted">What people at this level say actually worked for them. These become your tasks on Today.</p></div><ol class="dc-sessions">' + items + "</ol></section>";
+    return '<section class="stack"><div><h3 class="h3">' + e(title || ("Tasks for " + (lv === "beginner" ? "beginners" : lv === "intermediate" ? "intermediate players" : "advanced players"))) + "</h3>" +
+      '<p class="small muted">' + (title ? "Rotated one per session on Today." : "What people at this level say actually worked for them. One shows up on Today each session.") + '</p></div><ol class="dc-sessions">' + items + "</ol></section>";
   }
   function crashCourse(g) {
     var vids = g.crashCourse || [];
@@ -1407,44 +1367,102 @@
     return '<section class="stack"><div><h3 class="h3">Crash course: how to get started</h3><p class="small muted">' + vids.length + " beginner videos, in order.</p></div>" +
       '<div class="stack">' + vids.map(videoCard).join("") + "</div></section>";
   }
-  function renderGuide(g) {
-    var beginner = guideLevel(g.level) === "beginner";
-    return (g.overview ? '<p class="bl-sheet-blurb">' + e(g.overview) + "</p>" : "") +
-      (beginner ? crashCourse(g) + gearTiers(g) : "") + tasksSection(g);
+  // ---------- Gemini assistant ----------
+  var ASSIST = {}; // conversation per hobby and level, kept while the app is open
+  function assistOnline() { return !(location.protocol === "file:" || location.hostname.indexOf("claude") >= 0); }
+  var ASK_CHIPS = {
+    beginner: ["Show me cheaper gear", "Different gear options", "Mix up my tasks"],
+    intermediate: ["Mix up my tasks", "Make them harder", "Shorter sessions"],
+    advanced: ["Mix up my tasks", "Plan my week", "Something new to try"]
+  };
+  function canUseTasks(id, level) { var sk = id && SQ.skill && SQ.skill(id); return !!(id && SQ.isTracked(id) && sk && guideLevel(sk.tier) === level); }
+  function assistMessages(ctx) {
+    return (ASSIST[ctx.key] || []).map(function (m, i) {
+      if (m.role === "user") return '<div class="as-msg as-user">' + e(m.text) + "</div>";
+      if (m.pending) return '<div class="as-msg as-bot as-pending" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span>Thinking…</div>';
+      var tasks = (m.tasks || []).map(function (t) { return '<li><strong>' + e(t.title) + '</strong> <span class="small muted">' + e(t.minutes) + " min</span>" + (t.details ? '<span class="small">' + e(t.details) + "</span>" : "") + "</li>"; }).join("");
+      return '<div class="as-msg as-bot' + (m.error ? " as-error" : "") + '"><p>' + e(m.text) + "</p>" +
+        ((m.products || []).length ? '<div class="stack as-products">' + m.products.map(productCard).join("") + "</div>" : "") +
+        (tasks ? '<ol class="as-tasks">' + tasks + "</ol>" + (canUseTasks(ctx.id, ctx.level)
+          ? '<button type="button" class="btn sm primary" data-use-tasks="' + i + '">' + SQUI.icon("check", 16) + "Use these as my tasks</button>"
+          : '<p class="small muted">Add this hobby at this level to use these as your tasks.</p>') : "") + "</div>";
+    }).join("");
   }
-  function guideLoading() {
-    return '<div class="card dc-ai-loading" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span><div><div class="h3">Researching with Gemini</div>' +
-      '<p class="small muted">Reading Reddit threads, forums and reviews and checking every source. This can take up to a minute.</p></div></div>';
+  function assistantHtml(ctx) {
+    var online = assistOnline();
+    return '<section class="card as-card stack" data-role="assistant"><div class="as-head"><span class="as-ic" aria-hidden="true">' + SQUI.icon("spark", 18) + '</span><div><h3 class="h3">Ask Hobitual</h3>' +
+      '<p class="small muted">' + (online ? "Want cheaper gear, other options, or a different mix of tasks? Ask Gemini." : "The assistant works when Hobitual runs with its server (node server.js) and a Gemini key.") + "</p></div></div>" +
+      '<div class="as-log" data-role="as-log" aria-live="polite">' + assistMessages(ctx) + "</div>" +
+      (online ? '<div class="as-chips">' + (ASK_CHIPS[ctx.level] || ASK_CHIPS.beginner).map(function (c) { return '<button type="button" class="chip" data-ask="' + e(c) + '">' + e(c) + "</button>"; }).join("") + "</div>" +
+        '<form class="as-form" data-role="as-form"><input class="dc-input" name="q" maxlength="400" autocomplete="off" placeholder="Ask about ' + e(ctx.name) + '…" aria-label="Ask the assistant">' +
+        '<button type="submit" class="btn primary sm">Ask</button></form>' : "") + "</section>";
   }
-  function guideFallback(it, err, level) {
-    if (guideLevel(level) !== "beginner") it = { gear: [] };
-    var lo = 0, hi = 0;
-    (it.gear || []).forEach(function (g) { lo += g[1][0]; hi += g[1][1]; });
-    var msg = err && err.offline
-      ? "Real product picks and tutorial videos come from Gemini. Run Hobitual with its server (node server.js) and a Gemini key to load them."
-      : (err && err.message) || "Gemini could not finish the research. Try again in a moment.";
-    return '<div class="card bl-guide-note" role="note"><div class="h3">Live guide unavailable</div><p class="small muted">' + e(msg) + "</p>" +
-      (err && !err.offline ? '<button type="button" class="btn sm" data-sheet="retry">Try again</button>' : "") + "</div>" +
-      ((it.gear || []).length ? '<section class="stack"><h3 class="h3">What you need</h3><ul class="list bl-basics">' + it.gear.map(function (g) {
-        return '<li class="list-row"><span class="dc-row-name">' + e(g[0]) + '</span><span class="spacer"></span><span class="num small muted">' + e(money(g[1])) + "</span></li>";
-      }).join("") + '</ul><p class="small muted">Typical US prices, about ' + e(money([lo, hi])) + " in total.</p></section>" : "");
+  function bindAssistant(host, ctx) {
+    var card = host.querySelector('[data-role="assistant"]');
+    if (!card) return;
+    function redraw() { var log = card.querySelector('[data-role="as-log"]'); if (log) { log.innerHTML = assistMessages(ctx); log.scrollTop = log.scrollHeight; } }
+    function ask(q) {
+      q = String(q || "").trim();
+      if (!q) return;
+      var list = ASSIST[ctx.key] = ASSIST[ctx.key] || [];
+      var history = list.filter(function (m) { return !m.pending && !m.error; }).slice(-6).map(function (m) { return { role: m.role, text: m.text }; });
+      list.push({ role: "user", text: q });
+      var wait = { role: "assistant", pending: true };
+      list.push(wait);
+      redraw();
+      fetch("/api/assistant", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hobby: ctx.name, level: ctx.level, location: "United States", currency: "USD", question: q, history: history, context: ctx.context() }) })
+        .then(function (res) { return res.json().catch(function () { return {}; }).then(function (b) { if (!res.ok) throw new Error(b.error || "The assistant is unavailable right now."); return b; }); })
+        .then(function (b) { wait.pending = false; wait.text = b.reply; wait.products = b.products || []; wait.tasks = b.tasks || []; },
+          function (err) { wait.pending = false; wait.error = true; wait.text = (err && err.message && err.message !== "Failed to fetch") ? err.message : "Couldn’t reach the assistant. Is the server running?"; })
+        .then(function () { if (card.isConnected) redraw(); });
+    }
+    card.addEventListener("click", function (ev) {
+      var chip = ev.target.closest("[data-ask]");
+      if (chip) { ask(chip.getAttribute("data-ask")); return; }
+      var use = ev.target.closest("[data-use-tasks]");
+      if (use) {
+        var m = (ASSIST[ctx.key] || [])[Number(use.getAttribute("data-use-tasks"))];
+        if (m && SQ.setSkillTasks(ctx.id, ctx.level, (m.tasks || []).map(function (t) { return { label: t.title, minutes: t.minutes, why: t.why }; }))) {
+          SQUI.toast("Your " + ctx.name + " tasks are updated");
+          if (ctx.onTasks) ctx.onTasks();
+        }
+      }
+    });
+    var form = card.querySelector('[data-role="as-form"]');
+    if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); var inp = form.querySelector("input"); ask(inp.value); inp.value = ""; });
+  }
+  // The plan for a hobby at a level, plus the assistant. ownTasks: tasks the assistant set for this hobby.
+  function planSection(host, id, name, level, ownTasks, onTasks) {
+    var g = planGuide(id, level);
+    var tasksHtml = "";
+    if ((ownTasks || []).length) {
+      tasksHtml = tasksSection({ level: level, tasks: ownTasks.map(function (t) { return { title: t.label, minutes: t.minutes, why: t.why }; }) }, "Your tasks (from the assistant)") +
+        '<button type="button" class="btn ghost sm" data-plan="reset-tasks">Go back to the researched tasks</button>';
+    }
+    var body = g ? (level === "beginner" ? crashCourse(g) + gearTiers(g) : "") + (tasksHtml || tasksSection(g))
+      : tasksHtml + '<div class="card bl-guide-note" role="note"><p class="small muted">A researched plan for ' + e(name) + " is coming soon. Ask the assistant for gear or tasks in the meantime.</p></div>";
+    var ctx = { id: id, name: name, level: level, key: (id || name) + "|" + level, onTasks: onTasks,
+      context: function () {
+        var gg = planGuide(id, level) || {};
+        var kit = level === "beginner" && gg.gear && gg.gear[guideTier] ? gg.gear[guideTier].products.map(function (p) { return p.brand + " " + p.name; }) : [];
+        var sk = id && SQ.skill && SQ.skill(id);
+        var tasks = (sk && sk.tasks && sk.tasks.length ? sk.tasks.map(function (t) { return t.label; }) : (gg.tasks || []).map(function (t) { return t.title; }));
+        return { products: kit, tasks: tasks };
+      } };
+    host.innerHTML = body + assistantHtml(ctx);
+    bindKitTabs(host);
+    bindAssistant(host, ctx);
+    var reset = host.querySelector('[data-plan="reset-tasks"]');
+    if (reset) reset.addEventListener("click", function () { if (SQ.clearSkillTasks) SQ.clearSkillTasks(id); SQUI.toast("Back to the researched tasks"); if (onTasks) onTasks(); });
   }
 
-  // The hobby screen shows the same starter kit for hobbies you track.
+  // The hobby screen (from Today): the plan for the level you track it at.
   SQUI.hobbyPlan = function (host, id) {
     var h = SQ.getHobby(id);
     if (!host || !h) return;
     var sk = SQ.skill && SQ.skill(id), level = guideLevel(sk && sk.tier);
-    bindKitTabs(host);
-    host.innerHTML = guideLoading();
-    fetchGuide(h.name, level).then(function (g) {
-      if (sk && !(sk.tasks || []).length) applyGuideTasks(id, level, g);
-      if (host.isConnected) host.innerHTML = renderGuide(g);
-    }, function (err) {
-      if (!host.isConnected) return;
-      host.innerHTML = '<div class="card bl-guide-note" role="note"><div class="h3">' + (level === "beginner" ? "Crash course and starter kit" : "Your tasks") + '</div><p class="small muted">' +
-        e(err && err.offline ? "These come from Gemini. Run Hobitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
-    });
+    planSection(host, id, h.name, level, sk && sk.tasks, function () { SQUI.refresh(); });
   };
 
   // ---------- hobby info sheet ----------
@@ -1489,7 +1507,7 @@
         return '<li><span class="dc-tip-ic" aria-hidden="true">' + SQUI.icon("check", 16) + "</span><span>" + e(f) + "</span></li>";
       }).join("") + "</ul></section>" : "") +
       levelPicker(sheetLevel) +
-      '<div class="stack-lg" data-role="guide">' + guideLoading() + "</div>" +
+      '<div class="stack-lg" data-role="guide"></div>' +
       '<div class="bl-sheet-cta">' +
       (mine ? '<button type="button" class="btn primary block" data-sheet="open">' + SQUI.icon("check", 18) + " In My hobbies · Open tracker</button>"
         : '<p class="bl-drag-tip">' + svgIcon(CAT_ICON.mine, 16, 1.8) + "<span>Drag it into My hobbies to add it</span></p>" +
@@ -1497,17 +1515,12 @@
       "</div></div>";
     (document.getElementById("overlay-root") || document.body).appendChild(wrap);
     var guideHost = wrap.querySelector('[data-role="guide"]');
-    bindKitTabs(guideHost);
     function load() {
-      guideHost.innerHTML = guideLoading();
-      var level = sheetLevel;
-      fetchGuide(it.name, level).then(function (g) {
-        if (wrap.isConnected && level === sheetLevel) guideHost.innerHTML = renderGuide(g);
-      }, function (err) {
-        if (wrap.isConnected && level === sheetLevel) guideHost.innerHTML = guideFallback(it, err, level);
-      });
+      var sk = it.id && SQ.skill && SQ.skill(it.id);
+      var own = sk && guideLevel(sk.tier) === sheetLevel ? sk.tasks : null;
+      planSection(guideHost, it.id, it.name, sheetLevel, own, function () { load(); });
     }
-    if (!it.own) load(); else guideHost.innerHTML = "";
+    load();
     var focusBtn = wrap.querySelector("[data-close].icon-btn");
     if (focusBtn) try { focusBtn.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
     sheetKeys = function (ev) { if (ev.key === "Escape") { ev.stopPropagation(); closeBlobSheet(); } };
@@ -1519,14 +1532,13 @@
       if (lv) {
         sheetLevel = lv.getAttribute("data-level");
         wrap.querySelectorAll("[data-level]").forEach(function (x) { var on = x === lv; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); });
-        if (!it.own) load();
+        load();
         return;
       }
       var b = ev.target.closest("[data-sheet]");
       if (!b) return;
       var act = b.getAttribute("data-sheet");
       if (act === "add") { closeBlobSheet(); it.level = sheetLevel; onAdd(it); }
-      else if (act === "retry") load();
       else if (act === "open") { closeBlobSheet(); SQUI.go("hobby", { id: it.id }); }
     });
   }
@@ -1537,7 +1549,6 @@
     var reward = SQ.addHobby(id, { goal: 2, viaStarter: !!it.catalog });
     var level = guideLevel(it.level || "beginner");
     if (SQ.setSkill && !(SQ.skill(id) && SQ.skill(id).tier === level)) SQ.setSkill(id, level);
-    ensureTasks(id, it.name, level);
     finishOnboarding();
     return { id: id, reward: reward };
   }

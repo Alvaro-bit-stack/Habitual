@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 DIST = ROOT / "dist"
 CSS = ["shell.css", "discover.css", "community.css", "showcase.css", "mobile.css", "ocean.css", "gathering.css"]
-JS = ["data.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "sync-core.js", "cloud.js", "boot.js"]
+JS = ["data.js", "plans.js", "engine.js", "shell.js", "discover.js", "community.js", "showcase.js", "sync-core.js", "cloud.js", "boot.js"]
 FONT_URL = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
 
 

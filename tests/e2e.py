@@ -5,6 +5,7 @@ Run: python3 tests/e2e.py            (builds first if dist/Habitual.html is miss
 Screenshots: scratch/qa/<mode>-<step>.png
 Exit code 0 = all green.
 """
+import base64
 import os
 import re
 import sys
@@ -152,6 +153,9 @@ class Ctx:
                            lambda route: route.fulfill(status=200, content_type="text/css", body=""))
         # three.js (Me tab and celebrations) comes from jsDelivr. Serve an empty script so the 3D
         # character stays unloaded and the 2D fallbacks run, without network errors.
+        # Crash-course thumbnails come from YouTube's image CDN; serve a 1px stand-in so tests run offline.
+        self.context.route(re.compile(r"https://i\.ytimg\.com/.*"),
+                           lambda r: r.fulfill(status=200, content_type="image/png", body=base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")))
         self.context.route(re.compile(r"https://cdn\.jsdelivr\.net/.*"),
                            lambda route: route.fulfill(status=200, content_type="application/javascript", body=""))
         self.page = self.context.new_page()
@@ -530,7 +534,8 @@ def flow_simple_discovery(c, place):
     c.page.locator('.bl-hobby[data-key="crossfit"]').evaluate("el => el.click()")
     expect(c.page.locator(".bl-sheet").count() == 1, m, "discover-sheet", "hobby info sheet did not open")
     c.page.wait_for_selector(".bl-sheet .bl-guide-note")
-    expect(c.page.locator(".bl-sheet .bl-basics li").count() >= 2, m, "discover-sheet", "offline gear basics missing")
+    expect(c.page.locator('.bl-sheet [data-role="assistant"]').count() == 1, m, "discover-sheet", "a hobby without a plan should offer the assistant")
+    expect(c.page.locator(".bl-sheet [data-level]").count() == 3, m, "discover-sheet", "level picker missing")
     expect(c.page.locator('.bl-sheet a[href*="google.com/search"], .bl-sheet a[href*="youtube.com/results"]').count() == 0,
            m, "discover-sheet", "sheet should not link open searches")
     c.audit("03-discover-sheet", nav_check=False)
@@ -596,7 +601,8 @@ def flow_simple_pick_today(c):
     for i, how in [(0, "button"), (1, "esc"), (2, "backdrop")]:
         n0 = c.js("() => SQ.state.sessions.length")
         c.click(".hc .tiny-btn", nth=i)
-        expect(c.overlay_xp() in (10, 60), m, f"tiny{i}", "unexpected tiny-win XP")
+        # Researched tasks over 10 minutes count as a regular session (25 XP), shorter ones as a tiny win (10).
+        expect(c.overlay_xp() in (10, 25, 60, 75), m, f"tiny{i}", "unexpected task XP")
         c.close_overlay(how)
         expect(c.js("() => SQ.state.sessions.length") == n0 + 1, m, f"tiny{i}", "tiny win not logged once")
     c.click("#app-nav [data-nav=community]")

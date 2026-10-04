@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
-"""Browser test for the Gemini plan on the hobby screen: a beginner gets Budget and Premium kits with
-totals, product cards with a buy link, the cross-verified check mark, sources and tasks; other levels get tasks only.
+"""Browser test for the built-in hobby plans (src/plans.js) and the Ask Hobitual assistant.
+
+Beginner: crash course (5 videos), Budget and Premium starter kits with buy links and the
+cross-verified check mark, and tasks. Intermediate / advanced: tasks only. Today shows a shortcut for
+beginners. The assistant's reply is faked in the browser, so no Gemini key is needed.
 
 Run: python3 tests/kit.e2e.py   (builds first if dist/Habitual.html is missing)
-The guide is preloaded into the browser cache in the server's response shape, so no Gemini key is needed.
 """
+import functools
+import http.server
+import json
 import os
 import re
 import subprocess
 import sys
+import threading
 
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PAGE = os.path.join(ROOT, "dist", "Habitual.html")
+DIST = os.path.join(ROOT, "dist")
 failures = []
 
 
@@ -23,68 +29,75 @@ def check(ok, msg):
         failures.append(msg)
 
 
-def src(site, how):
-    return {"site": site, "url": "https://" + site + "/thread", "title": site, "how": how}
-
-
-GUIDE = {
-    "hobby": "Running", "overview": "", "currency": "USD", "community": [], "videos": [], "firstSteps": [], "sources": [],
-    "level": "beginner", "crashCourse": [], "tasks": [{"title": "Walk-run 20 minutes", "details": "", "minutes": 20, "why": "Most new runners on r/running started this way.", "sources": [{"site": "reddit.com", "url": "https://www.reddit.com/r/running"}]}],
-    "gear": {
-        "budget": {"label": "Budget start", "total": 170, "products": [
-            {"brand": "Brooks", "name": "Ghost 16", "price": 140, "retailer": "REI", "why": "Most recommended first shoe.",
-             "url": "https://www.rei.com/p", "linkType": "product", "buyUrl": "https://www.rei.com/p",
-             "verified": True, "sourceCount": 2, "sources": [src("reddit.com", "page"), src("runnersworld.com", "search")]},
-            {"brand": "Nike", "name": "Running shirt", "price": 30, "retailer": "", "why": "",
-             "url": None, "linkType": "search", "buyUrl": "https://www.google.com/search?tbm=shop&q=Nike%20Running%20shirt",
-             "verified": False, "sourceCount": 1, "sources": [src("reddit.com", "page")]}]},
-        "premium": {"label": "Premium start", "total": 145, "products": [
-            {"brand": "Hoka", "name": "Clifton 9", "price": 145, "retailer": "REI", "why": "", "url": "https://www.rei.com/q", "linkType": "product",
-             "buyUrl": "https://www.rei.com/q", "verified": True, "sourceCount": 2, "sources": [src("reddit.com", "page"), src("runrepeat.com", "page")]}]}
-    }
-}
+REPLY = {"reply": "Two cheaper picks and a mixed week.", "level": "beginner",
+         "products": [{"brand": "Fender", "name": "CD-60S", "price": 199, "retailer": "", "why": "Often on sale.", "url": None, "linkType": "search",
+                       "buyUrl": "https://www.google.com/search?tbm=shop&q=Fender%20CD-60S", "sources": [], "sourceCount": 0, "verified": False}],
+         "tasks": [{"title": "Learn G and C", "details": "", "minutes": 10, "why": "", "sources": []},
+                   {"title": "Strum along to a slow song", "details": "", "minutes": 15, "why": "", "sources": []}]}
 
 
 def main():
-    if not os.path.exists(PAGE):
+    if not os.path.exists(os.path.join(DIST, "Habitual.html")):
         subprocess.check_call([sys.executable, os.path.join(ROOT, "build.py")])
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=DIST))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    asked = []
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(viewport={"width": 390, "height": 844})
-        page.route(re.compile(r"https://(fonts\.(googleapis|gstatic)|cdn\.jsdelivr)\.(com|net)/.*"), lambda r: r.fulfill(status=200, body=""))
+        page.route(re.compile(r"https://(fonts\.(googleapis|gstatic)|cdn\.jsdelivr|i\.ytimg)\.(com|net)/.*"), lambda r: r.fulfill(status=200, body=""))
+        page.route("**/api/assistant", lambda r: (asked.append(json.loads(r.request.post_data)), r.fulfill(status=200, content_type="application/json", body=json.dumps(REPLY))))
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
-        page.goto("file://" + PAGE)
+        page.goto(f"http://127.0.0.1:{server.server_port}/Habitual.html")
+        page.wait_for_timeout(400)
+        plans = page.evaluate("SQ_PLANS")
+        page.evaluate("SQ.seedDemo(); SQ.setSkill('guitar', 'beginner'); SQ.setSkill('running', 'intermediate'); SQUI.go('today')")
         page.wait_for_timeout(300)
-        page.evaluate("g => { localStorage.setItem('habitual.hobbyGuides.v3', JSON.stringify({ 'running|beginner': { at: Date.now(), guide: g } })); SQ.seedDemo(); SQ.setSkill('running', 'beginner'); SQUI.go('hobby', { id: 'running' }); }", GUIDE)
+        check(page.locator('.hc-plan[data-id="guitar"]').count() == 1, "Today shows a crash course & starter kit shortcut for a beginner")
+        check(page.locator('.hc-plan[data-id="running"]').count() == 0, "no shortcut for an intermediate hobby")
+        check(page.locator(".hc", has_text="Guitar").locator(".tw-l").inner_text() in [t["title"] for t in plans["guitar"]["tasks"]["beginner"]], "Today's guitar task comes from the researched beginner tasks")
+        page.click('.hc-plan[data-id="guitar"]')
         page.wait_for_timeout(400)
         kit = page.locator('[data-role="kit"]')
-        tabs = kit.locator("[data-tier]")
-        check(tabs.count() == 2, "a beginner gets a Budget and a Premium kit")
-        check("Budget" in tabs.nth(0).inner_text() and "$170" in tabs.nth(0).inner_text(), "the Budget tab shows its total")
-        cards = kit.locator('[data-tier-panel="budget"] .kit-prod')
-        check(cards.count() == 2, "the Budget kit lists its products")
-        check(cards.nth(0).locator(".kit-badge.is-verified").count() == 1 and "2 sites" in cards.nth(0).inner_text(), "a cross-verified product shows the check mark")
-        check(cards.nth(1).locator(".kit-badge.is-verified").count() == 0 and "1 source" in cards.nth(1).inner_text(), "a single-source product has no check mark")
-        check(cards.nth(0).locator(".kit-buy").get_attribute("href") == "https://www.rei.com/p" and "View at REI" in cards.nth(0).inner_text(), "a verified product page is linked")
-        check("google.com/search" in cards.nth(1).locator(".kit-buy").get_attribute("href") and "Find it online" in cards.nth(1).inner_text(), "an unverified link falls back to a shopping search")
-        check(cards.nth(0).locator(".kit-buy").get_attribute("target") == "_blank" and "noopener" in cards.nth(0).locator(".kit-buy").get_attribute("rel"), "store links open safely in a new tab")
-        cards.nth(0).locator("summary").click()
-        check(cards.nth(0).locator(".kit-sources li").count() == 2, "the sources list opens")
-        kit.locator('[data-tier="premium"]').click()
+        check("Crash course" in kit.inner_text() and kit.locator(".bl-video").count() == 5, "a beginner gets a 5-video crash course")
+        check(all("youtube.com/watch?v=" in (a.get_attribute("href") or "") for a in kit.locator(".bl-video").all()), "crash course videos link to YouTube")
+        tabs = kit.locator(".kit [data-tier]")
+        check(tabs.count() == 2 and "Budget" in tabs.nth(0).inner_text() and "Premium" in tabs.nth(1).inner_text(), "Budget and Premium starter kits")
+        first = kit.locator('[data-tier-panel="budget"] .kit-prod').first
+        check(first.locator(".kit-badge.is-verified").count() == 1, "a product recommended by two sites shows the check mark")
+        href = first.locator(".kit-buy").get_attribute("href") or ""
+        check(href == plans["guitar"]["gear"]["budget"]["products"][0]["url"] and first.locator(".kit-buy").get_attribute("target") == "_blank", "buy links go to the researched product page in a new tab")
+        kit.locator('.kit [data-tier="premium"]').click()
         check(kit.locator('[data-tier-panel="premium"]').is_visible() and not kit.locator('[data-tier-panel="budget"]').is_visible(), "tapping Premium switches kits")
-        check(kit.locator(".plan-task").count() == 1 and "Walk-run" in kit.inner_text(), "a beginner also sees tasks")
-        check(page.evaluate("SQ.hobbyStats('running').nextTinyWin.label") == "Walk-run 20 minutes", "the researched task becomes the hobby's task on Today")
+        check(kit.locator(".plan-task").count() == len(plans["guitar"]["tasks"]["beginner"]), "beginner tasks are listed")
+
+        # Assistant
+        kit.locator("[data-ask]").first.click()
+        page.wait_for_timeout(400)
+        check(len(asked) == 1 and asked[0]["hobby"] == "Guitar" and asked[0]["level"] == "beginner" and asked[0]["context"]["products"], "the assistant gets the hobby, level and current kit")
+        check("Two cheaper picks" in kit.inner_text() and kit.locator(".as-bot .kit-prod").count() == 1, "the assistant's reply and products show")
+        kit.locator("[data-use-tasks]").click()
+        page.wait_for_timeout(400)
+        check(page.evaluate("SQ.hobbyStats('guitar').nextTinyWin.label") in ("Learn G and C", "Strum along to a slow song"), "Use these as my tasks changes Today's task")
+        check("Your tasks (from the assistant)" in page.locator('[data-role="kit"]').inner_text(), "the hobby screen shows the assistant's tasks")
+        page.locator('[data-plan="reset-tasks"]').click()
+        page.wait_for_timeout(300)
+        check(page.evaluate("SQ.hobbyStats('guitar').nextTinyWin.label") in [t["title"] for t in plans["guitar"]["tasks"]["beginner"]], "going back restores the researched tasks")
 
         # Intermediate: tasks only
-        mid = dict(GUIDE, level="intermediate", gear={}, crashCourse=[])
-        page.evaluate("g => { const all = JSON.parse(localStorage.getItem('habitual.hobbyGuides.v3')); all['running|intermediate'] = { at: Date.now(), guide: g }; localStorage.setItem('habitual.hobbyGuides.v3', JSON.stringify(all)); SQ.setSkill('running', 'intermediate'); SQUI.go('hobby', { id: 'running' }); }", mid)
+        page.evaluate("SQUI.go('hobby', { id: 'running' })")
         page.wait_for_timeout(300)
-        check(kit.locator(".kit, [data-tier]").count() == 0 and kit.locator(".plan-task").count() == 1, "intermediate gets tasks only, no starter kit")
-        check("Crash course" not in kit.inner_text(), "intermediate gets no crash course")
+        kit = page.locator('[data-role="kit"]')
+        check(kit.locator(".kit").count() == 0 and "Crash course" not in kit.inner_text(), "intermediate gets no starter kit or crash course")
+        check(kit.locator(".plan-task").count() == len(plans["running"]["tasks"]["intermediate"]) and "Tasks for intermediate players" in kit.inner_text(), "intermediate gets its tasks")
         check(page.evaluate("document.documentElement.scrollWidth") <= 390, "no sideways scrolling")
         check(not errors, "no page errors " + "; ".join(errors))
         browser.close()
+    server.shutdown()
     print(f"{len(failures)} kit failures" if failures else "kit: all green")
     sys.exit(1 if failures else 0)
 

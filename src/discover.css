@@ -643,3 +643,23 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .ob-start-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; min-height: 72px; padding: 16px 18px; text-align: left;
   border: 2px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
 .ob-start-opt:first-child { border-color: var(--leaf); }
+
+/* Ask Hobitual (Gemini assistant) */
+.as-card { padding: 16px; }
+.as-head { display: flex; gap: 10px; align-items: flex-start; }
+.as-head .h3 { margin: 0; }
+.as-head p { margin: 2px 0 0; }
+.as-ic { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #6f8cff, #b06cff); }
+.as-log { display: flex; flex-direction: column; gap: 8px; max-height: 460px; overflow-y: auto; }
+.as-log:empty { display: none; }
+.as-msg { max-width: 92%; padding: 10px 12px; border-radius: 16px; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.as-msg p { margin: 0; }
+.as-user { align-self: flex-end; background: var(--leaf); color: var(--leaf-ink); border-bottom-right-radius: 6px; }
+.as-bot { align-self: flex-start; display: flex; flex-direction: column; gap: 8px; background: var(--surface-2); color: var(--ink); border-bottom-left-radius: 6px; }
+.as-error { background: color-mix(in srgb, var(--bad) 10%, var(--surface)); }
+.as-pending { flex-direction: row; align-items: center; gap: 8px; color: var(--ink-2); }
+.as-products .kit-prod { padding: 10px; }
+.as-tasks { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.as-tasks li > span.small:last-child { display: block; }
+.as-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.as-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }

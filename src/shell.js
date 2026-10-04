@@ -979,6 +979,11 @@
     var f = document.querySelector(".td-streak-flame");
     try { if (f && sq().flameHeat) f.style.setProperty("--heat", sq().flameHeat().toFixed(3)); } catch (e) { /* ignore */ }
   }, 60000);
+  // Beginners at a hobby with a researched plan (src/plans.js) get a shortcut to its crash course and kit.
+  function isBeginnerWithPlan(id) {
+    var plans = G.SQ_PLANS || {}, sk = sq().skill ? sq().skill(id) : null;
+    return !!plans[id] && (!sk || sk.tier === "beginner" || sk.tier === "new");
+  }
   function renderToday() {
     var S = sq(), st0 = S.state, p = S.player();
     var today = todayStr();
@@ -1011,6 +1016,8 @@
           '<span class="tw-ic">' + icon("plus", 18) + "</span>" +
           '<span style="min-width:0"><span class="tw-k">' + stepKind(tw) + '</span><span class="tw-l">' + esc(tw.label) + "</span></span>" +
           '<span class="tw-m">' + esc(tw.minutes) + " min</span></button></div>" : "") +
+        (isBeginnerWithPlan(t.hobbyId) ? '<button type="button" class="hc-plan" data-action="plan" data-id="' + esc(t.hobbyId) + '">' + icon("play", 16) +
+          "<span>Crash course &amp; starter kit</span>" + icon("chevron-right", 16) + "</button>" : "") +
         "</article>";
     }).join("");
 
@@ -1073,6 +1080,7 @@
     mount: function (root) {
       onClick(root, {
         open: function (b) { go("hobby", { id: b.getAttribute("data-id") }); },
+        plan: function (b) { go("hobby", { id: b.getAttribute("data-id"), focus: "plan" }); },
         tiny: function (b) { doTinyWin(b.getAttribute("data-id")); },
         pick: function () { go(sq().state.tracked.length ? "pick" : "discover"); },
         discover: function () { go("discover"); }
@@ -1204,6 +1212,7 @@
       var id = params.id;
       var kitHost = root.querySelector('[data-role="kit"]');
       if (kitHost && SQUI.hobbyPlan) SQUI.hobbyPlan(kitHost, id);
+      if (kitHost && params.focus === "plan") { params.focus = null; try { kitHost.scrollIntoView({ block: "start" }); } catch (x) { /* ignore */ } }
       onClick(root, {
         back: function () { back(); },
         track: function () {

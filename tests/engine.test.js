@@ -67,6 +67,7 @@ function load(source, opts = {}) {
   vm.createContext(ctx);
   if (source === "stub") ctx.SQ_DATA = JSON.parse(JSON.stringify(stubData()));
   else vm.runInContext(fs.readFileSync(source, "utf8"), ctx, { filename: "data.js" });
+  if (opts.plans) vm.runInContext(fs.readFileSync(path.join(ROOT, "src/plans.js"), "utf8"), ctx, { filename: "plans.js" });
   vm.runInContext(ENGINE_SRC, ctx, { filename: "engine.js" });
   const SQ = ctx.SQ;
   if (opts.now) SQ._now = opts.now;
@@ -604,6 +605,25 @@ function suite(source) {
     eq(again.skill("painting").tasks.length, 2, "tasks survive a reload");
     SQ.setSkill("painting", "advanced");
     eq(SQ.skill("painting").tasks, undefined, "a new level starts without the old level's tasks");
+  });
+
+  if (source !== "stub") test("researched plan tasks (plans.js) rotate for a hobby's level", () => {
+    const { SQ, ctx } = load(source, { plans: true, now: D(2026, 9, 1) });
+    const plan = ctx.SQ_PLANS.guitar;
+    SQ.addHobby("guitar");
+    SQ.setSkill("guitar", "beginner");
+    eq(SQ.hobbyStats("guitar").nextTinyWin.label, plan.tasks.beginner[0].title);
+    SQ.logSession("guitar", { size: "regular" });
+    eq(SQ.hobbyStats("guitar").nextTinyWin.label, plan.tasks.beginner[1].title, "the next session gets a different task");
+    SQ.setSkill("guitar", "advanced");
+    eq(SQ.hobbyStats("guitar").nextTinyWin.label, plan.tasks.advanced[1 % plan.tasks.advanced.length].title);
+    for (const id of ["guitar", "running"]) {
+      const p = ctx.SQ_PLANS[id];
+      assert(p.crashCourse.length === 5, id + " crash course has 5 videos");
+      assert(p.gear.budget.products.length >= 3 && p.gear.premium.products.length >= 3, id + " kits");
+      ["beginner", "intermediate", "advanced"].forEach((lv) => assert(p.tasks[lv].length >= 6, id + " " + lv + " tasks"));
+      p.gear.budget.products.concat(p.gear.premium.products).forEach((x) => assert(/^https:\/\//.test(x.url) && x.price > 0, id + " product " + x.name));
+    }
   });
 
   run(source === "stub" ? "stub" : "real data", T);

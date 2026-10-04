@@ -456,3 +456,6 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 .td-streak-sub { font-size: 13px; color: var(--ink-2); }
 @media (prefers-reduced-motion: no-preference) { .td-streak:not(.zero) .td-streak-flame svg path { animation: td-flicker 2.4s ease-in-out infinite; transform-origin: 50% 90%; transform-box: fill-box; } }
 @keyframes td-flicker { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.05) rotate(-2deg); } }
+.hc-plan { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); color: var(--ink); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; text-align: left; }
+.hc-plan span { flex: 1; }
+.hc-plan:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }

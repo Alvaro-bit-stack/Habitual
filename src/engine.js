@@ -585,6 +585,10 @@
       return label ? { label: label, minutes: minutes, why: t && typeof t.why === "string" ? t.why.slice(0, 240) : "" } : null;
     }).filter(Boolean);
   }
+  function clearSkillTasks(id) {
+    ensure();
+    if (state.skills[id] && state.skills[id].tasks) { delete state.skills[id].tasks; save(); }
+  }
   function setSkillTasks(id, tier, tasks) {
     ensure();
     var sk = state.skills[id];
@@ -617,10 +621,21 @@
     intermediate: "Work on one weak spot in {h}",
     advanced: "Do a focused {h} session on a hard skill"
   };
+  // Researched tasks for a level (src/plans.js), rotated session by session for variety.
+  function planTasks(id, tier) {
+    var plans = (typeof window !== "undefined" ? window : globalThis).SQ_PLANS;
+    var p = plans && plans[id];
+    return (p && p.tasks && p.tasks[tier === "new" ? "beginner" : tier]) || [];
+  }
   function tierTask(h, tier, n, sk) {
     if (sk && sk.tasks && sk.tasks.length) {
       var t = sk.tasks[n % sk.tasks.length];
       return { label: t.label, minutes: t.minutes, why: t.why, researched: true };
+    }
+    var planned = planTasks(h.id, tier);
+    if (planned.length) {
+      var pt = planned[n % planned.length];
+      return { label: pt.title, minutes: pt.minutes, why: pt.why, researched: true };
     }
     var own = TIER_TASKS[h.id] && TIER_TASKS[h.id][tier];
     var generic = GENERIC_TASKS[tier].replace("{h}", h.name.toLowerCase());
@@ -916,6 +931,7 @@
     setSkill: setSkill,
     skill: skill,
     setSkillTasks: setSkillTasks,
+    clearSkillTasks: clearSkillTasks,
     logSession: logSession,
     tickMilestone: tickMilestone,
     events: events,

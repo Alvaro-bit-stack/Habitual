@@ -156,12 +156,14 @@
 .cm-hd-b h1 { font-size: 30px !important; }
 .cm-hd-people { display: flex; align-items: center; gap: 12px; margin-top: 6px; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
 .cm-hd-people strong { color: var(--ink); font-size: 15px; }
-/* Huddle: front person big and on top; the rest step back and shrink on each side */
-.cm-huddle { position: relative; display: flex; align-items: center; justify-content: center; flex: none; height: 60px; }
-.cm-gp { position: relative; flex: none; display: grid; place-items: start center; overflow: hidden; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--bg); box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 14%, transparent); }
-.cm-gp .cm-mii { margin-top: 2px; transform: scale(2.05); transform-origin: center top; }
-.cm-gp-front { z-index: 3; width: 56px; height: 56px; }
-.cm-gp-near-l, .cm-gp-near-r { z-index: 2; width: 42px; height: 42px; filter: brightness(.96) saturate(.92); }
-.cm-gp-far-l, .cm-gp-far-r { z-index: 1; width: 32px; height: 32px; filter: brightness(.9) saturate(.8); }
-.cm-gp-near-l { margin-right: -14px; } .cm-gp-near-r { margin-left: -14px; }
-.cm-gp-far-l { margin-right: -12px; } .cm-gp-far-r { margin-left: -12px; }
+/* Huddle: the characters themselves, overlapping. Front one biggest and on top; the others stand
+   a step back (smaller, a little higher, slightly dimmer) on each side. */
+.cm-huddle { position: relative; display: flex; align-items: flex-end; justify-content: center; flex: none; height: 76px; padding: 0 2px; }
+.cm-gp { position: relative; flex: none; display: block; }
+.cm-gp .cm-mii { display: block; }
+.cm-gp-front { z-index: 3; }
+.cm-gp-near-l, .cm-gp-near-r { z-index: 2; margin-bottom: 5px; filter: brightness(.95) saturate(.92); }
+.cm-gp-far-l, .cm-gp-far-r { z-index: 1; margin-bottom: 9px; filter: brightness(.88) saturate(.82); }
+.cm-gp-near-l { margin-right: -36px; } .cm-gp-near-r { margin-left: -36px; }
+.cm-gp-far-l { margin-right: -30px; } .cm-gp-far-r { margin-left: -30px; }
+.cm-huddle::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: 0; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 12%, transparent); filter: blur(4px); z-index: 0; }

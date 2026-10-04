@@ -476,7 +476,7 @@
     var slots = n === 5 ? ['far-l', 'near-l', 'front', 'near-r', 'far-r'] : n === 3 ? ['near-l', 'front', 'near-r'] : ['front'];
     var order = n === 5 ? [3, 1, 0, 2, 4] : n === 3 ? [1, 0, 2] : [0];
     return '<span class="cm-huddle" data-heads="' + n + '" aria-hidden="true">' + slots.map(function (slot, k) {
-      var size = slot === 'front' ? 56 : slot.indexOf('near') === 0 ? 42 : 32;
+      var size = slot === 'front' ? 74 : slot.indexOf('near') === 0 ? 62 : 52; // full characters, smaller further back
       return '<span class="cm-gp cm-gp-' + slot + '">' + mii(out[order[k]], size) + '</span>';
     }).join('') + '</span>';
   }

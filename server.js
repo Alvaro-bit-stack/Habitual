@@ -138,7 +138,8 @@ async function callGemini(body, options = {}) {
     try { return await callGeminiModel(body, Object.assign({}, options, { model })); }
     catch (error) {
       lastError = error;
-      if (!(error && (error.providerStatus === 404 || error.providerStatus === 429))) throw error;
+      // Try the next model on: bad request for this model (e.g. a tool it lacks), unavailable, quota, overload.
+      if (!(error && [400, 404, 429, 500, 503].indexOf(error.providerStatus) >= 0)) throw error;
     }
   }
   throw lastError;
@@ -174,6 +175,10 @@ async function callGeminiModel(body, options = {}) {
     clearTimeout(timer);
   }
   if (!response.ok) {
+    // Log Google's reason on the server console (never sent to the browser) so setup problems are fixable.
+    let reason = "";
+    try { const errBody = typeof response.json === "function" ? await response.json() : null; reason = cleanText(errBody && errBody.error && errBody.error.message, 300); } catch (_) { /* no body */ }
+    if (!options.quiet) console.warn(`Gemini ${options.model || MODEL} returned ${response.status}${reason ? ": " + reason : ""}`);
     // Do not return provider response bodies: they can echo request content or operational details.
     const messages = {
       401: "The Gemini API key was not accepted.",

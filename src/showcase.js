@@ -328,11 +328,14 @@
       '<p class="sc-move small muted" aria-live="polite">' + (happyToday() ? "Tap " + esc(who.name) + " to see a move" : "Log a session today to cheer " + esc(who.name) + " up") + "</p>" +
       '<div class="sc-level"><div class="row"><span class="h3">Level ' + p.level + '</span><span class="spacer"></span><span class="small muted"><span class="num">' + p.xpIntoLevel + " / " + p.xpForNext + "</span> XP to level " + (p.level + 1) + "</span></div>" +
       '<div class="progress xp" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '"><div class="progress-bar" style="width:' + pct(p.xpIntoLevel, p.xpForNext) + '%"></div></div></div>' +
+      // Character choice folds away: one row showing the current character, the grid only when opened.
+      '<details class="sc-choose"><summary><span class="cm-mii" data-character="' + cur + '" style="--mii-size:34px" aria-hidden="true"></span>' +
+      '<span class="sc-choose-l">Character</span><span class="sc-choose-v">' + esc(who.name) + '</span><span class="sc-choose-c" aria-hidden="true">' + icon("chevron-right", 18) + "</span></summary>" +
       '<div class="sc-picker" role="radiogroup" aria-label="Character">' + CHARACTERS.map(function (c) {
         var on = c.id === cur;
         return '<button type="button" role="radio" aria-checked="' + on + '" class="sc-pick' + (on ? " on" : "") + '" data-action="pick" data-id="' + c.id + '">' +
           '<span class="cm-mii" data-character="' + c.id + '" style="--mii-size:52px" aria-hidden="true"></span><span>' + esc(c.name) + "</span></button>";
-      }).join("") + "</div></section>" +
+      }).join("") + "</div></details></section>" +
 
       // Hobbies
       '<section class="stack"><h2 class="h3">Your hobbies</h2>' +

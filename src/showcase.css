@@ -48,3 +48,13 @@
 .sc-stage { background-color: #142046; background-size: cover; background-repeat: no-repeat;
   background-position: 50% calc(75.2% + min(4.41vh, 35.7px)); }
 .sc-stage .sc-status { color: #f4ecd8; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+/* Me: character picker folded into one row (native <details>) */
+.sc-choose { width: 100%; max-width: 420px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.sc-choose > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; cursor: pointer; }
+.sc-choose > summary::-webkit-details-marker { display: none; }
+.sc-choose-l { font-weight: 600; color: var(--ink-2); }
+.sc-choose-v { flex: 1; text-align: left; font-weight: 700; color: var(--ink); }
+.sc-choose-c { display: inline-flex; color: var(--ink-2); transition: transform .15s ease; }
+.sc-choose[open] .sc-choose-c { transform: rotate(90deg); }
+.sc-choose .sc-picker { padding: 0 10px 10px; max-width: none; }
+@media (prefers-reduced-motion: reduce) { .sc-choose-c { transition: none; } }

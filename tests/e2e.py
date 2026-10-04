@@ -422,8 +422,12 @@ def ob_profile(c, name="Sam Rivera", email="sam@example.com", city="Newark", cou
     m = c.mode
     # The splash moves on by itself after a moment; tap it if it is still showing.
     if c.page.locator("[data-action=ob-splash]").count():
-        expect(c.page.locator(".ob-splash .ob-wordmark").inner_text() == "Habitual", m, "profile", "first run should open on the Habitual splash")
+        expect(c.page.locator(".ob-splash .ob-wordmark").inner_text() == "Hobitual", m, "profile", "first run should open on the Hobitual splash")
         c.click("[data-action=ob-splash]")
+    # Then: save progress on this device, or try it as a guest.
+    c.page.wait_for_selector("[data-action=ob-start-save]")
+    expect(c.page.locator("[data-action=ob-start-guest]").count() == 1, m, "profile", "guest option missing")
+    c.click("[data-action=ob-start-save]")
     c.page.wait_for_selector(".ob-option")
     expect(c.page.locator(".ob-option").count() == 2, m, "profile", "two character options expected")
     labels = c.page.locator(".ob-option-label").all_inner_texts()

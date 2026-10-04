@@ -395,6 +395,11 @@
       [["system", "System"], ["light", "Light"], ["dark", "Dark"]].map(function (o) {
         return '<button type="button" role="radio" aria-checked="' + (theme === o[0]) + '" class="' + (theme === o[0] ? "on" : "") + '" data-action="theme" data-t="' + o[0] + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
+      '<div class="stack"><span class="sc-lbl" id="me-sound-lbl">Sound effects</span><div class="seg" role="radiogroup" aria-labelledby="me-sound-lbl">' +
+      [["on", "On"], ["off", "Off"]].map(function (o) {
+        var on = (S.state.user.sound === false ? "off" : "on") === o[0];
+        return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-action="sound" data-v="' + o[0] + '">' + o[1] + "</button>";
+      }).join("") + '</div><p class="small muted">Chimes when you earn XP, level up or unlock an achievement.</p></div>' +
       '<hr class="sq-dashrule"><button type="button" class="btn block" data-action="seed">Load sample data</button>' +
       (ui.confirmReset ?
         '<div class="confirm-box"><div class="h3">Reset everything?</div><p class="small muted">This erases your hobbies, sessions, XP and achievements on this device. It can’t be undone.</p>' +
@@ -546,6 +551,10 @@
           S.state.user.nudgeTime = v; S.save(); SQUI.toast("Nudge time saved for " + v);
         }
         else if (a === "theme") { SQUI.setTheme(b.getAttribute("data-t")); SQUI.refresh(); }
+        else if (a === "sound") {
+          S.state.user.sound = b.getAttribute("data-v") !== "off"; S.save(); SQUI.refresh();
+          if (S.state.user.sound && SQUI.sound) SQUI.sound.play("xp");
+        }
         else if (a === "seed") { S.seedDemo(); SQUI.go("today", {}, { reset: true }); SQUI.toast("Sample data loaded"); }
         else if (a === "reset") { ui.confirmReset = true; SQUI.refresh(); var c = document.querySelector("[data-action=reset-no]"); if (c) c.focus(); }
         else if (a === "reset-no") { ui.confirmReset = false; SQUI.refresh(); }

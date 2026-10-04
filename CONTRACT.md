@@ -247,6 +247,8 @@ SQUI.mascot(stage 0..4, {mood, size, accessories})  // 2D Sprout SVG
 SQUI.money([lo,hi]) -> "$25–60" / "Free"
 SQUI.setTheme("system"|"light"|"dark")
 SQUI.getTheme() -> "system"|"light"|"dark"
+SQUI.sound.play(kind, delayMs?) -> bool   // kind: "xp" | "tick" | "achievement" | "levelup"; Web Audio, no files.
+                                      //  showReward plays them; off when state.user.sound === false (Me → Sound effects).
 SQUI.celebrate(overlayEl, {levelUp}) -> bool   // defined by showcase.js; showReward calls it. The 3D character
                                       //  leaps up behind the reward card and cheers (level-up: bigger, spins,
                                       //  cheers twice). Returns false (2D Sprout stays) when the model isn't

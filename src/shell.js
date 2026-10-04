@@ -688,6 +688,67 @@
     if (AVATAR_IDS.indexOf(c) < 0) c = "neo";
     return '<span class="cm-mii rw-avatar" data-character="' + c + '" style="--mii-size:' + (size || 112) + 'px" aria-hidden="true"></span>';
   }
+  /* ------------------------------------------------------------------ sound
+     Small synthesized effects (Web Audio, no files): a coin chime and count-up ticks for XP, a
+     bright arpeggio for achievements and a fanfare for level-ups. Off when state.user.sound === false.
+     Browsers only allow audio after a tap, so the context is created on the first pointer/key press. */
+  var Sound = (function () {
+    var ctx = null;
+    function soundOn() { try { return sq().state.user.sound !== false; } catch (e) { return true; } }
+    function ac() {
+      if (!HAS_DOM) return null;
+      if (!ctx) {
+        var C = G.AudioContext || G.webkitAudioContext;
+        if (!C) return null;
+        try { ctx = new C(); } catch (e) { return null; }
+      }
+      if (ctx.state === "suspended" && ctx.resume) { try { ctx.resume(); } catch (e) { /* ignore */ } }
+      return ctx;
+    }
+    function note(c, freq, at, dur, opts) {
+      opts = opts || {};
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = opts.type || "triangle";
+      o.frequency.setValueAtTime(freq, at);
+      if (opts.to) o.frequency.exponentialRampToValueAtTime(opts.to, at + dur);
+      var peak = opts.gain || 0.18;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(peak, at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(at); o.stop(at + dur + 0.05);
+    }
+    var KINDS = {
+      // Coin chime: two quick bright notes.
+      xp: function (c, t) { note(c, 1318.5, t, 0.09, { gain: 0.16 }); note(c, 1975.5, t + 0.08, 0.28, { gain: 0.16 }); },
+      // Soft blip while the XP number counts up.
+      tick: function (c, t) { note(c, 2400, t, 0.035, { type: "sine", gain: 0.05 }); },
+      // Achievement: rising arpeggio and a sparkle on top.
+      achievement: function (c, t) {
+        [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { note(c, f, t + i * 0.085, 0.32, { type: "square", gain: 0.06 }); note(c, f, t + i * 0.085, 0.36, { gain: 0.12 }); });
+        note(c, 2093, t + 0.36, 0.5, { type: "sine", gain: 0.08 }); note(c, 2637, t + 0.42, 0.45, { type: "sine", gain: 0.06 });
+      },
+      // Level up: short fanfare ending on a held chord.
+      levelup: function (c, t) {
+        [392, 523.25, 659.25].forEach(function (f, i) { note(c, f, t + i * 0.11, 0.16, { type: "square", gain: 0.07 }); });
+        [523.25, 659.25, 783.99, 1046.5].forEach(function (f) { note(c, f, t + 0.36, 0.8, { gain: 0.1 }); note(c, f * 2, t + 0.36, 0.6, { type: "sine", gain: 0.03 }); });
+      }
+    };
+    function play(kind, delayMs) {
+      if (!soundOn() || !KINDS[kind]) return false;
+      var c = ac();
+      if (!c) return false;
+      try { KINDS[kind](c, c.currentTime + 0.01 + (delayMs || 0) / 1000); } catch (e) { return false; }
+      return true;
+    }
+    if (HAS_DOM) {
+      var unlock = function () { if (soundOn()) ac(); document.removeEventListener("pointerdown", unlock, true); document.removeEventListener("keydown", unlock, true); };
+      document.addEventListener("pointerdown", unlock, true);
+      document.addEventListener("keydown", unlock, true);
+    }
+    return { play: play, enabled: soundOn };
+  })();
+
   function showReward(reward, opts) {
     opts = opts || {};
     return new Promise(function (resolve) {
@@ -764,6 +825,14 @@
         raf = G.requestAnimationFrame(stepFn);
       }
       var stopConfetti = reduced ? null : confetti(el.querySelector(".rw-canvas"));
+      // Sound: coin chime and count-up ticks for XP, then a fanfare for level-ups and an arpeggio per achievement.
+      if (xp > 0) {
+        Sound.play("xp");
+        if (!reduced) for (var ti = 1; ti <= 6; ti++) Sound.play("tick", 90 + ti * 95);
+      }
+      var cue = xp > 0 ? 720 : 150;
+      if (lvUp || hLvUp) { Sound.play("levelup", cue); cue += 900; }
+      achs.forEach(function (a, i) { Sound.play("achievement", cue + i * 650); });
 
       var closed = false;
       function close() {
@@ -1297,6 +1366,7 @@
   SQUI.refresh = refresh;
   SQUI.start = start;
   SQUI.showReward = showReward;
+  SQUI.sound = Sound;
   SQUI.toast = toast;
   SQUI.esc = esc;
   SQUI.icon = icon;

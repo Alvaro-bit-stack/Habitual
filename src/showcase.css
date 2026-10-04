@@ -36,3 +36,9 @@
 .rw-stage canvas { display: block; width: 100%; height: 100%; }
 .rw-mascot[hidden] { display: none; }
 .sc-move { margin: -4px 0 0; min-height: 1.4em; }
+/* Me: character picker, a grid of sprite + name cards */
+.sc-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 420px; }
+.sc-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 10px; min-height: 44px;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.sc-pick.on { border-color: var(--leaf); box-shadow: inset 0 0 0 1px var(--leaf); }
+.sc-pick .cm-mii { flex: none; }

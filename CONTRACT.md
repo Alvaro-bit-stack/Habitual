@@ -375,7 +375,7 @@ showing "11 of 16" that opens `achievements`); every tracked hobby with
 level, XP bar, sessions and streak (tap to open it); a share button; and Settings (nudge time,
 appearance, sample data, two-step reset). Character customization is paused until new models exist.
 
-- **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, built by
+- **Characters:** `assets/models/<id>.glb`, ids `neo`, `adrian`, `alvaro`, `avatar1`, `avatar2`, `avatar3`, built by
   `tools/mixamo_merge.py` from Neo's Mixamo downloads (Adrian and Alvaro get a fitted copy of Neo's
   Mixamo skeleton and its skin weights). Clips (all kept in place): `SadIdle` and `HappyIdle`, plus
   moves `JoyfulJump`, `SillyDance`, `Breakdance`, `GoalkeeperDive`, `StandardWalk`, `DrunkWalk`.
@@ -385,6 +385,10 @@ appearance, sample data, two-step reset). Character customization is paused unti
   level-ups SillyDance. Older models from `tools/rig.py` (idle/wave/cheer) still work as fallbacks.
   `build.py` writes each as `dist/models/<id>.js` (base64 on `window.SQ_MODELS[id]`) so it also loads
   when `dist/preview.html` is opened from disk.
+- **Adding a character:** build its GLB with `tools/mixamo_merge.py` (`--target` + Neo's clips), render its
+  Community sprites with `tools/render-community-avatars.py -- <repo> src/assets/avatars <id>` (updates the
+  manifest `build.py` reads), then add the id to `CHARACTERS` (showcase.js), `CHAR_NAMES` (shell.js),
+  `AVATARS` (community.js) and the `/models/` allowlist in `server.js`.
 - **Selected character:** `SQ.state.user.character` (survives `normalize` because it is on
   `user`). Everyone can pick any character for now; later it is set from the signed-in user.
 - **Celebrations:** every reward (`SQUI.showReward`, which all XP gains go through) brings the

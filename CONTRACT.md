@@ -411,5 +411,12 @@ The app uses the Ocean design: `src/mobile.css` is the shared mobile shell and `
 Event cards place the people going as pre-rendered sprites of the three characters
 (`src/assets/avatars/<id>-idle.png` and an 8-frame `<id>-run.png`, rendered from the GLBs by
 `tools/render-community-avatars.py`; `build.py` embeds them once as CSS variables). When the user
-RSVPs, their selected character (`SQ.state.user.character`) joins the cast with a "You" label and
-an arrival animation that plays once per RSVP. Reduced motion shows the final state.
+RSVPs, their selected character (`SQ.state.user.character`) joins the cast with a "You" label.
+
+**Arrival (plays once per RSVP, never on a plain refresh):** the "You" slot renders hidden
+(`cm-arriving`). `land()` in community.js drops the character from 150px above the card into the
+slot (gravity ease, ~0.56 s), squashes on landing, nudges the card, bursts sparks and pops the label.
+If the 3D model is loaded, `SQUI.dropIn(slot, opts)` (showcase.js) does the fall with the real
+character, which then plays `JoyfulJump` and fades into the sprite. Otherwise the 2D sprite falls.
+Reduced motion: the character simply appears. Falling characters and sparks live in a fixed
+`.cm-drop-layer` under the nav (z-index 19) and clean themselves up. Test: `tests/arrival.e2e.py`.

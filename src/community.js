@@ -214,7 +214,7 @@
       '<div class="cm-member-stage">' + character(e.host, 220) + '</div><div class="cm-member-name"><p class="eyebrow">' + esc(hobbyName(e.hobbyId)) + ' community</p><h1 class="h1">' + esc(e.host) + '</h1><p class="muted">Sample host · Newark area</p></div>' +
       '<section class="stack"><h2 class="h2">Hosting next</h2><ul class="cm-evlist">' + eventRow(e, {showDate:true}) + '</ul></section>' +
       '<button type="button" class="btn primary block" data-action="open-group" data-id="' + esc(e.hobbyId) + '">Explore the ' + esc(hobbyName(e.hobbyId)) + ' group</button>' +
-      '<p class="small muted cm-sample">Showcase character · Sample host profile</p></div>';
+      '<p class="small muted cm-sample">Habitual character · Sample host profile</p></div>';
   }
 
   function matchesDate(e) {
@@ -296,7 +296,7 @@
     if (!SQ() || !SQ().communityUnlocked()) return renderLocked();
     var groups = view.category === 'groups';
     return '<div class="screen cm cm-feed">' +
-      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span><button type="button" class="cm-self-avatar" data-action="go" data-to="showcase" aria-label="Change your avatar in Showcase">' + mii(selectedAvatar(), 60) + '</button></header>' +
+      '<header class="cm-feed-header"><h1>Community</h1><span class="cm-location">' + icon('pin', 15) + ' Newark, NJ</span><button type="button" class="cm-self-avatar" data-action="go" data-to="me" aria-label="Change your character on the Me page">' + mii(selectedAvatar(), 60) + '</button></header>' +
       '<div class="cm-categories" role="group" aria-label="Community categories">' + CATEGORIES.map(function (c) {
         return '<button type="button" data-action="category" data-v="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '" class="' + (view.category === c[0] ? 'on' : '') + '"><span aria-hidden="true">' + icon(c[2], 23) + '</span>' + c[1] + '</button>';
       }).join('') + '</div>' +
@@ -420,6 +420,93 @@
     return h;
   }
 
+  /* ---------------- arrival: drop in from above the card, land, sparks ----------------
+     After an RSVP, the "You" slot renders hidden (cm-arriving). The character falls from above
+     the card into that slot, lands with a squash and a small thud of the card, sparks burst at its
+     feet and the "You" label pops in. With the 3D model loaded (showcase.js) the real character
+     falls and does its Joyful Jump; otherwise the 2D sprite falls. Reduced motion: it just appears. */
+  var STILL = !!(G.matchMedia && G.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var DROP_MS = 560, SQUASH_MS = 180, DROP_ABOVE = 150;
+  function dropLayer() {
+    var l = document.querySelector(".cm-drop-layer");
+    if (!l) { l = document.createElement("div"); l.className = "cm-drop-layer"; l.setAttribute("aria-hidden", "true"); document.body.appendChild(l); }
+    return l;
+  }
+  function sparks(slot) {
+    var r = slot.getBoundingClientRect(), x = r.left + r.width / 2, y = r.bottom - 10, layer = dropLayer();
+    var colors = ["var(--sun)", "var(--sun)", "var(--leaf)", "var(--sky)", "var(--surface)"];
+    var ring = document.createElement("span");
+    ring.className = "cm-spark-ring";
+    ring.style.left = x + "px"; ring.style.top = y + "px";
+    layer.appendChild(ring);
+    ring.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(-50%,-50%) scale(1.7)", opacity: 0 }],
+      { duration: 650, easing: "cubic-bezier(.2,.7,.3,1)" }).onfinish = function () { ring.remove(); };
+    var flash = document.createElement("span");
+    flash.className = "cm-spark-flash";
+    flash.style.left = x + "px"; flash.style.top = (y - 18) + "px";
+    layer.appendChild(flash);
+    flash.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(.2)", opacity: 1 }, { transform: "translate(-50%,-50%) rotate(45deg) scale(1.2)", opacity: .9, offset: .35 }, { transform: "translate(-50%,-50%) rotate(90deg) scale(.4)", opacity: 0 }],
+      { duration: 560, easing: "ease-out" }).onfinish = function () { flash.remove(); };
+    for (var i = 0; i < 22; i++) {
+      var p = document.createElement("span"), streak = i % 3 === 0;
+      var ang = (-185 + (i / 22) * 190 + (Math.random() * 12 - 6)) * Math.PI / 180; // fan upward and out
+      var dist = 46 + Math.random() * 52, dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * 0.9;
+      p.className = streak ? "cm-spark cm-spark-streak" : "cm-spark";
+      p.style.left = x + "px"; p.style.top = y + "px";
+      p.style.background = colors[i % colors.length];
+      var rot = "rotate(" + (ang * 180 / Math.PI + 90) + "deg)";
+      layer.appendChild(p);
+      p.animate([
+        { transform: "translate(-50%,-50%) " + rot + " scale(1)", opacity: 1 },
+        { transform: "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px)) " + rot + " scale(.25)", opacity: 0 }
+      ], { duration: 650 + Math.random() * 350, easing: "cubic-bezier(.15,.75,.35,1)" }).onfinish = (function (el) { return function () { el.remove(); }; })(p);
+    }
+  }
+  function thud(slot) {
+    var card = slot.closest(".cm-feed-event") || slot.closest(".cm-event-photo");
+    if (card && card.animate) card.animate([{ transform: "translateY(0)" }, { transform: "translateY(3px)" }, { transform: "translateY(0)" }], { duration: 240, easing: "ease-out" });
+  }
+  // Where the fall starts: DROP_ABOVE px above the top of the card holding the slot.
+  function dropStartTop(slot, h) {
+    var card = slot.closest(".cm-feed-event") || slot.closest(".cm-event-photo") || slot.parentNode;
+    return card.getBoundingClientRect().top - DROP_ABOVE - h;
+  }
+  function drop2d(slot, onLand, onDone) {
+    var sprite = slot.querySelector(".cm-mii"), layer = dropLayer();
+    if (!sprite || !sprite.animate) { onLand(); onDone(); return; }
+    var fall = document.createElement("span");
+    fall.className = "cm-drop";
+    fall.appendChild(sprite.cloneNode(true));
+    layer.appendChild(fall);
+    var t0 = null, landed = false;
+    (function frame() {
+      var now = performance.now(); // one clock: rAF timestamps and performance.now() can disagree
+      if (!slot.isConnected) { fall.remove(); return; }
+      if (t0 === null) t0 = now;
+      var r = sprite.getBoundingClientRect(), t = now - t0;
+      var k = Math.min(1, t / DROP_MS), yEnd = r.top, yStart = dropStartTop(slot, r.height);
+      var y = yStart + (yEnd - yStart) * k * k; // gravity: accelerates into the landing
+      var sq = 0;
+      if (k >= 1) {
+        if (!landed) { landed = true; onLand(); }
+        sq = Math.sin(Math.min(1, (t - DROP_MS) / SQUASH_MS) * Math.PI); // squash then spring back
+      }
+      fall.style.width = r.width + "px"; fall.style.height = r.height + "px";
+      fall.style.opacity = Math.min(1, k / 0.25); // materializes above the card, then falls in
+      fall.style.transform = "translate(" + r.left + "px," + y + "px) scale(" + (1 + 0.12 * sq) + "," + (1 - 0.14 * sq) + ")";
+      if (t < DROP_MS + SQUASH_MS) requestAnimationFrame(frame);
+      else { onDone(); fall.remove(); }
+    })();
+  }
+  function land(slot) {
+    if (STILL) { slot.classList.remove("cm-arriving"); return; }
+    function onLand() { slot.classList.add("cm-landed"); sparks(slot); thud(slot); }
+    function onDone() { slot.classList.remove("cm-arriving", "cm-landed"); }
+    var took = false;
+    try { took = !!(SQUI.dropIn && SQUI.dropIn(slot, { onLand: onLand, onDone: onDone, startTop: dropStartTop, ms: DROP_MS })); } catch (e) { took = false; }
+    if (!took) drop2d(slot, onLand, onDone);
+  }
+
   /* ---------------- shared actions ---------------- */
   function mount(root) {
     // Bind to this screen's own wrapper (replaced on every render) so the listener never
@@ -429,9 +516,8 @@
     host._cmBound = true;
     // Arrival is a one-shot RSVP transition, never replayed by filters or a later render.
     arrivingEvent = null;
-    host.addEventListener("animationend", function (ev) {
-      if (ev.animationName === "cm-arrive" && ev.target.classList) ev.target.classList.remove("cm-arriving");
-    });
+    var arriving = host.querySelector(".cm-you.cm-arriving");
+    if (arriving) requestAnimationFrame(function () { land(arriving); });
     host.addEventListener("error", function (ev) {
       if (ev.target.classList && ev.target.classList.contains("cm-venue-image")) ev.target.remove();
     }, true);

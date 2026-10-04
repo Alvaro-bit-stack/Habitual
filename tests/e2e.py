@@ -146,6 +146,10 @@ class Ctx:
         # No network here: serve an empty stylesheet for Google Fonts so it never errors.
         self.context.route(re.compile(r"https://fonts\.(googleapis|gstatic)\.com/.*"),
                            lambda route: route.fulfill(status=200, content_type="text/css", body=""))
+        # three.js (Me tab and celebrations) comes from jsDelivr. Serve an empty script so the 3D
+        # character stays unloaded and the 2D fallbacks run, without network errors.
+        self.context.route(re.compile(r"https://cdn\.jsdelivr\.net/.*"),
+                           lambda route: route.fulfill(status=200, content_type="application/javascript", body=""))
         self.page = self.context.new_page()
         self.errors = []
         self.page.on("console", self._on_console)

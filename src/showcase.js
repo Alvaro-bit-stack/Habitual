@@ -58,8 +58,10 @@
 
   /* ------------------------------------------------------------------ 3D stage */
   // Renders gltf into wrap until wrap leaves the page. opts.controls: drag to turn + tap to cheer.
-  // opts.intro: "wave" | "jump" | "jump-spin". opts.onMove(name): called when a tap starts a move.
-  // Everything cleans up on disconnect.
+  // opts.intro: "wave" | "jump" | "jump-spin" | "drop". opts.onMove(name): called when a tap starts a move.
+  // opts.tick(now): called every frame before rendering. opts.onIdle(): a one-shot move finished.
+  // "drop" frames the whole body with the feet on the bottom edge and waits for api.cheer().
+  // Returns { cheer }. Everything cleans up on disconnect.
   function stage(wrap, gltf, opts) {
     var THREE = G.THREE, canvas = document.createElement("canvas");
     canvas.setAttribute("aria-hidden", opts.controls ? "false" : "true");
@@ -98,6 +100,10 @@
       controls.enablePan = false;
       controls.enableZoom = false;
       controls.minPolarAngle = controls.maxPolarAngle = Math.PI / 2.15;
+    } else if (opts.intro === "drop") {
+      // Whole body, feet on the bottom edge, ~1.8x the body's height of headroom for the jump.
+      var half = 2.0, dist = half / Math.tan(16 * Math.PI / 180); // body ≈ the community sprites' height
+      camera.position.set(0, half - 0.05, dist); camera.lookAt(0, half - 0.05, 0);
     } else {
       camera.position.set(0, 1.3, 4.1); camera.lookAt(0, 1.3, 0); // knees down hide behind the card; room for arms up + jump
     }
@@ -118,14 +124,14 @@
       if (cur && cur !== next) cur.crossFadeTo(next, 0.3, false);
       cur = next;
     }
-    mixer.addEventListener("finished", function (e) { if (e.action === cur) play("idle"); });
+    mixer.addEventListener("finished", function (e) { if (e.action === cur) { play("idle"); if (opts.onIdle) opts.onIdle(); } });
     play("idle");
 
     // Intro: "wave" in place, or leap up from below (behind the reward card) and cheer.
-    var t0 = null, intro = opts.intro || "wave", leap = intro !== "wave" && !still;
+    var t0 = null, intro = opts.intro || "wave", leap = intro !== "wave" && intro !== "drop" && !still;
     if (intro === "wave") play(greet);
     else if (still) play(cheer);
-    else rig.position.y = -2.2;
+    else if (intro !== "drop") rig.position.y = -2.2; // "drop" moves the whole canvas instead
     function ease(k) { var c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); } // ease-out-back
 
     if (opts.controls) {
@@ -143,6 +149,7 @@
 
     (function frame(now) {
       if (!canvas.isConnected) { renderer.dispose(); if (controls) controls.dispose(); return; } // screen re-rendered or overlay closed
+      if (opts.tick) { opts.tick(now || performance.now()); if (!canvas.isConnected) return; }
       var w = wrap.clientWidth, h = wrap.clientHeight;
       if (canvas.width !== Math.floor(w * renderer.getPixelRatio())) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
       if (leap && now) {
@@ -157,6 +164,7 @@
       renderer.render(scene, camera);
       requestAnimationFrame(frame);
     })();
+    return { cheer: function () { if (cheer) play(cheer); else if (opts.onIdle) opts.onIdle(); } };
   }
 
   function mountStage(wrap, id) {
@@ -191,6 +199,48 @@
     wrap.className = "rw-stage";
     overlay.insertBefore(wrap, card);
     loadModel(id).then(function (gltf) { if (wrap.isConnected) stage(wrap, gltf, { intro: big ? "jump-spin" : "jump" }); }, function () { wrap.remove(); if (mascot) mascot.hidden = false; });
+    return true;
+  };
+
+  /* ------------------------------------------------------------------ community arrival */
+  // Called by community.js after an RSVP with the hidden "You" slot on an event card. The 3D character
+  // falls from above the card into the slot, lands (opts.onLand: sparks), does its Joyful Jump, then
+  // fades into the slot's sprite (opts.onDone). Only takes over when the model is already loaded.
+  SQUI.dropIn = function (slot, opts) {
+    var id = characterId();
+    if (still || !ready[id] || !slot || !G.THREE) return false;
+    var layer = document.querySelector(".cm-drop-layer");
+    if (!layer) { layer = document.createElement("div"); layer.className = "cm-drop-layer"; layer.setAttribute("aria-hidden", "true"); document.body.appendChild(layer); }
+    var wrap = document.createElement("div");
+    wrap.className = "cm-drop cm-drop-3d";
+    wrap.style.visibility = "hidden";
+    layer.appendChild(wrap);
+    var api = null, t0 = null, landed = false, finished = false, ms = opts.ms || 560;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      opts.onDone();
+      wrap.style.opacity = "";
+      wrap.classList.add("cm-drop-out");
+      G.setTimeout(function () { wrap.remove(); }, 320);
+    }
+    function place() {
+      var now = performance.now(); // one clock: rAF timestamps and performance.now() can disagree
+      if (!slot.isConnected) { wrap.remove(); return; }
+      if (t0 === null) t0 = now;
+      var r = slot.getBoundingClientRect(), w = r.width * 2.2, h = r.height * 2.1; // room for arms and the jump
+      var yEnd = r.bottom - h - 8, yStart = opts.startTop(slot, h), k = Math.min(1, (now - t0) / ms);
+      var y = landed ? yEnd : yStart + (yEnd - yStart) * k * k;
+      wrap.style.width = w + "px"; wrap.style.height = h + "px";
+      wrap.style.transform = "translate(" + (r.left + r.width / 2 - w / 2) + "px," + y + "px)";
+      wrap.style.visibility = "visible";
+      if (!landed) wrap.style.opacity = Math.min(1, k / 0.25); // materializes above the card, then falls in
+      if (!landed && k >= 1) { landed = true; opts.onLand(); if (api) api.cheer(); G.setTimeout(finish, 3200); } // safety net
+    }
+    loadModel(id).then(function (gltf) {
+      if (!slot.isConnected) { wrap.remove(); return; }
+      api = stage(wrap, gltf, { intro: "drop", tick: place, onIdle: function () { if (landed) finish(); } });
+    }, function () { wrap.remove(); opts.onLand(); opts.onDone(); });
     return true;
   };
 

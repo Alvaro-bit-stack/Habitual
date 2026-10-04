@@ -17,14 +17,23 @@
 .cm-person.cm-you { z-index: 2; transform: none; }
 .cm-you-label { position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); border-radius: 8px; background: var(--leaf); color: var(--leaf-ink); border: 1px solid var(--surface); padding: 1px 7px; font: 700 10px/1.3 var(--font-body); box-shadow: 0 2px 8px #102a3f30; }
 .cm-photo-tag { z-index: 3; }
-.cm-arriving { animation: cm-arrive 1.1s cubic-bezier(.2,.65,.3,1) both; }
-.cm-arriving .cm-mii::before { animation: cm-rest-visible 1.1s step-end both; }
-.cm-arriving .cm-mii::after { animation: cm-run-frames .55s steps(7,end) 2, cm-run-visible 1.1s step-end both; }
-.cm-arriving .cm-you-label { animation: cm-rest-visible 1.1s step-end both; }
-@keyframes cm-arrive { from { transform: translateX(-280px); } to { transform: translateX(0); } }
-@keyframes cm-run-frames { from { background-position: 0 0; } to { background-position: 100% 0; } }
-@keyframes cm-run-visible { from { opacity: 1; } to { opacity: 0; } }
-@keyframes cm-rest-visible { from { opacity: 0; } to { opacity: 1; } }
+/* Arrival (see land() in community.js): the "You" slot stays hidden while the character drops in,
+   the label pops in on landing, sparks burst at the feet. */
+.cm-you.cm-arriving .cm-mii { visibility: hidden; }
+.cm-you.cm-arriving::before { opacity: 0; }
+.cm-you.cm-arriving .cm-you-label { opacity: 0; transform: translateX(-50%) scale(.6); }
+.cm-you.cm-arriving.cm-landed::before { opacity: 1; transition: opacity .15s; }
+.cm-you.cm-arriving.cm-landed .cm-you-label { opacity: 1; transform: translateX(-50%) scale(1); transition: opacity .15s, transform .3s cubic-bezier(.3,1.7,.5,1); }
+.cm-drop-layer { position: fixed; inset: 0; z-index: 19; pointer-events: none; overflow: hidden; }
+.cm-drop { position: absolute; left: 0; top: 0; display: block; transform-origin: 50% 100%; will-change: transform; }
+.cm-drop .cm-mii { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+.cm-drop-3d canvas { display: block; width: 100%; height: 100%; }
+.cm-drop-3d { transition: opacity .28s ease; }
+.cm-drop-3d.cm-drop-out { opacity: 0; }
+.cm-spark { position: absolute; width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 6px 1px color-mix(in srgb, var(--sun) 70%, transparent); }
+.cm-spark-streak { width: 4px; height: 16px; border-radius: 2px; }
+.cm-spark-flash { position: absolute; width: 34px; height: 34px; background: var(--sun); clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); filter: drop-shadow(0 0 6px var(--sun)); }
+.cm-spark-ring { position: absolute; width: 90px; height: 26px; border-radius: 50%; border: 2px solid var(--sun); box-shadow: 0 0 10px color-mix(in srgb, var(--sun) 60%, transparent); }
 .cm-attendance-icon .cm-mii { margin-top: 4px; transform: scale(1.5); transform-origin: center 15%; }
 .cm-member-stage { min-height: 300px; background: radial-gradient(ellipse at 50% 90%, var(--surface-2), var(--surface)); }
 .cm-member-stage .cm-mii { --mii-size: 280px !important; }
@@ -43,8 +52,6 @@
 .cm-av { overflow: hidden; }
 .cm-av .cm-mii { transform: scale(1.5); transform-origin: center top; }
 @media (prefers-reduced-motion: reduce) {
-  .cm-arriving, .cm-arriving .cm-mii::before, .cm-arriving .cm-mii::after, .cm-arriving .cm-you-label { animation: none !important; }
-  .cm-arriving .cm-mii::before, .cm-arriving .cm-you-label { opacity: 1; }
-  .cm-arriving .cm-mii::after { display: none; }
+  .cm-you.cm-arriving .cm-mii { visibility: visible; } .cm-you.cm-arriving::before, .cm-you.cm-arriving .cm-you-label { opacity: 1; transform: translateX(-50%); }
 }
 @media (max-width: 370px) { .cm-feed-header h1 { font-size: 24px; } .cm-feed-header .cm-location { font-size: 10px; } }

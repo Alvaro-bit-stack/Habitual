@@ -40,6 +40,9 @@ jobs:
       - name: Browser tests
         run: python3 tests/e2e.py
 
+      - name: Community arrival test
+        run: python3 tests/arrival.e2e.py
+
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -767,6 +767,7 @@ async function handler(req, res) {
       return sendJson(res, 200, result);
     } catch (error) {
       const status = Number(error && error.status) || 500;
+      console.warn(`${isGuide ? "Hobby guide" : "Hobby research"} failed (${status}): ${(error && error.message) || error}`);
       const message = status >= 500 && status !== 503 && status !== 504
         ? "The research service could not complete that request."
         : cleanText(error && error.message, 240) || "Request failed.";
@@ -836,8 +837,8 @@ function createServer() { return http.createServer(handler); }
 
 if (require.main === module) {
   createServer().listen(PORT, HOST, () => {
-    console.log(`Sidequest server: http://127.0.0.1:${PORT}`);
-    console.log(`Gemini research: ${process.env.GEMINI_API_KEY ? "configured" : "not configured"}`);
+    console.log(`Habitual server: http://127.0.0.1:${PORT}`);
+    console.log(`Gemini research: ${process.env.GEMINI_API_KEY ? "configured" : "not configured"} (models: ${MODELS.join(", ")})`);
   });
 }
 

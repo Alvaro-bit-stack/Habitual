@@ -180,6 +180,10 @@ button.list-row:hover { background: color-mix(in srgb, var(--surface-2) 60%, tra
   display: grid; place-items: center; background: var(--surface); color: var(--ink-2);
   border: 1px solid var(--line);
 }
+@media (max-width: 380px) {
+  .nav-btn { font-size: 10.5px; }
+  .nav-btn .nav-ic { width: 46px; }
+}
 
 /* ---------- Toast ---------- */
 #toast-root {
@@ -236,6 +240,9 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
   display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start;
   width: 100%; padding: 16px 16px 12px; background: transparent; border: 0; text-align: left; color: var(--ink);
 }
+.hc-photo-wrap { width: 56px; height: 56px; border-radius: 12px; overflow: hidden; background: var(--surface-2); display: block; }
+.hc-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sq-photo-fallback { width: 100%; height: 100%; display: grid; place-items: center; color: var(--leaf); }
 .hc-body:focus-visible { outline-offset: -3px; }
 .hc-name { font-family: var(--font-display); font-weight: 800; font-size: 19px; line-height: 1.2; overflow-wrap: anywhere; }
 .hc-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin-top: 2px; }

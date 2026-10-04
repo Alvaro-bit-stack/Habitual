@@ -1,8 +1,8 @@
 # Habitual — Team Contract
 
 Habitual is a mobile-first web app that gets people off their
-phones and into hobbies. Two ways in: "I already have hobbies" (add them to a tracker) and
-"Find a new hobby" (5-question quiz → 3 matches → starter pack with gear + cost → start).
+phones and into hobbies. First-run onboarding asks for current hobbies; Discover then offers a
+searchable, clustered hobby network and optional Gemini-generated starter research.
 Tracked hobbies get weekly goals, tiny wins, comeback mode, XP, levels, achievements, a 3D
 character and progress page (Me), a skill evaluator and a community tab.
 
@@ -20,6 +20,7 @@ something another part depends on, change it here first and get a quick OK from 
 | Community | `src/community.*` | _(fill in)_ |
 | Skill evaluator | `src/evaluate.*` (new) + its engine/data additions | _(fill in)_ |
 | Discovery (onboarding, quiz, starter packs) | `src/discover.*` | _(fill in)_ |
+| Secure Gemini research server | `server.js`, `.env.example`, `tests/server.test.js` | Core & data |
 
 Edit only your own files. If you need something from another part that isn't in this contract,
 code defensively (check it exists before calling it) and raise it with the owner.
@@ -36,7 +37,7 @@ code defensively (check it exists before calling it) and raise it with the owner
 - **Always online.** The app is headed toward a real mobile app with network access, so loading a
   library from a CDN (cdn.jsdelivr.net, cdnjs) is fine when it earns its place. Load it only on
   the screen that needs it, and show a friendly message if it fails. Don't bundle libraries.
-- **No emoji** anywhere in UI or data. Icons are inline SVG (`SQUI.icon`, `SQUI.hobbyIcon`).
+- **Icons:** shared controls use inline SVG (`SQUI.icon`, `SQUI.hobbyIcon`). Discover hobby nodes may use a single representative emoji.
 - **No `alert/confirm/prompt`.** Use in-page UI (see the reset confirm on the Me screen).
 - **Dates:** today is the local date. All dates in data are relative (day offsets) so the demo
   never goes stale.
@@ -48,16 +49,16 @@ code defensively (check it exists before calling it) and raise it with the owner
 
 ```
 SQ_DATA = {
-  hobbies: Hobby[],          // exactly 12
+  hobbies: Hobby[],          // exactly 10 built-in hobbies
   achievements: AchDef[],    // exactly the ids listed below, in this order
-  groups: Group[],           // one per hobby (12)
-  events: EventDef[],        // 16-20 events across hobbies
-  quiz: QuizQuestion[]       // exactly the 5 questions below
+  groups: Group[],           // one per built-in hobby
+  events: EventDef[],        // 18 sample events across built-in hobbies
+  quiz: QuizQuestion[]       // legacy matching input; current onboarding does not expose the quiz
 }
 ```
 
-Hobby ids (exactly these): `drawing`, `running`, `tennis`, `guitar`, `photography`,
-`cooking`, `hiking`, `soccer`, `knitting`, `bouldering`, `chess`, `gardening`.
+Hobby ids (exactly these): `guitar`, `soccer`, `tennis`, `painting`, `photography`,
+`running`, `sewing`, `journaling`, `piano`, `basketball`.
 
 ```
 Hobby = {
@@ -65,7 +66,7 @@ Hobby = {
   category: "creative"|"active"|"technical"|"social"|"relaxing",  // primary vibe
   vibes: string[],                            // all vibes that fit, includes category
   place: "indoor"|"outdoor"|"either",
-  social: "solo"|"group"|"either",            // tennis/soccer = group; chess = either
+  social: "solo"|"group"|"either",            // tennis/soccer = group; running = either
   minBudget: 0|50|150,                        // cheapest realistic start (budget tier total bucket)
   time: "low"|"mid"|"high",                   // weekly time it naturally wants
   blurb: string,                              // one sentence, < 110 chars
@@ -173,7 +174,7 @@ SQ.seedDemo()                   // replaces state with the realistic demo, onboa
 SQ.today()                      // "YYYY-MM-DD" local; respects SQ._now
 SQ._now                         // null by default; tests may set a Date
 SQ.getHobby(id)                 // catalog or custom hobby (custom ones get generated tinyWins/milestones, no starterPack)
-SQ.catalog()                    // all 12 catalog hobbies
+SQ.catalog()                    // all 10 built-in catalog hobbies
 SQ.addCustomHobby(name, category) // returns new custom id; does NOT track it
 SQ.isTracked(id) -> bool
 SQ.addHobby(id, {goal=2, viaStarter=false}={}) -> Reward   // xpGained 0; may unlock first_hobby/three_hobbies/starter_pack
@@ -211,13 +212,13 @@ Reward:
 ```
 
 ### Demo data and tests
-`seedDemo()` replays real API calls on past dates: tracks drawing (goal 3, in comeback),
+`seedDemo()` replays real API calls on past dates: tracks painting (goal 3, in comeback),
 running (goal 2, consistent, last run yesterday) and guitar (goal 2, via starter pack); 2 running
-milestones and 1 drawing milestone ticked; 2 RSVPs, one today. Player lands around level 4-5.
+milestones and 1 painting milestone are ticked. Player lands around level 4-5.
 Keep these invariants if you change it; `tests/engine.test.js` checks them.
 
-Tests (CI runs all three on every push and PR):
-`node tests/data.check.js` · `node tests/engine.test.js` · `python3 tests/e2e.py` (Playwright).
+Core tests include `node tests/data.check.js`, `node tests/engine.test.js`,
+`node tests/server.test.js`, and `python3 tests/e2e.py` (Playwright), plus the Community suites.
 Engine changes come with a test in `tests/engine.test.js`.
 
 ## 4. UI kit — `window.SQUI` (`src/shell.js`)
@@ -230,7 +231,7 @@ SQUI.go(name, params={}, {replace=false, reset=false}={})
 SQUI.back()                           // history back, fallback "today"
 SQUI.refresh()                        // re-render current screen with same params
 SQUI.current() -> {name, params}|null
-SQUI.start()                          // SQ.init(); welcome if not onboarded, else today
+SQUI.start()                          // SQ.init(); current-hobby picker if not onboarded, else today
 SQUI.showReward(reward, {title}?)     // full-screen celebration; Promise resolved on close
 SQUI.toast(text)
 SQUI.esc(str)                         // HTML-escape. Use it on every string that isn't a literal.
@@ -239,6 +240,7 @@ SQUI.icon(name, size=20)              // inline SVG: categories ("creative","act
                                       //  "spark","calendar","pin","users","lock","star","clock","close",
                                       //  "search","leaf","trophy","sun","compass","user"
 SQUI.hobbyIcon(hobbyId, size=24)      // per-hobby glyph (custom → its category icon)
+SQUI.hobbyPicture(hobbyId, alt, className) // local hobby photo, or icon fallback for custom hobbies
 SQUI.mascot(stage 0..4, {mood, size, accessories})  // 2D Sprout SVG
 SQUI.money([lo,hi]) -> "$25–60" / "Free"
 SQUI.setTheme("system"|"light"|"dark")
@@ -255,7 +257,7 @@ No inline `onclick`.
 
 **Screens and owners**
 - Shell: `today`, `hobby` ({id}), `log` ({id, size?}, tab null), `achievements` (earned first, newest on top, then what's left).
-- Discovery: `welcome`, `pick`, `quiz`, `results` (tab null), `pack` ({id}), `discover`.
+- Discovery: `pick`, `pack` ({id}), `discover`, `research` ({hobby?, autorun?}); legacy quiz screens remain registered for compatibility.
 - Community: `community`, `group` ({hobbyId}), `event` ({id}).
 - Me page (`showcase.js`): `me`.
 - Skill evaluator: `evaluate` ({id}), see section 5.
@@ -263,11 +265,20 @@ No inline `onclick`.
 Bottom nav (shell): Today · Discover · Community · Me, hidden when a screen's tab is null.
 Community shows a lock until the user tracks a hobby.
 
-**Onboarding (discovery):** `welcome` offers "I already have hobbies" → `pick`, "Find a new hobby" →
-`quiz`, and a quiet "Explore with sample data" → `SQ.seedDemo(); SQUI.go("today")`. Finishing
-`pick` (≥1 hobby) or pressing Start on a pack sets `SQ.state.onboarded = true; SQ.save()` and goes
-to `today`. Starting from a pack calls `SQ.addHobby(id, {goal:2, viaStarter:true})`, then
-`SQUI.showReward(r)` if it has newAchievements.
+**Onboarding and discovery:** a fresh app opens `pick`; navigation stays hidden until the user
+selects at least one current hobby. Discover shows those hobbies as emphasized emoji nodes and
+similar hobbies as muted nodes, grouped into topic bubbles such as sports, music, art/making, and
+writing/reflection. Search can isolate any built-in hobby. Selecting a suggestion opens `pack`;
+Gemini research can create a custom hobby through `SQ.addCustomHobby` and then track it.
+
+### Secure Gemini research API (`server.js`)
+
+`POST /api/hobby-research` accepts bounded `{hobby, location, experience, budget, currency}` input.
+The server loads `GEMINI_API_KEY` from the ignored `.env`, calls Gemini from Node, rate-limits by
+client address, caches successful results briefly, validates the returned document, and exposes only
+HTTPS grounding sources. The key must never enter built HTML, browser storage, URLs, logs, or Git.
+If Google Search grounding is unavailable, the server retries without the search tool and marks the
+result `grounded:false`; the UI then labels prices and recommendations as estimates.
 
 ### Shared CSS classes (defined in `shell.css`; use them, never redefine them)
 Layout: `.screen` (padded column, max-width 560px), `.stack` (gap 12px), `.stack-lg` (gap 24px),

@@ -27,7 +27,7 @@ for (const photo of Object.values(context.SQ_VENUES)) {
 const SQ = context.SQ;
 SQ.init();
 SQ._now = new Date(2026, 9, 3, 12);
-SQ.addHobby('running'); SQ.addHobby('drawing'); SQ.addHobby('guitar');
+SQ.addHobby('running'); SQ.addHobby('painting'); SQ.addHobby('guitar');
 let click, imageError;
 const inputHandlers = {};
 const search = {value:'', addEventListener:(name, fn) => { inputHandlers[name] = fn; }};
@@ -46,7 +46,7 @@ let checks = 0;
 function test(name, fn) { fn(); checks++; console.log('PASS ' + name); }
 test('Going is the first tab and the default',()=>{const html=screens.community.render();assert.ok(/data-action="category" data-v="going" aria-pressed="true"/.test(html));assert.ok(html.indexOf('data-v="going"')<html.indexOf('data-v="for-you"'));assert.ok(html.includes('Your plans start here'));});
 action('category','for-you');
-test('For you shows tracked hobbies',()=>assert.deepEqual(ids(), ['ev-drawing-1','ev-guitar-1','ev-running-1','ev-running-2']));
+test('For you shows tracked hobbies',()=>assert.deepEqual(ids(), ['ev-drawing-1','ev-guitar-1','ev-hiking-1','ev-hiking-2','ev-running-1','ev-running-2']));
 action('category','all');
 test('All events exposes the full catalog',()=>assert.equal(ids().length,18));
 action('date-filter','tomorrow');
@@ -73,8 +73,8 @@ action('rsvp',null,'ev-guitar-1');
 test('Removing RSVP updates Going',()=>assert.equal(ids().length,0));
 action('category','groups');
 test('Group listings ignore the All events search',()=>{
-  const html=screens.community.render();assert.ok(html.includes('Drawing · Newark area'));
-  assert.ok(html.includes('Guitar · Newark area'));assert.ok(!html.includes('id="cm-search"'));
+  const html=screens.community.render();assert.ok(html.includes('Painting · Newark area'));
+  assert.ok(html.includes('Guitar Playing · Newark area'));assert.ok(!html.includes('id="cm-search"'));
 });
 action('open-member',null,'ev-guitar-1');
 test('Host action opens the character profile',()=>{assert.equal(lastRoute.name,'member');assert.equal(lastRoute.params.id,'ev-guitar-1');const html=screens.member.render(lastRoute.params);assert.ok(html.includes('Ray D.'));assert.ok(html.includes('cm-mii'));assert.ok(html.includes('data-action="open-group"'));});
@@ -118,7 +118,7 @@ test('Event thumbnails no longer contain character scenes; host avatars remain',
 test('Search exists only in All events and does not filter other tabs',()=>{
   action('category','all');query('military');assert.equal(ids().length,1);
   assert.ok(screens.community.render().includes('id="cm-search"'));
-  action('category','for-you');assert.equal(ids().length,4);
+  action('category','for-you');assert.equal(ids().length,6);
   assert.ok(!screens.community.render().includes('id="cm-search"'));
   action('category','going');assert.ok(!screens.community.render().includes('id="cm-search"'));
   action('category','all');assert.equal(ids().length,1);
@@ -126,7 +126,7 @@ test('Search exists only in All events and does not filter other tabs',()=>{
 });
 test('Hobby filter narrows events and groups, and resets with the feed',()=>{
   action('category','all');action('hobby-filter','running');
-  assert.deepEqual(ids(),['ev-running-1','ev-running-2']);
+  assert.deepEqual(ids(),['ev-hiking-1','ev-hiking-2','ev-running-1','ev-running-2']);
   assert.ok(/id="cm-hobby"[^>]*value="Running"/.test(screens.community.render()));
   action('category','groups');const g=screens.community.render();assert.ok(g.includes('Running · Newark area'));assert.ok(!g.includes('Guitar · Newark area'));
   assert.ok(!g.includes('id="cm-when"'));assert.ok(g.includes('id="cm-hobby"'));
@@ -134,9 +134,9 @@ test('Hobby filter narrows events and groups, and resets with the feed',()=>{
 });
 test('Your tabs list only your hobbies; All events lists every hobby to discover',()=>{
   const opts=()=>[...screens.community.render().matchAll(/id="cm-hobby-opt-\d+" role="option" data-v="([^"]*)"/g)].map(m=>m[1]);
-  action('category','going');assert.deepEqual(opts(),['','running','drawing','guitar']);
-  action('category','for-you');assert.deepEqual(opts(),['','running','drawing','guitar']);
-  action('category','all');const all=opts();assert.deepEqual(all.slice(0,4),['','running','drawing','guitar']);assert.ok(all.includes('tennis')&&all.includes('chess'));
+  action('category','going');assert.deepEqual(opts(),['','running','painting','guitar']);
+  action('category','for-you');assert.deepEqual(opts(),['','running','painting','guitar']);
+  action('category','all');const all=opts();assert.deepEqual(all.slice(0,4),['','running','painting','guitar']);assert.ok(all.includes('tennis')&&all.includes('journaling'));
   action('hobby-filter','tennis');assert.ok(ids().every(id=>id.startsWith('ev-tennis')));
   action('category','going');assert.ok(/id="cm-hobby"[^>]*value=""/.test(screens.community.render()),'a hobby you do not track is dropped when switching to Going');
   action('reset-feed');

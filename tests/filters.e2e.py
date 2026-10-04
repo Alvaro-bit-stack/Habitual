@@ -45,7 +45,7 @@ def main():
 
         page.click("#cm-hobby")
         check(is_open(), "tapping the Hobby field opens the list")
-        check(shown() == ["All hobbies", "Running", "Drawing", "Guitar"], "Going lists only your hobbies")
+        check(shown() == ["All hobbies", "Running", "Painting", "Guitar Playing"], "Going lists only your hobbies")
         page.keyboard.press("Escape")
         check(not is_open(), "Escape closes the list")
 
@@ -69,9 +69,9 @@ def main():
         check(page.input_value("#cm-hobby") == "Tennis", "Escape restores the current pick")
 
         page.click("#cm-hobby")
-        page.click('#cm-hobby-list [data-v="chess"]')
+        page.click('#cm-hobby-list [data-v="journaling"]')
         page.wait_for_timeout(250)
-        check(page.input_value("#cm-hobby") == "Chess" and not is_open(), "tapping an option picks it")
+        check(page.input_value("#cm-hobby") == "Journaling" and not is_open(), "tapping an option picks it")
 
         page.click(".cm-combo-clear")
         page.wait_for_timeout(250)

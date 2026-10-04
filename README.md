@@ -6,17 +6,19 @@ A mobile-first app that helps people trade scrolling for hobbies. It gets you st
 
 ## What the MVP does
 
-- **Two ways in:** "I already have hobbies" (add them to the tracker) or "Find a new hobby" (5-question quiz → 3 matches → starter pack).
-- **Starter packs** for 12 hobbies: gear in Free / Budget / Step-up tiers with totals, try-before-you-buy tips, and a plan for the first 3 sessions.
+- **First run:** choose the hobbies you already do, then land on Today with those hobbies ready to track.
+- **Discover:** search hobbies or explore an emoji-node network grouped into sports, music, art/making, and writing/reflection clusters.
+- **Starter packs** for 10 built-in hobbies, with free options, equipment costs, and introductory tutorial searches.
+- **Gemini research:** securely research and add hobbies beyond the built-in catalog through the optional same-origin backend.
 - **Tracker:** weekly goals, one-tap tiny wins on a 5-rung ladder, comeback mode after 7+ days away, a 12-week activity map, skill milestones and a session log.
 - **Rewards:** XP, hobby and player levels, the Sprout mascot (5 growth stages, accessories), achievements and a celebration screen.
-- **Community (sample data):** a venue-photo event feed with character profiles, live search, date filters, your groups, RSVPs and check-in for XP. Character profiles use inline SVG. Licensed venue photos are bundled in the standalone page; no remote image requests.
+- **Community (sample data):** a venue-photo event feed with character profiles, live search, date filters, groups and RSVPs. Character profiles use inline SVG. Licensed venue photos are bundled in the standalone page; no remote image requests.
 
-Everything runs in the browser and saves to the device (localStorage). There are no accounts, servers or real other users yet.
+App state stays in the browser using localStorage. There are no accounts or real other users yet. Gemini research uses the optional local server so the API key never enters browser code.
 
 ## Run it
 
-Requirements: Python 3 and Node 18+.
+Requirements: Python 3. Node 20.12+ is required only for Gemini research.
 
 ```bash
 python3 build.py          # inlines src/ into dist/
@@ -27,12 +29,26 @@ On the welcome screen, tap **Explore with sample data** to see the app filled in
 
 `build.py` writes one page, `dist/Habitual.html`, in the Ocean design. Keep the `dist/models` folder next to it; the Showcase tab loads its 3D characters from there.
 
+### Run with Gemini research
+
+Keep the key server-side in an ignored `.env` file:
+
+```bash
+cp .env.example .env
+# Replace the placeholder in .env with your Gemini API key.
+python3 build.py
+node server.js
+```
+
+On Windows PowerShell, use `Copy-Item .env.example .env`. Open the local URL printed by the server. `GEMINI_MODEL` and `PORT` are optional. The backend validates input, rate-limits requests, keeps a short in-memory cache, filters source URLs, and never sends the API key to the browser.
+
 ## Tests
 
 ```bash
 node tests/data.check.js       # content: every hobby, pack, event and quiz entry matches the contract
 node tests/engine.test.js      # game logic: XP, levels, streaks, comeback, matching, storage
 node tests/community.test.js   # dates, search, RSVPs, groups and character profiles
+node tests/server.test.js      # backend validation, source filtering, key handling and caching
 pip install playwright && python3 -m playwright install chromium
 python3 tests/e2e.py           # browser walkthrough of every flow, phone + desktop, light + dark
 python3 tests/arrival.e2e.py   # Community: character drops in from above the card, lands with sparks
@@ -52,6 +68,7 @@ The app is plain HTML, CSS and JavaScript with no framework and no build tools b
 | `src/shell.js`, `src/shell.css` | App shell, navigation, design tokens, shared components, Today, hobby, log, Me, achievements, reward overlay, mascot (`SQUI`) | Tracker & rewards |
 | `src/discover.js`, `src/discover.css` | Welcome, add-hobbies picker, quiz, results, starter packs, Discover tab | Discovery & community |
 | `src/community.js`, `src/community.css` | Community tab, groups, events | Discovery & community |
+| `server.js` | Same-origin static server and secure Gemini hobby-research API | Core & data |
 | `src/boot.js` | Starts the app | Anyone |
 
 **[CONTRACT.md](CONTRACT.md) is the source of truth** for how these pieces talk to each other: data shapes, the `SQ` engine API, the `SQUI` UI kit, shared CSS classes and design tokens. Change it before changing an interface, and get a quick OK from the team.

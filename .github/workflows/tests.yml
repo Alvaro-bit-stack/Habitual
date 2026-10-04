@@ -29,6 +29,9 @@ jobs:
       - name: Community tests
         run: node tests/community.test.js
 
+      - name: Backend tests
+        run: node tests/server.test.js
+
       - name: Build
         run: python3 build.py
 

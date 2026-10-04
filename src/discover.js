@@ -9,13 +9,13 @@
   function onboarded() { try { return !!(SQ.state && SQ.state.onboarded); } catch (x) { return false; } }
   // Screens reachable both during onboarding (nav hidden) and after (Discover tab).
   // `tab` is a getter so the shell reads the right value at navigation time.
-  function dynTab() { return onboarded() ? "discover" : null; }
+  function dynTab() { return "discover"; }
 
   var CAT = { creative: "Creative", active: "Active", technical: "Technical", social: "Social", relaxing: "Relaxing" };
   var PLACE = { indoor: "Indoors", outdoor: "Outdoors", either: "Indoors or out" };
   var SOCIAL = { solo: "Solo", group: "With people", either: "Solo or social" };
   var TIERS = [["free", "Free"], ["budget", "Budget"], ["stepup", "Step-up"]];
-  var TRENDING = ["bouldering", "chess", "gardening", "photography"];
+  var TRENDING = ["basketball", "tennis", "running", "photography"];
 
   function tierTotal(h, tier) {
     var t = h && h.starterPack && h.starterPack.tiers && h.starterPack.tiers[tier];
@@ -45,6 +45,9 @@
   function glyph(id, size, cls) {
     return '<span class="dc-glyph ' + (cls || "") + '" aria-hidden="true">' + SQUI.hobbyIcon(id, size || 24) + "</span>";
   }
+  function picture(id, alt, cls) {
+    return SQUI.hobbyPicture ? SQUI.hobbyPicture(id, alt || "", cls || "dc-hobby-photo") : glyph(id, 28, cls || "");
+  }
   function hobbyRow(h, extra) {
     return '<button type="button" class="list-row dc-row" data-action="pack" data-id="' + e(h.id) + '">' +
       glyph(h.id, 22, "sm") +
@@ -69,6 +72,7 @@
     var h = {
       back: function () { SQUI.back(); },
       pack: function (t) { SQUI.go("pack", { id: t.getAttribute("data-id") }); },
+      research: function (t) { SQUI.go("research", { hobby: t.getAttribute("data-hobby") || "", autorun: t.getAttribute("data-auto") === "1" }); },
       quiz: function () { SQUI.go("quiz"); },
       pick: function () { SQUI.go("pick"); },
       results: function () { SQUI.go("results"); }
@@ -113,13 +117,13 @@
         '<div class="stack dc-fork">' +
         '<button type="button" class="card tap dc-choice" data-action="pick">' +
         '<span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("leaf", 26) + "</span>" +
-        '<span class="dc-choice-text"><span class="dc-choice-title">I already have hobbies</span>' +
-        '<span class="dc-choice-sub">Track them, get back into them, level up</span></span>' +
+        '<span class="dc-choice-text"><span class="dc-choice-title">Go to current hobbies</span>' +
+        '<span class="dc-choice-sub">Choose from the hobbies already in the app</span></span>' +
         '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
         '<button type="button" class="card tap dc-choice dc-choice-new" data-action="quiz">' +
         '<span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("spark", 26) + "</span>" +
-        '<span class="dc-choice-text"><span class="dc-choice-title">Find a new hobby</span>' +
-        '<span class="dc-choice-sub">5 quick questions, then everything you need to start</span></span>' +
+        '<span class="dc-choice-text"><span class="dc-choice-title">Discover new hobbies</span>' +
+        '<span class="dc-choice-sub">Choose indoors, outdoors, or a mix</span></span>' +
         '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
         "</div>" +
         '<div class="dc-welcome-foot"><button type="button" class="btn ghost dc-link" data-action="demo">Explore with sample data</button>' +
@@ -389,6 +393,7 @@
         (ans && nTracked ? '<p class="small muted dc-note">' + SQUI.icon("leaf", 16) + "<span>Matches skip what you already track and lean toward hobbies that pair with them.</span></p>" : "") +
         body +
         (ans ? '<button type="button" class="btn block" data-action="quiz">Retake quiz</button>' : "") +
+        '<button type="button" class="btn block" data-action="research">Research a different hobby</button>' +
         '<section class="stack"><h2 class="h3">Browse all hobbies</h2><div class="list">' +
         catalog().map(function (h) { return hobbyRow(h); }).join("") + "</div></section>" +
         "</div></div>";
@@ -434,7 +439,8 @@
       if (!sp) {
         return '<div class="screen dc-pack" data-dc="pack" data-id="' + e(h.id) + '"><div class="stack-lg">' +
           '<div class="screen-head">' + backBtn() + "</div>" + top +
-          '<div class="empty">This is one of your own hobbies, so there is no starter pack for it yet.</div></div>' + cta + "</div>";
+          '<div class="empty stack"><div>This is one of your own hobbies, so there is no built-in starter pack yet.</div>' +
+          '<button type="button" class="btn" data-action="research" data-hobby="' + e(h.name) + '">Research a starter guide</button></div></div>' + cta + "</div>";
       }
       var budgetTot = tierTotal(h, "budget");
       return '<div class="screen dc-pack" data-dc="pack" data-id="' + e(h.id) + '"><div class="stack-lg">' +
@@ -502,53 +508,497 @@
     }
   });
 
+  // ---------- grounded hobby research ----------
+  var researchState = { hobby: "", result: null, error: "" };
+  function researchMoney(currency, low, high) {
+    low = Number(low) || 0; high = Number(high) || low;
+    var a = currency + " " + low.toLocaleString();
+    return low === high ? a : a + "–" + high.toLocaleString();
+  }
+  function safeSourceUrl(value) {
+    try { var u = new URL(String(value)); return u.protocol === "https:" ? u.href : ""; } catch (x) { return ""; }
+  }
+  function renderResearchResult(r) {
+    if (!r) return "";
+    var total = r.totalCost || { low: 0, high: 0 };
+    var equipment = (r.equipment || []).map(function (it) {
+      return '<li class="card dc-ai-gear"><div class="row"><span class="dc-row-name">' + e(it.name) + "</span><span class=\"spacer\"></span>" +
+        (it.essential ? '<span class="pill-good small">Essential</span>' : '<span class="chip small">Optional</span>') + "</div>" +
+        '<div class="num dc-ai-cost">' + e(researchMoney(r.currency, it.costLow, it.costHigh)) + "</div>" +
+        (it.why ? '<p>' + e(it.why) + "</p>" : "") +
+        (it.buyingTip ? '<p class="small muted"><strong>Buying tip:</strong> ' + e(it.buyingTip) + "</p>" : "") +
+        ((it.suggestedOptions || []).length ? '<div class="row">' + it.suggestedOptions.map(function (x) { return '<span class="chip small">' + e(x) + "</span>"; }).join("") + "</div>" : "") +
+        "</li>";
+    }).join("");
+    var steps = (r.firstSteps || []).map(function (s, i) {
+      return '<li class="dc-session"><span class="dc-session-n num" aria-hidden="true">' + (i + 1) + "</span>" +
+        '<div class="dc-session-body"><div class="dc-row-name">' + e(s.title) + "</div><p>" + e(s.details) + "</p>" +
+        (s.minutes ? '<span class="small muted">About ' + e(s.minutes) + " minutes</span>" : "") + "</div></li>";
+    }).join("");
+    var tutorials = (r.tutorials || []).map(function (t) {
+      var yt = "https://www.youtube.com/results?search_query=" + encodeURIComponent(t.searchQuery || t.title);
+      var gs = "https://www.google.com/search?q=" + encodeURIComponent(t.searchQuery || t.title);
+      return '<li class="card dc-ai-tutorial"><div class="row"><span class="chip small">' + e(t.format) + '</span><span class="small muted">' + e(t.provider) + "</span></div>" +
+        '<div class="dc-row-name">' + e(t.title) + "</div><p class=\"small\">" + e(t.whatYouLearn) + "</p>" +
+        '<div class="row"><a class="btn sm" href="' + e(yt) + '" target="_blank" rel="noopener noreferrer">Search YouTube</a>' +
+        '<a class="btn ghost sm" href="' + e(gs) + '" target="_blank" rel="noopener noreferrer">Search web</a></div></li>';
+    }).join("");
+    var sources = (r.sources || []).map(function (s) {
+      var url = safeSourceUrl(s.url); if (!url) return "";
+      return '<li><a href="' + e(url) + '" target="_blank" rel="noopener noreferrer">' + e(s.title || s.publisher || "Source") +
+        '</a><span class="small muted">' + e(s.publisher || "") + "</span></li>";
+    }).join("");
+    var safety = (r.safety || []).map(function (x) { return "<li>" + e(x) + "</li>"; }).join("");
+    var notes = (r.notes || []).map(function (x) { return "<li>" + e(x) + "</li>"; }).join("");
+    var when = r.researchedAt ? new Date(r.researchedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "recently";
+    return '<article class="stack-lg dc-ai-result" aria-live="polite"><header class="stack"><div class="eyebrow">' + (r.grounded ? "Grounded starter guide" : "Gemini starter guide") + '</div>' +
+      '<h2 class="h1">' + e(r.hobby) + "</h2><p>" + e(r.overview) + "</p>" +
+      (!r.grounded ? '<p class="small muted">Live web sources were unavailable, so treat prices and recommendations as estimates and use the tutorial links below to verify them.</p>' : "") +
+      '<div class="row"><span class="chip">' + e(r.location) + '</span><span class="chip">Researched ' + e(when) + "</span>" +
+      (r.cached ? '<span class="chip">Cached</span>' : "") + "</div></header>" +
+      '<section class="stack"><div class="row"><h3 class="h2">Equipment</h3><span class="spacer"></span><span class="num dc-ai-total">' +
+        e(researchMoney(r.currency, total.low, total.high)) + " total</span></div><ul class=\"dc-ai-list\">" + equipment + "</ul></section>" +
+      '<section class="stack"><h3 class="h2">First steps</h3><ol class="dc-sessions">' + steps + "</ol></section>" +
+      '<section class="stack"><h3 class="h2">Videos and tutorials</h3><p class="small muted">These links run the researched search phrases instead of sending you to an unverified URL.</p>' +
+        '<ul class="dc-ai-list">' + tutorials + "</ul></section>" +
+      (safety ? '<section class="card dc-ai-callout"><h3 class="h3">Safety</h3><ul>' + safety + "</ul></section>" : "") +
+      (notes ? '<section class="stack"><h3 class="h3">Good to know</h3><ul class="dc-ai-notes">' + notes + "</ul></section>" : "") +
+      (sources ? '<section class="stack"><h3 class="h3">Grounded sources</h3><p class="small muted">Gemini used these pages for its research. Check important details before buying.</p><ul class="dc-ai-sources">' + sources + "</ul></section>" : "") +
+      '<button type="button" class="btn primary block" data-action="trackresearch">Track ' + e(r.hobby) + "</button></article>";
+  }
+  function researchStatus() {
+    if (researchState.error) return '<div class="card dc-ai-error" role="alert"><div class="h3">Research unavailable</div><p>' + e(researchState.error) + "</p></div>";
+    return renderResearchResult(researchState.result);
+  }
+  SQUI.register("research", {
+    get tab() { return dynTab(); },
+    title: "Research a hobby",
+    render: function (params) {
+      var requested = params && params.hobby ? String(params.hobby) : "";
+      var autorun = !!(params && params.autorun && requested);
+      if (requested && requested !== researchState.hobby) researchState = { hobby: requested, result: null, error: "" };
+      return '<div class="screen dc-research" data-dc="research"><div class="stack-lg">' + head("Research any hobby", "Gemini-powered") +
+        '<div class="card dc-ai-intro"><div class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("search", 24) + "</div>" +
+        '<div><div class="h3">A current starter guide</div><p class="small muted">Your hobby, location, experience, and budget are sent to Google Gemini. Do not enter private information. Results can be wrong—verify fit, safety, and prices.</p></div></div>' +
+        '<form class="stack dc-ai-form" data-role="research-form"' + (autorun ? " hidden" : "") + '>' +
+        '<label class="dc-field"><span>Hobby</span><input class="dc-input" name="hobby" minlength="2" maxlength="60" required placeholder="e.g. Pickleball" value="' + e(researchState.hobby) + '"></label>' +
+        '<div class="dc-ai-grid"><label class="dc-field"><span>Location</span><input class="dc-input" name="location" maxlength="80" value="United States"></label>' +
+        '<label class="dc-field"><span>Experience</span><select class="dc-input" name="experience"><option value="beginner">Complete beginner</option><option value="some">Tried it before</option><option value="returning">Coming back</option></select></label></div>' +
+        '<div class="dc-ai-grid"><label class="dc-field"><span>Maximum budget <span class="muted">(optional)</span></span><input class="dc-input" name="budget" type="number" min="0" max="10000" inputmode="numeric" placeholder="No fixed budget"></label>' +
+        '<label class="dc-field"><span>Currency</span><select class="dc-input" name="currency"><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>AUD</option></select></label></div>' +
+        '<button type="submit" class="btn primary block" data-role="research-submit">Research starter guide</button></form>' +
+        '<div data-role="research-output">' + researchStatus() + "</div></div></div>";
+    },
+    mount: function (root, params) {
+      var host = bind(root, "[data-dc]", common({
+        trackresearch: function () {
+          var r = researchState.result; if (!r) return;
+          var all = SQ.catalog().concat((SQ.state.custom || []).map(function (c) { return SQ.getHobby(c.id); }).filter(Boolean));
+          var h = all.filter(function (x) { return x.name.toLowerCase() === r.hobby.toLowerCase(); })[0];
+          var id = h ? h.id : SQ.addCustomHobby(r.hobby, r.category);
+          var reward = SQ.isTracked(id) ? null : SQ.addHobby(id, { goal: 2 });
+          finishOnboarding();
+          SQUI.go("hobby", { id: id }, { reset: true });
+          if (reward && reward.newAchievements && reward.newAchievements.length) SQUI.showReward(reward, { title: "Your new sidequest begins" });
+        }
+      }));
+      var form = host.querySelector('[data-role="research-form"]');
+      var output = host.querySelector('[data-role="research-output"]');
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var button = form.querySelector('[data-role="research-submit"]');
+        var fields = new FormData(form);
+        var payload = { hobby: fields.get("hobby"), location: fields.get("location"), experience: fields.get("experience"),
+          budget: fields.get("budget"), currency: fields.get("currency") };
+        researchState = { hobby: String(payload.hobby || ""), result: null, error: "" };
+        button.disabled = true; button.textContent = "Researching…";
+        output.innerHTML = '<div class="card dc-ai-loading" role="status"><span class="dc-ai-spinner" aria-hidden="true"></span><div><div class="h3">Researching current sources</div><p class="small muted">This can take up to a minute.</p></div></div>';
+        fetch("/api/hobby-research", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })
+          .then(function (res) { return res.json().catch(function () { return {}; }).then(function (body) { if (!res.ok) throw new Error(body.error || "Research request failed."); return body; }); })
+          .then(function (result) { researchState.result = result; researchState.error = ""; output.innerHTML = renderResearchResult(result); })
+          .catch(function (err) {
+            researchState.error = location.protocol === "file:" ? "Run the secure Sidequest server to use Gemini research." : (err && err.message || "Try again in a moment.");
+            form.hidden = false;
+            output.innerHTML = researchStatus();
+          })
+          .finally(function () { button.disabled = false; button.textContent = "Research starter guide"; });
+      });
+      if (params && params.autorun && researchState.hobby && !researchState.result && !researchState.error) {
+        setTimeout(function () { if (form.requestSubmit) form.requestSubmit(); else form.querySelector('[data-role="research-submit"]').click(); }, 0);
+      }
+    }
+  });
+
   // ---------- discover hub ----------
+  var DISCOVER_COMMON = ["running", "tennis", "guitar", "painting"];
+  var discoverSearch = "";
+  function discoverChoices() {
+    var common = DISCOVER_COMMON.map(function (id) { return SQ.getHobby(id); }).filter(Boolean);
+    if (!discoverSearch) return common.slice(0, 4);
+    var q = discoverSearch.toLowerCase();
+    var found = catalog().filter(function (h) { return h.name.toLowerCase() === q || h.id === q; })[0] ||
+      catalog().filter(function (h) { return h.name.toLowerCase().indexOf(q) >= 0; })[0];
+    var first = found || { id: "", name: titleCase(discoverSearch), category: "technical", customResearch: true };
+    return [first].concat(common.filter(function (h) { return h.id !== first.id; })).slice(0, 4);
+  }
+  function discoverCube(h, i) {
+    var custom = !!h.customResearch;
+    return '<button type="button" class="card tap dc-cube' + (custom ? " dc-cube-searched" : "") + '" data-action="' + (custom ? "research" : "pack") + '"' +
+      (custom ? ' data-hobby="' + e(h.name) + '" data-auto="1"' : ' data-id="' + e(h.id) + '"') + ">" +
+      '<span class="dc-cube-glyph" aria-hidden="true">' + (custom ? SQUI.icon("search", 30) : SQUI.hobbyIcon(h.id, 34)) + "</span>" +
+      '<span class="dc-cube-name">' + e(h.name) + "</span>" +
+      '<span class="small muted">' + (custom ? "Your search" : e(CAT[h.category] || h.category)) + "</span>" +
+      (i === 0 && discoverSearch ? '<span class="pill-good small">Found</span>' : "") + "</button>";
+  }
   SQUI.register("discover", {
     tab: "discover",
     title: "Discover",
     render: function () {
-      var st = SQ.state || {};
-      var ans = st.user && st.user.quiz;
-      var ms = matchesFor(ans);
-      var trackedIds = (st.tracked || []).map(function (t) { return t.hobbyId; });
-      var pairs = [], seen = {};
-      trackedIds.forEach(function (tid) {
-        var th = SQ.getHobby(tid);
-        ((th && th.related) || []).forEach(function (rid) {
-          if (seen[rid] || trackedIds.indexOf(rid) >= 0) return;
-          var rh = SQ.getHobby(rid);
-          if (rh) { seen[rid] = 1; pairs.push({ h: rh, from: th.name }); }
-        });
-      });
-      pairs = pairs.slice(0, 4);
-      var trend = TRENDING.map(function (id) { return SQ.getHobby(id); }).filter(Boolean);
-
       return '<div class="screen dc-discover" data-dc="discover"><div class="stack-lg">' +
-        '<header class="dc-disc-head"><div class="eyebrow">Discover</div><h1 class="h1">Find something new</h1>' +
-        '<p class="muted">Every hobby here comes with a starter pack: what to buy, what to skip, and your first three sessions.</p></header>' +
-        '<button type="button" class="card tap dc-choice dc-choice-new" data-action="quiz">' +
-        '<span class="dc-choice-ic" aria-hidden="true">' + SQUI.icon("spark", 24) + "</span>" +
-        '<span class="dc-choice-text"><span class="dc-choice-title">' + (ans ? "Retake the quiz" : "Take the 5-question quiz") + "</span>" +
-        '<span class="dc-choice-sub">' + (ans ? "Changed your mind? Get three fresh matches." : "Get three hobbies that fit your time, budget and vibe.") + "</span></span>" +
-        '<span class="dc-chev" aria-hidden="true">' + SQUI.icon("chevron-right", 20) + "</span></button>" +
-        (ms.length ? '<section class="stack"><div class="row"><h2 class="h3">Your last matches</h2><span class="spacer"></span>' +
-          '<button type="button" class="btn ghost sm" data-action="results">See all</button></div>' +
-          '<div class="dc-hscroll">' + ms.map(function (m) { return miniCard(m.hobby, (m.reasons || []).slice(0, 2).join(" · ")); }).join("") + "</div></section>" : "") +
-        (pairs.length ? '<section class="stack"><h2 class="h3">Pairs with what you do</h2><div class="list">' +
-          pairs.map(function (p) { return hobbyRow(p.h, "Pairs with " + p.from + " · " + startCost(p.h)); }).join("") + "</div></section>" : "") +
-        '<section class="stack"><div class="row"><h2 class="h3">Trending near you</h2><span class="spacer"></span><span class="chip dc-sample">Sample</span></div>' +
-        '<div class="dc-hscroll">' + trend.map(function (h) { return miniCard(h, CAT[h.category] || ""); }).join("") + "</div></section>" +
-        '<section class="stack"><h2 class="h3">Browse all ' + catalog().length + "</h2><div class=\"list\">" +
-        catalog().map(function (h) { return hobbyRow(h); }).join("") + "</div></section>" +
-        '<button type="button" class="btn block" data-action="pick">' + SQUI.icon("plus", 18) + "<span>Add a hobby you already do</span></button>" +
+        '<header class="dc-disc-head"><div class="eyebrow">Discover</div><h1 class="h1">Find a new hobby</h1></header>' +
+        '<form class="dc-discover-search" data-role="discover-form"><label class="sr-only" for="discover-q">Search for a hobby</label>' +
+        '<span aria-hidden="true">' + SQUI.icon("search", 20) + '</span><input id="discover-q" class="dc-input" name="hobby" maxlength="60" placeholder="Search any hobby" value="' + e(discoverSearch) + '">' +
+        '<button type="submit" class="btn primary sm">Search</button></form>' +
+        '<section class="stack"><div class="row"><h2 class="h3">' + (discoverSearch ? "Your hobby and popular picks" : "Popular hobbies") + '</h2><span class="spacer"></span>' +
+        (discoverSearch ? '<button type="button" class="btn ghost sm" data-action="clearsearch">Clear</button>' : "") + "</div>" +
+        '<div class="dc-cube-grid">' + discoverChoices().map(discoverCube).join("") + "</div></section>" +
         "</div></div>";
+    },
+    mount: function (root) {
+      var host = bind(root, "[data-dc]", common({ clearsearch: function () { discoverSearch = ""; SQUI.refresh(); } }));
+      var form = host.querySelector('[data-role="discover-form"]');
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var value = String(new FormData(form).get("hobby") || "").replace(/\s+/g, " ").trim().slice(0, 60);
+        if (!value) return;
+        discoverSearch = value;
+        SQUI.refresh();
+        try { window.scrollTo(0, 0); } catch (x) { /* ignore */ }
+      });
+    }
+  });
+
+  // ---------- focused, low-clutter discovery experience ----------
+  var SIMPLE_TREE = [
+    { label: "Music", ids: ["guitar", "piano"] },
+    { label: "Sports", ids: ["soccer", "tennis", "running", "basketball"] },
+    { label: "Creative", ids: ["painting", "photography", "sewing", "journaling"] }
+  ];
+  var simplePick = [];
+  function simpleTreeItem(id) {
+    var h = SQ.getHobby(id), on = simplePick.indexOf(id) >= 0, isT = tracked(id);
+    if (!h) return "";
+    return '<button type="button" class="dc-tree-item' + (on ? " on" : "") + (isT ? " is-tracked" : "") + '" data-action="simple-toggle" data-id="' + e(id) + '" data-name="' + e(h.name.toLowerCase()) + '"' +
+      (isT ? " disabled" : ' aria-pressed="' + on + '"') + '><span class="dc-tree-photo">' + picture(id, "", "dc-tree-photo-img") + "</span>" +
+      '<span class="dc-tree-name">' + e(h.name) + '</span><span class="dc-tree-check" aria-hidden="true">' + (on ? SQUI.icon("check", 15) : "") + "</span></button>";
+  }
+  function simplePickButton() {
+    var n = simplePick.length;
+    return '<button type="button" class="btn primary block" data-action="simple-start"' + (n ? "" : " disabled") + ">" +
+      (n ? "Continue with " + n + " " + (n === 1 ? "hobby" : "hobbies") : "Choose a hobby") + "</button>";
+  }
+  SQUI.register("pick", {
+    get tab() { return onboarded() ? "discover" : null; }, title: "Current hobbies",
+    render: function () {
+      simplePick = [];
+      var firstRun = !onboarded();
+      var pickHead = firstRun
+        ? '<header class="dc-disc-head"><div class="eyebrow">First, tell us what you do</div><h1 class="h1">List your current hobbies</h1></header>'
+        : head("Add current hobbies", "Your hobbies");
+      return '<div class="screen dc-simple-pick" data-dc="simple-pick"><div class="stack-lg">' +
+        pickHead +
+        '<label class="dc-search"><span class="dc-search-ic" aria-hidden="true">' + SQUI.icon("search", 18) + '</span><input type="search" class="dc-input" data-role="simple-search" placeholder="Search available hobbies" aria-label="Search available hobbies" autocomplete="off"></label>' +
+        '<div class="dc-hobby-tree">' + SIMPLE_TREE.map(function (branch) {
+          return '<section class="dc-tree-branch" data-tree-branch><h2 class="eyebrow">' + e(branch.label) + '</h2><div class="dc-tree-line">' +
+            branch.ids.map(simpleTreeItem).join("") + "</div></section>";
+        }).join("") + '</div><p class="small muted dc-nores" data-role="simple-nores" hidden>No available hobby matches that search.</p></div><div class="dc-cta" data-role="simple-cta">' + simplePickButton() + "</div></div>";
+    },
+    mount: function (root) {
+      var host = bind(root, "[data-dc]", common({
+        "simple-toggle": function (t) {
+          var id = t.getAttribute("data-id"), i = simplePick.indexOf(id);
+          if (i >= 0) simplePick.splice(i, 1); else simplePick.push(id);
+          var on = simplePick.indexOf(id) >= 0;
+          t.classList.toggle("on", on); t.setAttribute("aria-pressed", on);
+          t.querySelector(".dc-tree-check").innerHTML = on ? SQUI.icon("check", 15) : "";
+          host.querySelector('[data-role="simple-cta"]').innerHTML = simplePickButton();
+        },
+        "simple-start": function () {
+          if (!simplePick.length) return;
+          var rewards = simplePick.map(function (id) { return SQ.isTracked(id) ? null : SQ.addHobby(id, { goal: 2 }); }).filter(Boolean);
+          var wasOnboarded = onboarded(); finishOnboarding();
+          SQUI.go("today", {}, wasOnboarded ? { replace: true } : { reset: true });
+          var reward = mergeRewards(rewards); if (reward) SQUI.showReward(reward, { title: "You're ready" });
+        }
+      }));
+      var search = host.querySelector('[data-role="simple-search"]');
+      search.addEventListener("input", function () {
+        var term = search.value.trim().toLowerCase(), shown = 0;
+        host.querySelectorAll(".dc-tree-item").forEach(function (item) {
+          var visible = !term || item.getAttribute("data-name").indexOf(term) >= 0;
+          item.hidden = !visible; if (visible) shown += 1;
+        });
+        host.querySelectorAll("[data-tree-branch]").forEach(function (branch) {
+          branch.hidden = !Array.prototype.some.call(branch.querySelectorAll(".dc-tree-item"), function (item) { return !item.hidden; });
+        });
+        host.querySelector('[data-role="simple-nores"]').hidden = shown > 0;
+      });
+    }
+  });
+
+  function simpleMatch(m) {
+    var h = m.hobby;
+    return '<button type="button" class="card tap dc-simple-match" data-action="pack" data-id="' + e(h.id) + '">' +
+      '<span class="dc-match-photo">' + picture(h.id, "", "dc-match-photo-img") + '</span><span class="dc-cube-name">' + e(h.name) + "</span>" +
+      '<span class="small muted">' + e(PLACE[h.place] || h.place) + '</span><span class="num dc-simple-cost">' +
+      (tierTotal(h, "free")[1] === 0 ? "Free to try" : e(money(tierTotal(h, "budget")))) + "</span></button>";
+  }
+  SQUI.register("results", {
+    get tab() { return dynTab(); }, title: "Hobby matches",
+    render: function () {
+      var ans = SQ.state && SQ.state.user && SQ.state.user.quiz;
+      var ms = matchesFor(ans);
+      return '<div class="screen dc-results" data-dc="results"><div class="stack-lg">' +
+        head("Hobbies that fit", ans && ans.place === "indoor" ? "Indoors" : ans && ans.place === "outdoor" ? "Outdoors" : "Indoor and outdoor") +
+        (ms.length ? '<div class="dc-simple-match-grid">' + ms.map(simpleMatch).join("") + "</div>" : '<div class="empty">No untracked matches right now.</div>') +
+        '<button type="button" class="btn block" data-action="quiz">Choose a different place</button></div></div>';
     },
     mount: function (root) { bind(root, "[data-dc]", common({})); }
   });
-  function miniCard(h, sub) {
-    return '<button type="button" class="card tap dc-mini" data-action="pack" data-id="' + e(h.id) + '">' +
-      glyph(h.id, 26, "") + '<span class="dc-row-name">' + e(h.name) + "</span>" +
-      '<span class="small muted">' + e(sub) + "</span>" +
-      '<span class="num small dc-mini-cost">' + e(startCost(h)) + "</span></button>";
+
+  function tutorialLink(t) {
+    var url = "https://www.youtube.com/results?search_query=" + encodeURIComponent(t.searchQuery || t.title);
+    return '<a class="card tap dc-tutorial-link" href="' + e(url) + '" target="_blank" rel="noopener noreferrer"><span>' + SQUI.icon("play", 20) +
+      '</span><span>' + e(t.title) + '</span><span class="spacer"></span>' + SQUI.icon("chevron-right", 18) + "</a>";
   }
+  function gearLink(item) {
+    var url = "https://www.google.com/search?q=" + encodeURIComponent(item.name + " beginner equipment");
+    return '<a class="card tap dc-gear-link" href="' + e(url) + '" target="_blank" rel="noopener noreferrer"><span><strong>' + e(item.name) +
+      '</strong><span class="small muted">' + e(money(item.price || [0, 0])) + '</span></span><span class="spacer"></span>' + SQUI.icon("chevron-right", 18) + "</a>";
+  }
+  SQUI.register("pack", {
+    get tab() { return dynTab(); }, title: "Hobby basics",
+    render: function (params) {
+      packId = params && params.id;
+      var h = packId ? SQ.getHobby(packId) : null;
+      if (!h || !h.starterPack) return '<div class="screen" data-dc="pack">' + head("Hobby basics") + '<div class="empty">Hobby not found.</div></div>';
+      var isT = tracked(h.id), free = h.starterPack.tiers.free.items || [], budget = tierTotal(h, "budget");
+      var gearItems = h.starterPack.tiers.budget.items || [];
+      return '<div class="screen dc-pack dc-simple-pack" data-dc="pack"><div class="stack-lg"><div class="screen-head">' + backBtn() + "</div>" +
+        '<header class="dc-simple-pack-head"><span class="dc-pack-photo">' + picture(h.id, h.name, "dc-pack-photo-img") + '</span><h1 class="h1">' + e(h.name) + "</h1></header>" +
+        '<div class="dc-cost-cards"><div class="card"><span class="eyebrow">Can I try it free?</span><strong>Yes</strong><span class="small muted">' + e(free[0] ? free[0].name : "Use what you have") +
+        '</span></div><div class="card"><span class="eyebrow">Basic setup</span><strong class="num">' + e(money(budget)) + "</strong></div></div>" +
+        '<section class="stack"><div><h2 class="h2">Gear needed</h2><p class="small muted">Open an item to compare current options.</p></div><div class="stack">' + gearItems.map(gearLink).join("") + "</div></section>" +
+        '<section class="stack"><h2 class="h2">Intro tutorials</h2><div class="stack">' + (h.tutorials || []).map(tutorialLink).join("") + "</div></section>" +
+        '</div><div class="dc-cta"><button type="button" class="btn primary block" data-action="' + (isT ? "open" : "startpack") + '">' +
+        (isT ? "Open in tracker" : "Add to current hobbies") + "</button></div></div>";
+    },
+    mount: function (root) {
+      bind(root, "[data-dc]", common({
+        open: function () { SQUI.go("hobby", { id: packId }); },
+        startpack: function () {
+          var wasOnboarded = onboarded(), reward = SQ.addHobby(packId, { goal: 2, viaStarter: true });
+          finishOnboarding(); SQUI.go("hobby", { id: packId }, wasOnboarded ? { replace: true } : { reset: true });
+          if (reward && reward.newAchievements && reward.newAchievements.length) SQUI.showReward(reward, { title: "Added" });
+        }
+      }));
+    }
+  });
+
+  var HOBBY_EMOJI = {
+    guitar: "🎸", soccer: "⚽", tennis: "🎾", painting: "🎨", photography: "📷",
+    running: "👟", sewing: "🧵", journaling: "📓", piano: "🎹", basketball: "🏀"
+  };
+  var HOBBY_TOPIC = {
+    soccer: "sports", tennis: "sports", running: "sports", basketball: "sports",
+    guitar: "music", piano: "music",
+    painting: "art", photography: "art", sewing: "art",
+    journaling: "writing"
+  };
+  var TOPICS = {
+    sports: { label: "Sports & movement", hint: "Active · group + solo" },
+    music: { label: "Music", hint: "Practice · performance" },
+    art: { label: "Art & making", hint: "Visual · hands-on" },
+    writing: { label: "Writing & reading", hint: "Ideas · reflection" },
+    creative: { label: "Creative things", hint: "Make · explore" },
+    social: { label: "Group activities", hint: "Shared · social" },
+    technical: { label: "Technical hobbies", hint: "Build · solve" },
+    relaxing: { label: "Calm hobbies", hint: "Slow · reflective" }
+  };
+  function discoverTags(h) {
+    return [
+      h.place === "indoor" ? "Inside" : h.place === "outdoor" ? "Outside" : "Inside + outside",
+      h.category === "active" ? "Active" : "Non-active",
+      h.social === "group" ? "Group-centered" : h.social === "solo" ? "Solo" : "Solo or group"
+    ];
+  }
+  function similarity(base, candidate) {
+    var score = 0;
+    if ((base.related || []).indexOf(candidate.id) >= 0) score += 6;
+    if ((candidate.related || []).indexOf(base.id) >= 0) score += 4;
+    if (topicFor(base) === topicFor(candidate)) score += 10;
+    if (base.category && base.category === candidate.category) score += 2;
+    if (base.place && (base.place === candidate.place || base.place === "either" || candidate.place === "either")) score += 1;
+    if (base.social && (base.social === candidate.social || base.social === "either" || candidate.social === "either")) score += 2;
+    return score;
+  }
+  function topicFor(h) {
+    if (HOBBY_TOPIC[h.id]) return HOBBY_TOPIC[h.id];
+    if (h.category === "active") return "sports";
+    if (h.category === "social" || h.social === "group") return "social";
+    if (h.category === "creative") return "creative";
+    return TOPICS[h.category] ? h.category : "creative";
+  }
+  function ringPositions(count, rx, ry, offset) {
+    var out = [];
+    if (count === 1) return [{ x: 50, y: 50 }];
+    for (var i = 0; i < count; i++) {
+      var a = (offset == null ? -Math.PI / 2 : offset) + (Math.PI * 2 * i / count);
+      out.push({ x: 50 + Math.cos(a) * rx, y: 50 + Math.sin(a) * ry });
+    }
+    return out;
+  }
+  function topicFrames(count) {
+    if (count <= 1) return [{ x: 50, y: 50, rx: 43, ry: 41 }];
+    if (count === 2) return [{ x: 27, y: 50, rx: 22, ry: 42 }, { x: 73, y: 50, rx: 22, ry: 42 }];
+    if (count === 3) return [
+      { x: 27, y: 28, rx: 22, ry: 24 }, { x: 73, y: 28, rx: 22, ry: 24 }, { x: 50, y: 74, rx: 25, ry: 22 }
+    ];
+    return [
+      { x: 27, y: 27, rx: 22, ry: 23 }, { x: 73, y: 27, rx: 22, ry: 23 },
+      { x: 27, y: 73, rx: 22, ry: 23 }, { x: 73, y: 73, rx: 22, ry: 23 }
+    ];
+  }
+  function positionTopicNodes(group, frame, positions, labelAbove) {
+    var current = group.nodes.filter(function (item) { return item.current; });
+    var suggested = group.nodes.filter(function (item) { return !item.current; });
+    var contentY = frame.y + frame.ry * .13;
+    var currentPos = ringPositions(current.length, Math.min(8, frame.rx * .25), Math.min(8, frame.ry * .22), -Math.PI / 2);
+    var suggestedPos = ringPositions(suggested.length, frame.rx * .58, frame.ry * .42, -Math.PI / 2);
+    if (current.length === 1 && suggested.length) {
+      currentPos = [{ x: 50, y: 50 + frame.ry * .05 }];
+      if (suggested.length === 1) suggestedPos = [{ x: 50, y: 50 - frame.ry * .43 }];
+      if (suggested.length === 2) suggestedPos = [
+        { x: 50 - frame.rx * .48, y: 50 - frame.ry * .2 }, { x: 50 + frame.rx * .48, y: 50 - frame.ry * .2 }
+      ];
+      if (suggested.length === 3) suggestedPos = [
+        { x: 50, y: 50 - frame.ry * .43 },
+        { x: 50 - frame.rx * .53, y: 50 + frame.ry * .24 }, { x: 50 + frame.rx * .53, y: 50 + frame.ry * .24 }
+      ];
+      if (suggested.length === 4) suggestedPos = [
+        { x: 50 - frame.rx * .5, y: 50 - frame.ry * .23 }, { x: 50 + frame.rx * .5, y: 50 - frame.ry * .23 },
+        { x: 50 - frame.rx * .5, y: 50 + frame.ry * .34 }, { x: 50 + frame.rx * .5, y: 50 + frame.ry * .34 }
+      ];
+      suggested.forEach(function (item, i) { if (suggestedPos[i].y < 50) labelAbove[item.hobby.id] = true; });
+    } else if (!current.length && suggested.length > 1) {
+      labelAbove[suggested[0].hobby.id] = true;
+    }
+    current.forEach(function (item, i) {
+      positions[item.hobby.id] = { x: frame.x + currentPos[i].x - 50, y: contentY + currentPos[i].y - 50 };
+    });
+    suggested.forEach(function (item, i) {
+      positions[item.hobby.id] = { x: frame.x + suggestedPos[i].x - 50, y: contentY + suggestedPos[i].y - 50 };
+    });
+  }
+  function discoverGraph() {
+    var trackedIds = ((SQ.state && SQ.state.tracked) || []).map(function (t) { return t.hobbyId; });
+    var current = trackedIds.map(function (id) { return SQ.getHobby(id); }).filter(Boolean);
+    var available = catalog().filter(function (h) { return trackedIds.indexOf(h.id) < 0; });
+    var suggestions = available.map(function (h) {
+      var best = null, score = 0;
+      current.forEach(function (base) { var n = similarity(base, h); if (n > score) { score = n; best = base.id; } });
+      return { hobby: h, score: score, parent: best };
+    }).filter(function (item) { return current.length ? item.score >= 4 : true; })
+      .sort(function (a, b) { return b.score - a.score || a.hobby.name.localeCompare(b.hobby.name); });
+    var initialIds = current.map(function (h) { return h.id; }).concat(suggestions.map(function (item) { return item.hobby.id; }));
+    var all = current.slice();
+    available.forEach(function (h) { if (!all.some(function (item) { return item.id === h.id; })) all.push(h); });
+    var grouped = {};
+    current.forEach(function (h) {
+      var id = topicFor(h); grouped[id] = grouped[id] || { id: id, nodes: [] }; grouped[id].nodes.push({ hobby: h, current: true });
+    });
+    suggestions.forEach(function (item) {
+      var id = topicFor(item.hobby); grouped[id] = grouped[id] || { id: id, nodes: [] }; grouped[id].nodes.push({ hobby: item.hobby, current: false });
+    });
+    var topicOrder = ["sports", "music", "art", "writing", "social", "creative", "technical", "relaxing"];
+    var groups = Object.keys(grouped).map(function (id) { return grouped[id]; }).sort(function (a, b) {
+      return topicOrder.indexOf(a.id) - topicOrder.indexOf(b.id);
+    }).slice(0, 4);
+    var frames = topicFrames(groups.length), positions = {}, labelAbove = {};
+    groups.forEach(function (group, i) {
+      group.frame = frames[i]; group.meta = TOPICS[group.id] || TOPICS.creative;
+      positionTopicNodes(group, group.frame, positions, labelAbove);
+    });
+    initialIds = initialIds.filter(function (id) { return !!positions[id]; });
+    return { current: current, suggestions: suggestions, all: all, initialIds: initialIds, positions: positions, groups: groups, labelAbove: labelAbove };
+  }
+  function discoverNode(h, graph) {
+    var isCurrent = graph.current.some(function (item) { return item.id === h.id; });
+    var shown = graph.initialIds.indexOf(h.id) >= 0;
+    var p = graph.positions[h.id] || { x: 50, y: 50 };
+    var tags = discoverTags(h).join(", ");
+    return '<button type="button" class="dc-discover-node ' + (isCurrent ? "is-current" : "is-suggestion") + (graph.labelAbove[h.id] ? " label-above" : "") + '" data-action="discover-node" data-id="' + e(h.id) +
+      '" data-name="' + e(h.name.toLowerCase()) + '" data-initial="' + (shown ? "1" : "0") + '" data-x="' + p.x.toFixed(2) + '" data-y="' + p.y.toFixed(2) +
+      '" style="--node-x:' + p.x.toFixed(2) + '%;--node-y:' + p.y.toFixed(2) + '%" aria-label="' + e(h.name + ". " + tags) + '"' + (shown ? "" : " hidden") + '>' +
+      '<span class="dc-node-dot" aria-hidden="true">' + e(HOBBY_EMOJI[h.id] || "✨") + '</span><span class="dc-node-name">' + e(h.name) + "</span></button>";
+  }
+  function discoverEdges(graph) {
+    return graph.suggestions.map(function (item) {
+      var a = graph.positions[item.parent], b = graph.positions[item.hobby.id];
+      if (!a || !b) return "";
+      return '<line x1="' + a.x.toFixed(2) + '" y1="' + a.y.toFixed(2) + '" x2="' + b.x.toFixed(2) + '" y2="' + b.y.toFixed(2) + '"></line>';
+    }).join("");
+  }
+  function discoverTopicBubbles(graph) {
+    return graph.groups.map(function (group) {
+      var f = group.frame;
+      return '<div class="dc-topic-bubble" data-topic="' + e(group.id) + '" style="--bubble-left:' + (f.x - f.rx).toFixed(2) + '%;--bubble-top:' + (f.y - f.ry).toFixed(2) +
+        '%;--bubble-width:' + (f.rx * 2).toFixed(2) + '%;--bubble-height:' + (f.ry * 2).toFixed(2) + '%"><span class="dc-topic-title">' + e(group.meta.label) +
+        '</span><span class="dc-topic-hint">' + e(group.meta.hint) + "</span></div>";
+    }).join("");
+  }
+
+  SQUI.register("discover", {
+    tab: "discover", title: "Discover",
+    render: function () {
+      var graph = discoverGraph();
+      return '<div class="screen dc-discover-home" data-dc="discover-home"><div class="stack-lg"><header class="dc-disc-head"><div class="eyebrow">Discover</div>' +
+        '<h1 class="h1">Find a new hobby</h1></header><label class="dc-search"><span class="dc-search-ic" aria-hidden="true">' + SQUI.icon("search", 18) +
+        '</span><input type="search" class="dc-input" data-role="discover-search" placeholder="Search hobbies" aria-label="Search hobbies" autocomplete="off"></label>' +
+        '<div class="dc-graph-legend"><span><i class="is-current"></i>Your hobbies</span><span><i class="is-suggestion"></i>Similar hobbies</span></div>' +
+        '<div class="dc-discover-graph has-' + graph.groups.length + '-clusters" data-role="discover-graph" aria-label="A clustered map of your hobbies and similar hobbies">' +
+          discoverTopicBubbles(graph) + '<svg class="dc-graph-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+          discoverEdges(graph) + '</svg>' + graph.all.map(function (h) { return discoverNode(h, graph); }).join("") + '</div>' +
+        '<div class="empty" data-role="discover-empty"' + (graph.initialIds.length ? " hidden" : "") + '>Choose a current hobby first to build your discovery map.</div>' +
+        '<p class="small muted dc-nores" data-role="discover-nores" hidden>No new hobby matches that search.</p></div></div>';
+    },
+    mount: function (root) {
+      var host = bind(root, "[data-dc]", common({
+        "discover-node": function (t) {
+          var id = t.getAttribute("data-id");
+          SQUI.go(tracked(id) ? "hobby" : "pack", { id: id });
+        }
+      }));
+      var search = host.querySelector('[data-role="discover-search"]');
+      var graph = host.querySelector('[data-role="discover-graph"]');
+      search.addEventListener("input", function () {
+        var term = search.value.trim().toLowerCase(), shown = 0;
+        var matches = [];
+        graph.classList.toggle("is-searching", !!term);
+        graph.querySelectorAll(".dc-discover-node").forEach(function (node) {
+          var visible = term ? node.getAttribute("data-name").indexOf(term) >= 0 : node.getAttribute("data-initial") === "1";
+          node.hidden = !visible;
+          if (visible) { shown += 1; matches.push(node); }
+        });
+        if (term) {
+          var pos = ringPositions(matches.length, matches.length > 5 ? 34 : 25, matches.length > 5 ? 31 : 22, -Math.PI / 2);
+          matches.forEach(function (node, i) { node.style.setProperty("--node-x", pos[i].x + "%"); node.style.setProperty("--node-y", pos[i].y + "%"); });
+        } else {
+          matches.forEach(function (node) { node.style.setProperty("--node-x", node.getAttribute("data-x") + "%"); node.style.setProperty("--node-y", node.getAttribute("data-y") + "%"); });
+        }
+        host.querySelector('[data-role="discover-nores"]').hidden = shown > 0;
+        host.querySelector('[data-role="discover-empty"]').hidden = !!term || shown > 0;
+      });
+    }
+  });
 })();

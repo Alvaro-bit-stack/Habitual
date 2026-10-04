@@ -678,8 +678,8 @@
 
     // Running: goal 2, added 5 weeks before this week's Monday; Tue + Sat runs each past week.
     at(thisMon - 35, 8, function () { addHobby("running", { goal: 2 }); });
-    // Drawing: goal 3, added same day; frequent until 9 days ago.
-    at(thisMon - 35, 9, function () { addHobby("drawing", { goal: 3 }); });
+    // Painting: goal 3, added same day; frequent until 9 days ago.
+    at(thisMon - 35, 9, function () { addHobby("painting", { goal: 3 }); });
     var runMin = [25, 30, 28, 35, 32];
     for (var k = 5; k >= 1; k--) {
       var mon = thisMon - 7 * k;
@@ -699,11 +699,11 @@
     var drawOffsets = [-37, -35, -32, -28, -25, -21, -18, -15, -12, -9];
     drawOffsets.forEach(function (o, i) {
       at(Math.max(o, thisMon - 35), 21, function () {
-        logSession("drawing", { size: i % 4 === 3 ? "tiny" : "regular", minutes: i % 4 === 3 ? 5 : 30,
+        logSession("painting", { size: i % 4 === 3 ? "tiny" : "regular", minutes: i % 4 === 3 ? 5 : 30,
           note: i === 0 ? "Sketched the kitchen table" : "" });
       });
     });
-    at(-24, 22, function () { tickMilestone("drawing", firstMilestone("drawing", 0)); });
+    at(-24, 22, function () { tickMilestone("painting", firstMilestone("painting", 0)); });
 
     // Guitar: added 20 days ago via starter pack; 3 tiny wins + 1 regular, last 2 days ago.
     at(-20, 19, function () { addHobby("guitar", { goal: 2, viaStarter: true }); });
@@ -721,7 +721,7 @@
       // RSVPs: one event today, one later (prefer tracked hobbies).
       SQ._now = base;
       var evs = data().events;
-      var trackedIds = ["running", "drawing", "guitar"];
+      var trackedIds = ["running", "painting", "guitar"];
       function pick(pred) {
         var c = evs.filter(function (e) { return pred(e) && trackedIds.indexOf(e.hobbyId) >= 0; });
         if (!c.length) c = evs.filter(pred);

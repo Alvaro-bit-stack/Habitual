@@ -368,7 +368,7 @@
         else if (a === "seed") { S.seedDemo(); SQUI.go("today", {}, { reset: true }); SQUI.toast("Sample data loaded"); }
         else if (a === "reset") { ui.confirmReset = true; SQUI.refresh(); var c = document.querySelector("[data-action=reset-no]"); if (c) c.focus(); }
         else if (a === "reset-no") { ui.confirmReset = false; SQUI.refresh(); }
-        else if (a === "reset-yes") { ui.confirmReset = false; S.reset(); SQUI.go("welcome", {}, { reset: true }); }
+        else if (a === "reset-yes") { ui.confirmReset = false; S.reset(); SQUI.go("pick", {}, { reset: true }); }
       });
     }
   });

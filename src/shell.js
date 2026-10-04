@@ -105,6 +105,7 @@
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>',
+    play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/>',
     leaf: '<path d="M5 19.5C5 11 10 5 20 4.5c0 10-5.5 15-13.5 15z"/><path d="M5 19.5c3-4.5 6-7.5 9.5-9.5"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
     compass: '<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
@@ -125,7 +126,12 @@
     knitting: '<circle cx="11" cy="13" r="7.5"/><path d="M5.5 8.5c4 .3 8.5 3.5 10 10"/><path d="M4 13.5c3.5.2 6.5 2.5 7.5 6.8"/><path d="M8.5 6c3.5 1.5 7 5 8 9"/><path d="M15 2.5l6.5 6.5M18 2l3.5 3.5"/>',
     bouldering: '<path d="M10 3h4a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z"/><path d="M10 7.5v8"/><path d="M8.7 15.5h2.6"/>',
     chess: '<circle cx="12" cy="6" r="2.5"/><path d="M9.5 10.5h5"/><path d="M10.3 10.5c0 3-1 5.2-2.8 7.5h9c-1.8-2.3-2.8-4.5-2.8-7.5"/><path d="M6 21h12"/>',
-    gardening: '<path d="M6.5 14h11l-1.6 7H8.1z"/><path d="M12 14V8"/><path d="M12 10.5c-3 0-4.8-2-4.8-4.8 3 0 4.8 2 4.8 4.8z"/><path d="M12 8.5c0-2.8 1.8-4.8 4.8-4.8 0 2.8-1.8 4.8-4.8 4.8z"/>'
+    gardening: '<path d="M6.5 14h11l-1.6 7H8.1z"/><path d="M12 14V8"/><path d="M12 10.5c-3 0-4.8-2-4.8-4.8 3 0 4.8 2 4.8 4.8z"/><path d="M12 8.5c0-2.8 1.8-4.8 4.8-4.8 0 2.8-1.8 4.8-4.8 4.8z"/>',
+    painting: '<path d="M4 20l1.2-4.3L15.8 5.1a2 2 0 0 1 2.9 0l.2.2a2 2 0 0 1 0 2.9L8.3 18.8z"/><path d="M14 7l3 3"/><path d="M13 20.5h7"/>',
+    sewing: '<path d="M4 19L19 4M15 4h4v4"/><path d="M5 15l4 4"/><circle cx="6" cy="6" r="2.5"/><path d="M8 8l3 3"/>',
+    journaling: '<path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M8 4.5V20M11 9h5M11 13h5"/>',
+    piano: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v9M11 5v9M15 5v9M19 5v9M8.5 5v6M12.5 5v6M16.5 5v6"/>',
+    basketball: '<circle cx="12" cy="12" r="8.5"/><path d="M4 9c5 1 9 5 11 10M9 4c1 5 5 9 10 11M3.5 13h17M13 3.5v17"/>'
   };
   function svgWrap(inner, size, sw) {
     size = size || 20;
@@ -142,6 +148,14 @@
     var h = hobby(id);
     var cat = h && h.category;
     return svgWrap(ICONS[cat] || ICONS.leaf, size);
+  }
+  var HOBBY_PHOTOS = {
+    guitar: 1, soccer: 1, tennis: 1, painting: 1, photography: 1,
+    running: 1, sewing: 1, journaling: 1, piano: 1, basketball: 1
+  };
+  function hobbyPicture(id, alt, className) {
+    if (!HOBBY_PHOTOS[id]) return '<span class="sq-photo-fallback" aria-hidden="true">' + hobbyIcon(id, 28) + "</span>";
+    return '<img class="' + esc(className || "sq-hobby-photo") + '" src="../assets/hobbies/' + esc(id) + '.jpg" alt="' + esc(alt || "") + '" loading="lazy">';
   }
 
   /* ------------------------------------------------------------------ mascot */
@@ -739,7 +753,7 @@
       var tw = s.nextTinyWin;
       return '<article class="card hc">' +
         '<button type="button" class="hc-body" data-action="open" data-id="' + esc(t.hobbyId) + '">' +
-        glyph(t.hobbyId, 26) +
+        '<span class="hc-photo-wrap">' + hobbyPicture(t.hobbyId, "", "hc-photo") + "</span>" +
         '<span style="min-width:0"><span class="hc-name">' + esc(h.name) + "</span>" +
         '<span class="hc-meta"><span class="hc-lv">Lv ' + s.level + '</span><span class="small muted">' + esc(lastText(s.daysSince)) + "</span></span>" +
         '<span class="hc-progress">' + dotsMeter(s.sessionsThisWeek, s.goal) +
@@ -781,12 +795,8 @@
 
     var body;
     if (!trackedList.length) {
-      body = '<div class="empty td-empty">' + mascot(0, { mood: "happy", size: 96 }) +
-        '<div class="h2">Plant your first hobby</div>' +
-        '<p class="muted small" style="max-width:300px">Add something you already do, or let us find something new. Two minutes counts.</p>' +
-        '<div class="stack" style="width:100%;max-width:320px">' +
-        '<button type="button" class="btn primary block" data-action="pick">' + icon("plus", 18) + "Add a hobby</button>" +
-        '<button type="button" class="btn block" data-action="discover">' + icon("compass", 18) + "Find something new</button></div></div>";
+      body = '<div class="empty td-empty"><div class="h2">Nothing on Today yet</div>' +
+        '<p class="muted small">Choose a hobby from the Discover tab when you are ready.</p></div>';
     } else {
       body = '<section class="stack" aria-label="Your hobbies"><div class="sq-section-title"><h2 class="h3">Your hobbies</h2><span class="spacer"></span>' +
         '<span class="small muted">' + (loggedToday ? "Nice, you showed up today" : "One tiny win is enough") + "</span></div>" + cards + "</section>" +
@@ -1081,9 +1091,8 @@
       return;
     }
     try { S.init(); } catch (e) { logErr(e); }
-    var onboarded = false;
-    try { onboarded = !!(S.state && S.state.onboarded); } catch (e) { onboarded = false; }
-    go(onboarded ? "today" : "welcome", {}, { reset: true, focus: false });
+    var firstRun = !(S.state && S.state.onboarded);
+    go(firstRun ? "pick" : "today", {}, { reset: true, focus: false });
   }
 
   SQUI.register = register;
@@ -1096,6 +1105,7 @@
   SQUI.esc = esc;
   SQUI.icon = icon;
   SQUI.hobbyIcon = hobbyIcon;
+  SQUI.hobbyPicture = hobbyPicture;
   SQUI.mascot = mascot;
   SQUI.money = money;
   SQUI.setTheme = setTheme;

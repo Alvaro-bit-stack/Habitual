@@ -307,12 +307,16 @@ def flow_quiz(c, combo):
     c.audit("08-today-one")
     # Discover tab after onboarding: pack CTA must clear the nav
     c.click("#app-nav [data-nav=discover]")
+    expect(c.page.locator(".dc-cube").count() == 4, m, "discover", "discover should show four hobby tiles")
     c.audit("09-discover")
-    c.click(".dc-discover [data-action=pack][data-id=chess]")
+    c.click(".dc-discover [data-action=pack][data-id=tennis]")
     c.audit("10-pack-onboarded")
     c.click("#app-nav [data-nav=discover]")
-    c.click(".dc-discover [data-action=pick]")
-    c.audit("11-pick-onboarded")
+    c.page.fill("[data-role=discover-form] [name=hobby]", "Pottery")
+    c.click("[data-role=discover-form] button[type=submit]")
+    expect(c.page.locator(".dc-cube").count() == 4, m, "discover-search", "search changed the four-tile layout")
+    expect("Pottery" in c.page.locator(".dc-cube").first.inner_text(), m, "discover-search", "searched hobby did not replace first tile")
+    c.audit("11-discover-search")
 
 
 def goal_of_card(c, i):
@@ -414,6 +418,96 @@ def flow_pick_today(c):
     c.audit("20-discover-pairs")
 
 
+def flow_simple_discovery(c, place):
+    m = c.mode
+    c.fresh()
+    expect(c.screen() == "pick", m, "first-run", "fresh start should ask for current hobbies")
+    expect(c.js("() => document.getElementById('app-nav').hidden"), m, "first-run", "navigation should stay hidden during first-run selection")
+    expect("List your current hobbies" in c.page.locator("#app-main").inner_text(), m, "first-run", "first-run prompt missing")
+    c.click(".dc-tree-item[data-id='guitar']")
+    c.click("[data-action=simple-start]")
+    c.close_any_overlay()
+    expect(c.screen() == "today", m, "first-run", "selection did not open Today")
+    expect(c.page.locator(".hc .hc-name").all_inner_texts() == ["Guitar Playing"], m, "first-run", "selected hobby missing from Today")
+    c.audit("01-today-with-hobby")
+    c.click("#app-nav [data-nav=discover]")
+    expect(c.screen() == "discover", m, "discover-tree", "Discover tab did not open")
+    expect(c.page.locator('[data-role="discover-search"]').count() == 1, m, "discover-tree", "search bar missing")
+    expect(c.page.locator('[data-action="quiz"]').count() == 0 and c.page.locator(".dc-opt").count() == 0,
+           m, "discover-tree", "questionnaire is still exposed")
+    nodes = c.page.locator(".dc-discover-node:visible")
+    expect(c.page.locator(".dc-discover-node.is-current:visible").count() == 1,
+           m, "discover-graph", "selected hobby should be the active graph node")
+    expect(c.page.locator(".dc-discover-node.is-current:visible").get_attribute("data-id") == "guitar",
+           m, "discover-graph", "wrong active hobby node")
+    expect(c.page.locator(".dc-discover-node.is-suggestion:visible").count() >= 2,
+           m, "discover-graph", "similar grey hobby nodes missing")
+    expect(c.page.locator('.dc-topic-bubble[data-topic="music"]').count() == 1,
+           m, "discover-graph", "music cluster missing around selected guitar hobby")
+    expect(c.page.locator(".dc-topic-bubble").count() >= 2,
+           m, "discover-graph", "related hobbies were not separated into topic bubbles")
+    expect(c.page.locator(".dc-graph-lines line").count() >= 2,
+           m, "discover-graph", "relationship lines missing")
+    expect(nodes.locator(".dc-node-dot").count() == nodes.count(), m, "discover-graph", "emoji nodes missing")
+    expect(c.page.locator("img.dc-discover-photo-img").count() == 0, m, "discover-graph", "discover graph should not use hobby pictures")
+    c.page.fill('[data-role="discover-search"]', "tennis")
+    expect(c.page.locator(".dc-discover-node:visible").count() == 1, m, "discover-search", "search did not find one hobby")
+    expect(c.page.locator(".dc-discover-node:visible").get_attribute("data-id") == "tennis", m, "discover-search", "search returned wrong hobby")
+    c.page.fill('[data-role="discover-search"]', "")
+    c.audit("02-discover-graph")
+    suggestions = c.page.locator(".dc-discover-node.is-suggestion:visible")
+    first_id = suggestions.first.get_attribute("data-id")
+    suggestions.first.click()
+    expect(c.screen() == "pack", m, "simple-pack", "hobby tile did not open information")
+    expect(c.page.locator(".dc-cost-cards").count() == 1, m, "simple-pack", "cost summary missing")
+    expect(c.page.locator(".dc-gear-link").count() >= 2, m, "simple-pack", "linked gear list missing")
+    expect(c.page.locator(".dc-tutorial-link").count() == 3, m, "simple-pack", "intro tutorials missing")
+    expect(c.page.locator(".dc-pack .dc-blurb").count() == 0, m, "simple-pack", "description shown on hobby information")
+    expect(c.page.locator("img.dc-pack-photo-img").count() == 1, m, "simple-pack", "hobby picture missing")
+    c.audit("03-pack")
+    c.click("[data-action=startpack]")
+    c.close_any_overlay()
+    expect(c.js(f"() => SQ.isTracked('{first_id}')") is True, m, "simple-pack", "hobby was not added")
+    c.click("#app-nav [data-nav=discover]")
+    expect(c.page.locator(".dc-discover-node.is-current:visible").count() == 2,
+           m, "simple-discover-tab", "added hobby should become an active graph node")
+    c.audit("04-discover-updated")
+
+
+def flow_simple_pick_today(c):
+    m = c.mode
+    c.fresh()
+    expect(c.screen() == "pick", m, "simple-pick", "current hobbies choice did not open picker")
+    expect(c.page.locator(".dc-tree-item").count() == 10, m, "simple-pick", "tree should contain exactly ten hobbies")
+    expect(c.page.locator(".dc-tree-branch").count() == 3, m, "simple-pick", "hobby tree branches missing")
+    expect(c.page.locator("img.dc-tree-photo-img").count() == 10, m, "simple-pick", "tree should picture every hobby")
+    c.page.fill('[data-role="simple-search"]', "photo")
+    expect(c.page.locator(".dc-tree-item:visible").count() == 1, m, "simple-pick", "search did not filter the tree")
+    expect(c.page.locator(".dc-tree-item:visible").get_attribute("data-id") == "photography", m, "simple-pick", "search returned the wrong hobby")
+    c.page.fill('[data-role="simple-search"]', "")
+    c.audit("12-pick-tree")
+    for hid in ["running", "journaling", "sewing"]:
+        c.click(f".dc-tree-item[data-id='{hid}']")
+    expect(c.page.locator(".dc-tree-item.on").count() == 3, m, "simple-pick", "selected hobbies not marked")
+    c.audit("13-pick-selected", nav_check=False)
+    c.click("[data-action=simple-start]")
+    c.close_any_overlay()
+    expect(c.screen() == "today", m, "simple-pick", "picker did not open Today")
+    names = c.page.locator(".hc .hc-name").all_inner_texts()
+    expect(names == ["Running", "Journaling", "Sewing"], m, "simple-pick", f"tracked cards {names}")
+    c.audit("16-today")
+    for i, how in [(0, "button"), (1, "esc"), (2, "backdrop")]:
+        n0 = c.js("() => SQ.state.sessions.length")
+        c.click(".hc .tiny-btn", nth=i)
+        expect(c.overlay_xp() in (10, 60), m, f"tiny{i}", "unexpected tiny-win XP")
+        c.close_overlay(how)
+        expect(c.js("() => SQ.state.sessions.length") == n0 + 1, m, f"tiny{i}", "tiny win not logged once")
+    c.click("#app-nav [data-nav=community]")
+    c.audit("18-community")
+    c.click("#app-nav [data-nav=discover]")
+    c.audit("20-discover-place")
+
+
 def flow_hobby(c):
     """Uses state from flow_pick_today (Running goal 4, Chess, custom)."""
     m = c.mode
@@ -510,17 +604,17 @@ def flow_hobby(c):
 def flow_demo_community(c):
     m = c.mode
     c.fresh()
-    c.click(".dc-welcome [data-action=demo]")
+    c.js("() => { SQ.seedDemo(); SQUI.go('today', {}, {reset:true}); }")
     expect(c.screen() == "today", m, "demo", "demo did not land on today")
     cards = c.page.locator(".hc").all_inner_texts()
-    draw = [t for t in cards if t.startswith("Drawing")]
-    expect(draw and "Comeback" in draw[0], m, "demo", "drawing card lacks comeback badge")
+    draw = [t for t in cards if t.startswith("Painting")]
+    expect(draw and "Comeback" in draw[0], m, "demo", "painting card lacks comeback badge")
     c.audit("30-today-demo")
     # listener leak on today: refresh several times, one click = one session
     for _ in range(5):
         c.js("() => SQUI.refresh()")
     n0 = c.js("() => SQ.state.sessions.length")
-    di = [i for i, t in enumerate(cards) if t.startswith("Drawing")][0]
+    di = [i for i, t in enumerate(cards) if t.startswith("Painting")][0]
     c.click(".hc .tiny-btn", nth=di)
     xp = c.overlay_xp()
     expect(xp == 30, m, "demo-comeback", f"comeback tiny win +{xp}, expected +30")
@@ -630,28 +724,59 @@ def flow_me(c):
     expect(c.js("() => SQ.state.onboarded") is True, m, "reset", "cancel reset wiped")
     c.click("[data-action=reset]")
     c.click("[data-action=reset-yes]")
-    expect(c.screen() == "welcome", m, "reset", f"reset went to {c.screen()}")
+    expect(c.screen() == "pick", m, "reset", f"reset went to {c.screen()}")
     expect(c.js("() => SQ.state.onboarded") is False and c.js("() => SQ.state.tracked.length") == 0, m, "reset", "state not reset")
     c.page.reload()
     c.page.wait_for_selector("#app-main .screen")
-    expect(c.screen() == "welcome", m, "reset-reload", "reset did not persist")
-    # mid-onboarding reload resumes not-onboarded
-    c.click(".dc-welcome [data-action=quiz]")
-    c.click(".dc-opt >> nth=0")
-    c.page.reload()
-    c.page.wait_for_selector("#app-main .screen")
-    expect(c.screen() == "welcome", m, "quiz-reload", f"reload mid-quiz on {c.screen()}")
-    # locked community via welcome->pick? (nav hidden) — check community lock render
+    expect(c.screen() == "pick", m, "reset-reload", "reset did not return to first-run picker")
+    # Check the locked community state with no tracked hobbies.
     c.js("() => { SQ.state.onboarded = true; SQ.save(); SQUI.go('community', {}, {reset:true}); }")
     c.audit("42-community-locked")
+
+
+def flow_research(c):
+    m = c.mode
+    c.fresh()
+    c.js("() => { SQ.seedDemo(); SQUI.go('discover', {}, {reset:true}); }")
+    result = {
+        "hobby": "Pickleball", "category": "active", "overview": "A beginner-friendly paddle sport.",
+        "location": "United States", "currency": "USD", "budget": 150, "cached": False,
+        "researchedAt": "2026-10-03T12:00:00.000Z",
+        "equipment": [{"name": "Paddle", "essential": True, "costLow": 30, "costHigh": 100,
+                       "why": "Needed to play.", "buyingTip": "Choose a comfortable grip.",
+                       "suggestedOptions": ["Lightweight beginner paddle"]}],
+        "totalCost": {"low": 45, "high": 150},
+        "firstSteps": [{"title": "Learn the kitchen", "details": "Practice the non-volley-zone rule.", "minutes": 15}],
+        "tutorials": [{"title": "Pickleball rules", "format": "video", "provider": "Rules educator",
+                       "searchQuery": "beginner pickleball rules", "whatYouLearn": "Scoring and court position."}],
+        "safety": ["Warm up before quick lateral movement."], "notes": ["Public courts may have open-play hours."],
+        "sources": [{"title": "Beginner guide", "publisher": "example.org", "url": "https://example.org/pickleball"}]
+    }
+    c.js("payload => { window.fetch = async () => ({ok:true, json:async () => payload}); }", result)
+    expect(c.page.locator(".dc-cube").count() == 4, m, "research", "discover should start with four tiles")
+    c.page.fill('[data-role="discover-form"] [name="hobby"]', "Pickleball")
+    c.click('[data-role="discover-form"] button[type="submit"]')
+    expect(c.page.locator(".dc-cube").count() == 4, m, "research", "search should keep four tiles")
+    expect("Pickleball" in c.page.locator(".dc-cube").first.inner_text(), m, "research", "search did not replace a tile")
+    c.audit("43-discover-four-cubes")
+    c.click('.dc-cube[data-action="research"]')
+    expect(c.screen() == "research", m, "research", "searched tile did not open research")
+    c.page.wait_for_selector(".dc-ai-result")
+    expect("Paddle" in c.page.locator(".dc-ai-result").inner_text(), m, "research", "equipment missing")
+    expect(c.page.locator(".dc-ai-sources a").get_attribute("href") == "https://example.org/pickleball",
+           m, "research", "grounded source missing")
+    c.audit("44-research-result")
+    c.click('[data-action="trackresearch"]')
+    expect(c.screen() == "hobby", m, "research", "tracking researched hobby did not open it")
+    expect(c.js("() => SQ.isTracked('custom-pickleball')") is True, m, "research", "researched hobby not tracked")
 
 
 def run_mode(browser, idx, mode, vp, scheme):
     print(f"== {mode} {vp} {scheme}")
     c = Ctx(browser, mode, vp, scheme)
     try:
-        for name, fn in [("quiz", lambda: flow_quiz(c, QUIZ_COMBOS[idx % len(QUIZ_COMBOS)])),
-                         ("pick", lambda: flow_pick_today(c)),
+        for name, fn in [("quiz", lambda: flow_simple_discovery(c, ["indoor", "outdoor", "either"][idx % 3])),
+                         ("pick", lambda: flow_simple_pick_today(c)),
                          ("hobby", lambda: flow_hobby(c)),
                          ("demo", lambda: flow_demo_community(c)),
                          ("me", lambda: flow_me(c))]:

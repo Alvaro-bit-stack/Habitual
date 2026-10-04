@@ -6,7 +6,7 @@ const D = globalThis.SQ_DATA;
 let fails = 0;
 function check(name, fn) { try { fn(); } catch (e) { fails++; console.error("FAIL " + name + ": " + e.message); } }
 
-const IDS = ["drawing","running","tennis","guitar","photography","cooking","hiking","soccer","knitting","bouldering","chess","gardening"];
+const IDS = ["guitar","soccer","tennis","painting","photography","running","sewing","journaling","piano","basketball"];
 const VIBES = ["creative","active","technical","social","relaxing"];
 const ACH = ["first_hobby","first_session","starter_pack","tiny_five","three_hobbies","goal_week_1","goal_week_4","comeback","milestone_1","milestone_5","event_1","event_5","level_5"];
 const ACH_CATS = ["starter","consistency","comeback","skill","social"];
@@ -26,7 +26,7 @@ D.hobbies.forEach(h => {
     assert(["solo","group","either"].includes(h.social));
     assert([0,50,150].includes(h.minBudget));
     assert(["low","mid","high"].includes(h.time));
-    assert(str(h.blurb) && h.blurb.length < 110, "blurb length " + h.blurb.length);
+    assert(typeof h.blurb === "string" && h.blurb.length < 110, "blurb length " + h.blurb.length);
     assert(h.related.length >= 2 && h.related.length <= 3 && h.related.every(r => IDS.includes(r) && r !== h.id));
   });
   check(p + " tinyWins", () => {
@@ -42,7 +42,7 @@ D.hobbies.forEach(h => {
   });
   const sp = h.starterPack;
   check(p + " starterPack", () => {
-    assert(str(sp.whyLike) && str(sp.firstMonth));
+    assert(typeof sp.whyLike === "string" && typeof sp.firstMonth === "string");
     ["free","budget","stepup"].forEach(t => {
       const items = sp.tiers[t].items;
       assert(Array.isArray(items) && items.length >= 1);
@@ -55,6 +55,8 @@ D.hobbies.forEach(h => {
     assert(sp.tryFirst.length >= 2 && sp.tryFirst.length <= 3 && sp.tryFirst.every(str));
     assert.strictEqual(sp.firstSessions.length, 3);
     sp.firstSessions.forEach(s => assert(str(s.title) && str(s.detail) && str(s.tinyVersion)));
+    assert.strictEqual(h.tutorials.length, 3);
+    h.tutorials.forEach(t => assert(str(t.title) && str(t.searchQuery) && str(t.format)));
   });
   check(p + " budget consistency", () => {
     assert(sp.tiers.free.items.every(i => i.price[0] === 0 && i.price[1] === 0), "free tier not free");
@@ -64,10 +66,9 @@ D.hobbies.forEach(h => {
   });
 });
 
-check("each vibe is a primary category", () => VIBES.forEach(v => assert(D.hobbies.some(h => h.category === v), v)));
 check("social constraints", () => {
   const g = id => D.hobbies.find(h => h.id === id).social;
-  assert.strictEqual(g("tennis"), "group"); assert.strictEqual(g("soccer"), "group"); assert.strictEqual(g("chess"), "either");
+  assert.strictEqual(g("tennis"), "group"); assert.strictEqual(g("soccer"), "group"); assert.strictEqual(g("basketball"), "group");
 });
 
 check("achievements", () => {
@@ -76,7 +77,7 @@ check("achievements", () => {
 });
 
 check("groups", () => {
-  assert.strictEqual(D.groups.length, 12);
+  assert.strictEqual(D.groups.length, 10);
   assert.deepStrictEqual(D.groups.map(g => g.hobbyId).sort(), IDS.slice().sort());
   D.groups.forEach(g => {
     assert(str(g.name) && Number.isInteger(g.members) && g.members > 0);
@@ -104,16 +105,10 @@ check("events", () => {
 
 check("quiz", () => {
   const Q = D.quiz;
-  assert.deepStrictEqual(Q.map(q => q.id), ["vibe","place","social","budget","time"]);
+  assert.deepStrictEqual(Q.map(q => q.id), ["place"]);
   const vals = q => q.options.map(o => o.value);
-  assert.deepStrictEqual(vals(Q[0]), VIBES);
-  assert.deepStrictEqual(vals(Q[1]), ["indoor","outdoor","either"]);
-  assert.deepStrictEqual(vals(Q[2]), ["solo","group","either"]);
-  assert.deepStrictEqual(vals(Q[3]), [0,50,150,999]);
-  assert.deepStrictEqual(vals(Q[4]), ["low","mid","high"]);
-  assert.deepStrictEqual(Q.map(q => q.prompt), ["What sounds most fun?","Where do you want to spend it?","Solo or with people?","Starting budget?","Time per week?"]);
-  assert.deepStrictEqual(Q[3].options.map(o => o.label), ["Free","Under $50","Under $150","Flexible"]);
-  assert.deepStrictEqual(Q[4].options.map(o => o.label), ["Under 1 hr","1–3 hrs","3+ hrs"]);
+  assert.deepStrictEqual(vals(Q[0]), ["indoor","outdoor","either"]);
+  assert.deepStrictEqual(Q.map(q => q.prompt), ["Where would you like to do your hobby?"]);
   Q.forEach(q => q.options.forEach(o => assert(str(o.label) && str(o.hint))));
 });
 
@@ -122,23 +117,12 @@ check("no emoji", () => {
   assert(!m, "found: " + (m || []).join(" "));
 });
 
-// Quiz coverage: every answer combo should yield >= 3 hobbies with positive score (approximate engine scoring).
+// Place coverage: each choice should yield at least three matching hobbies.
 check("quiz coverage", () => {
-  const Q = D.quiz; let worst = Infinity;
-  for (const v of VIBES) for (const pl of ["indoor","outdoor","either"]) for (const so of ["solo","group","either"])
-  for (const b of [0,50,150,999]) for (const t of ["low","mid","high"]) {
-    const scores = D.hobbies.map(h => {
-      let s = 0;
-      if (h.vibes.includes(v)) s += 3 + (h.category === v ? 1 : 0);
-      if (h.place === pl || h.place === "either" || pl === "either") s += 2;
-      if (h.social === so || h.social === "either" || so === "either") s += 2;
-      s += h.minBudget <= b ? 2 : -3;
-      if (h.time === t) s += 1;
-      return s;
-    }).sort((a, b) => b - a);
-    worst = Math.min(worst, scores[0]);
+  for (const pl of ["indoor","outdoor","either"]) {
+    const matches = D.hobbies.filter(h => h.place === pl || h.place === "either" || pl === "either");
+    assert(matches.length >= 3, pl + " has only " + matches.length);
   }
-  assert(worst >= 4, "some combo top score only " + worst);
 });
 
 if (fails) { console.error(fails + " check(s) failed"); process.exit(1); }

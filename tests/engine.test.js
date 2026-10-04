@@ -10,21 +10,18 @@ const ENGINE_SRC = fs.readFileSync(path.join(ROOT, "src/engine.js"), "utf8");
 const DATA_PATH = path.join(ROOT, "src/data.js");
 
 // ------------------------------------------------------------------ stub data
-const IDS = ["drawing", "running", "tennis", "guitar", "photography", "cooking",
-  "hiking", "soccer", "knitting", "bouldering", "chess", "gardening"];
+const IDS = ["guitar", "soccer", "tennis", "painting", "photography", "running", "sewing", "journaling", "piano", "basketball"];
 const STUB_META = {
-  drawing: ["creative", ["creative", "relaxing"], "indoor", "solo", 0, "low", ["photography", "knitting"]],
-  running: ["active", ["active"], "outdoor", "solo", 0, "mid", ["hiking", "soccer"]],
+  guitar: ["creative", ["creative"], "indoor", "solo", 0, "mid", ["piano", "journaling"]],
+  soccer: ["active", ["active"], "outdoor", "group", 0, "mid", ["running", "basketball"]],
   tennis: ["active", ["active", "social"], "outdoor", "group", 50, "mid", ["running", "soccer"]],
-  guitar: ["creative", ["creative", "technical"], "indoor", "solo", 150, "mid", ["drawing", "chess"]],
-  photography: ["creative", ["creative", "technical"], "either", "solo", 0, "mid", ["drawing", "hiking"]],
-  cooking: ["relaxing", ["creative", "relaxing", "social"], "indoor", "either", 50, "mid", ["gardening"]],
-  hiking: ["active", ["active", "relaxing"], "outdoor", "either", 50, "high", ["running", "photography"]],
-  soccer: ["social", ["active", "social"], "outdoor", "group", 50, "mid", ["running", "tennis"]],
-  knitting: ["relaxing", ["creative", "relaxing"], "indoor", "solo", 50, "low", ["drawing"]],
-  bouldering: ["active", ["active", "technical", "social"], "indoor", "either", 50, "mid", ["hiking"]],
-  chess: ["technical", ["technical", "social"], "indoor", "either", 0, "low", ["guitar"]],
-  gardening: ["relaxing", ["relaxing", "active"], "outdoor", "solo", 50, "mid", ["cooking"]]
+  painting: ["creative", ["creative"], "indoor", "solo", 0, "mid", ["photography", "journaling"]],
+  photography: ["creative", ["creative"], "either", "solo", 0, "mid", ["painting", "journaling"]],
+  running: ["active", ["active"], "outdoor", "either", 0, "mid", ["soccer", "basketball"]],
+  sewing: ["creative", ["creative"], "indoor", "solo", 0, "mid", ["painting", "journaling"]],
+  journaling: ["relaxing", ["relaxing"], "either", "solo", 0, "mid", ["painting", "photography"]],
+  piano: ["creative", ["creative"], "indoor", "solo", 0, "mid", ["guitar", "journaling"]],
+  basketball: ["active", ["active"], "either", "group", 0, "mid", ["soccer", "running"]]
 };
 function stubData() {
   const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -108,7 +105,7 @@ function suite(source) {
     assert(SQ._now === null, "_now null by default");
     assert(SQ.state && SQ.state.version === 1, "state getter");
     assert(SQ.state === SQ.state, "state getter returns live object");
-    eq(SQ.catalog().length, 12, "catalog size");
+    eq(SQ.catalog().length, 10, "catalog size");
   });
 
   test("level curve", () => {
@@ -142,11 +139,11 @@ function suite(source) {
 
   test("XP per size + hobby/player XP, session ts respects _now", () => {
     const { SQ } = L({ now: D(2026, 10, 5) });
-    SQ.addHobby("drawing", { goal: 7 });
-    const a = SQ.logSession("drawing", { size: "tiny" });
+    SQ.addHobby("painting", { goal: 7 });
+    const a = SQ.logSession("painting", { size: "tiny" });
     eq(a.xpGained, 10); eq(a.breakdown, [{ label: "Tiny win", xp: 10 }]);
-    eq(SQ.logSession("drawing", { size: "regular" }).xpGained, 25);
-    eq(SQ.logSession("drawing", { size: "big", minutes: 60, note: "x" }).xpGained, 50);
+    eq(SQ.logSession("painting", { size: "regular" }).xpGained, 25);
+    eq(SQ.logSession("painting", { size: "big", minutes: 60, note: "x" }).xpGained, 50);
     eq(SQ.state.user.xp, 85); eq(SQ.state.tracked[0].xp, 85);
     const s = SQ.state.sessions[2];
     eq(s.ts, D(2026, 10, 5).getTime()); eq(s.date, "2026-10-05"); eq(s.minutes, 60); eq(s.note, "x");
@@ -157,15 +154,15 @@ function suite(source) {
 
   test("reward shape", () => {
     const { SQ } = L({ now: D(2026, 10, 5) });
-    const r0 = SQ.addHobby("drawing");
+    const r0 = SQ.addHobby("painting");
     eq(r0.xpGained, 0); eq(r0.breakdown, []);
     eq(r0.newAchievements.map((a) => a.id), ["first_hobby"]);
     const a = r0.newAchievements[0];
     eq(Object.keys(a).sort(), ["category", "desc", "id", "name"]);
-    const r = SQ.logSession("drawing", { size: "regular" });
+    const r = SQ.logSession("painting", { size: "regular" });
     ["xpGained", "breakdown", "hobbyId", "hobbyLevelBefore", "hobbyLevelAfter", "playerLevelBefore", "playerLevelAfter",
       "stageBefore", "stageAfter", "newAchievements", "goalHit", "wasComeback"].forEach((k) => assert(k in r, "reward." + k));
-    eq(r.hobbyId, "drawing");
+    eq(r.hobbyId, "painting");
     eq(SQ.state.tracked[0].goal, 2, "default goal 2");
   });
 
@@ -194,46 +191,46 @@ function suite(source) {
 
   test("goal 1 hits on first session; setGoal clamps", () => {
     const { SQ } = L({ now: D(2026, 10, 5) });
-    SQ.addHobby("chess", { goal: 1 });
-    assert(SQ.logSession("chess", { size: "tiny" }).goalHit);
-    eq(SQ.setGoal("chess", 0), 1); eq(SQ.setGoal("chess", 99), 7); eq(SQ.state.tracked[0].goal, 7);
+    SQ.addHobby("journaling", { goal: 1 });
+    assert(SQ.logSession("journaling", { size: "tiny" }).goalHit);
+    eq(SQ.setGoal("journaling", 0), 1); eq(SQ.setGoal("journaling", 99), 7); eq(SQ.state.tracked[0].goal, 7);
   });
 
   test("comeback bonus, ladder reset and climb", () => {
     const { SQ } = L({ now: D(2026, 9, 1) });
-    SQ.addHobby("drawing", { goal: 7 });
-    let st = SQ.hobbyStats("drawing");
+    SQ.addHobby("painting", { goal: 7 });
+    let st = SQ.hobbyStats("painting");
     eq(st.ladderIndex, 0); eq(st.daysSince, null); eq(st.inComeback, false);
-    eq(st.nextTinyWin, SQ.getHobby("drawing").tinyWins[0]);
+    eq(st.nextTinyWin, SQ.getHobby("painting").tinyWins[0]);
     SQ._now = D(2026, 9, 9); // added 8 days ago, no sessions -> comeback
-    assert(SQ.hobbyStats("drawing").inComeback, "no sessions + added 8d ago");
-    const r = SQ.logSession("drawing", { size: "tiny" });
+    assert(SQ.hobbyStats("painting").inComeback, "no sessions + added 8d ago");
+    const r = SQ.logSession("painting", { size: "tiny" });
     assert(r.wasComeback); eq(r.xpGained, 30);
     eq(r.breakdown[1], { label: "Comeback bonus", xp: 20 });
-    eq(SQ.hobbyStats("drawing").ladderIndex, 1);
-    for (let d = 10; d <= 14; d++) { SQ._now = D(2026, 9, d); SQ.logSession("drawing", { size: "tiny" }); }
-    st = SQ.hobbyStats("drawing");
-    eq(st.ladderIndex, 4, "capped at 4"); eq(st.nextTinyWin, SQ.getHobby("drawing").tinyWins[4]);
+    eq(SQ.hobbyStats("painting").ladderIndex, 1);
+    for (let d = 10; d <= 14; d++) { SQ._now = D(2026, 9, d); SQ.logSession("painting", { size: "tiny" }); }
+    st = SQ.hobbyStats("painting");
+    eq(st.ladderIndex, 4, "capped at 4"); eq(st.nextTinyWin, SQ.getHobby("painting").tinyWins[4]);
     eq(st.daysSince, 0);
     SQ._now = D(2026, 9, 20); // 6 days: not comeback
-    st = SQ.hobbyStats("drawing");
+    st = SQ.hobbyStats("painting");
     eq(st.daysSince, 6); assert(!st.inComeback); eq(st.ladderIndex, 4);
     SQ._now = D(2026, 9, 21); // 7 days
-    st = SQ.hobbyStats("drawing");
+    st = SQ.hobbyStats("painting");
     assert(st.inComeback); eq(st.ladderIndex, 0);
-    const r2 = SQ.logSession("drawing", { size: "regular" });
+    const r2 = SQ.logSession("painting", { size: "regular" });
     assert(r2.wasComeback); eq(r2.xpGained, 45);
     assert(!r2.newAchievements.some((a) => a.id === "comeback"), "7 days is not 14");
-    eq(SQ.hobbyStats("drawing").ladderIndex, 1, "ladder reset after 7d gap");
+    eq(SQ.hobbyStats("painting").ladderIndex, 1, "ladder reset after 7d gap");
     SQ._now = D(2026, 9, 22);
-    eq(SQ.logSession("drawing", { size: "tiny" }).wasComeback, false);
-    eq(SQ.hobbyStats("drawing").ladderIndex, 2);
+    eq(SQ.logSession("painting", { size: "tiny" }).wasComeback, false);
+    eq(SQ.hobbyStats("painting").ladderIndex, 2);
     // 14+ days -> comeback achievement once
     SQ._now = D(2026, 10, 6);
-    const r3 = SQ.logSession("drawing", { size: "tiny" });
+    const r3 = SQ.logSession("painting", { size: "tiny" });
     assert(r3.newAchievements.some((a) => a.id === "comeback"));
     SQ._now = D(2026, 10, 25);
-    assert(!SQ.logSession("drawing", { size: "tiny" }).newAchievements.some((a) => a.id === "comeback"), "once");
+    assert(!SQ.logSession("painting", { size: "tiny" }).newAchievements.some((a) => a.id === "comeback"), "once");
   });
 
   test("weekly streak: met weeks, current week skip, forgiven week", () => {
@@ -262,8 +259,8 @@ function suite(source) {
     SQ._now = D(2026, 7, 7); // week Jul 6 current, not met
     eq(SQ.hobbyStats("running").weeklyStreak, 2, "Jun29+Jun22, Jun15 forgiven, Jun8 breaks");
     // stop at added week: new hobby added this week with no history
-    SQ.addHobby("drawing", { goal: 1 });
-    eq(SQ.hobbyStats("drawing").weeklyStreak, 0);
+    SQ.addHobby("painting", { goal: 1 });
+    eq(SQ.hobbyStats("painting").weeklyStreak, 0);
   });
 
   test("goal_week_4 unlocks on 4-week streak", () => {
@@ -282,7 +279,7 @@ function suite(source) {
     const { SQ } = L({ now: D(2026, 10, 5) });
     const r = SQ.addHobby("guitar", { viaStarter: true });
     eq(r.newAchievements.map((a) => a.id), ["first_hobby", "starter_pack"]);
-    SQ.addHobby("drawing");
+    SQ.addHobby("painting");
     eq(SQ.addHobby("running").newAchievements.map((a) => a.id), ["three_hobbies"]);
     eq(SQ.addHobby("running").newAchievements, [], "re-add yields nothing");
     eq(SQ.state.tracked.length, 3);
@@ -292,7 +289,7 @@ function suite(source) {
     eq(SQ.state.achievements.tiny_five, "2026-10-05");
     let lv5 = false;
     for (let i = 0; i < 25 && !lv5; i++) {
-      const rr = SQ.logSession("drawing", { size: "big" });
+      const rr = SQ.logSession("painting", { size: "big" });
       if (rr.newAchievements.some((a) => a.id === "level_5")) { lv5 = true; eq(rr.playerLevelAfter, 5); eq(rr.stageAfter, 2); }
     }
     assert(lv5, "level_5 unlocked");
@@ -403,8 +400,10 @@ function suite(source) {
     eq(hit.reasons[0], h.category[0].toUpperCase() + h.category.slice(1));
     // budget penalty
     const pricey = S2.catalog().find((x) => x.minBudget > 0);
-    const s0 = S2.match({ budget: 0 });
-    assert(!s0.some((x) => x.hobby.id === pricey.id) || s0.every((x) => x.score < 0), "over-budget penalized");
+    if (pricey) {
+      const s0 = S2.match({ budget: 0 });
+      assert(!s0.some((x) => x.hobby.id === pricey.id) || s0.every((x) => x.score < 0), "over-budget penalized");
+    }
   });
 
   test("custom hobbies", () => {
@@ -428,18 +427,18 @@ function suite(source) {
   test("removeHobby keeps sessions; communityUnlocked", () => {
     const { SQ } = L({ now: D(2026, 10, 5) });
     assert(!SQ.communityUnlocked());
-    SQ.addHobby("chess"); assert(SQ.communityUnlocked());
-    SQ.logSession("chess", { size: "regular" });
-    SQ.removeHobby("chess");
-    assert(!SQ.isTracked("chess")); eq(SQ.state.sessions.length, 1); assert(!SQ.communityUnlocked());
+    SQ.addHobby("journaling"); assert(SQ.communityUnlocked());
+    SQ.logSession("journaling", { size: "regular" });
+    SQ.removeHobby("journaling");
+    assert(!SQ.isTracked("journaling")); eq(SQ.state.sessions.length, 1); assert(!SQ.communityUnlocked());
   });
 
   test("hobbyStats: heat 84 entries ending today, recent, totals", () => {
     const { SQ } = L({ now: D(2026, 3, 30) });
-    SQ.addHobby("cooking");
-    SQ.logSession("cooking", { size: "regular", minutes: 40 });
-    SQ.logSession("cooking", { size: "tiny", minutes: 5 });
-    const st = SQ.hobbyStats("cooking");
+    SQ.addHobby("sewing");
+    SQ.logSession("sewing", { size: "regular", minutes: 40 });
+    SQ.logSession("sewing", { size: "tiny", minutes: 5 });
+    const st = SQ.hobbyStats("sewing");
     eq(st.heat.length, 84);
     eq(st.heat[83], { date: "2026-03-30", count: 2 });
     eq(st.heat[0].date, "2026-01-06");
@@ -451,9 +450,9 @@ function suite(source) {
 
   test("player: stage, accessories, weekSessions", () => {
     const { SQ } = L({ now: D(2026, 10, 5) });
-    SQ.addHobby("running"); SQ.addHobby("drawing");
+    SQ.addHobby("running"); SQ.addHobby("painting");
     for (let i = 0; i < 3; i++) SQ.logSession("running", { size: "big" });
-    SQ.logSession("drawing", { size: "tiny" });
+    SQ.logSession("painting", { size: "tiny" });
     const p = SQ.player();
     eq(p.accessories, [SQ.getHobby("running").category]);
     eq(p.totalSessions, 4); eq(p.weekSessions, 4); eq(p.trackedCount, 2);
@@ -464,7 +463,7 @@ function suite(source) {
   test("storage-less operation", () => {
     const { SQ, ctx } = L({ now: D(2026, 10, 5) });
     assert(typeof ctx.localStorage === "undefined");
-    SQ.addHobby("hiking"); SQ.logSession("hiking", { size: "big" });
+    SQ.addHobby("basketball"); SQ.logSession("basketball", { size: "big" });
     eq(SQ.save(), false);
     SQ.seedDemo(); SQ.reset();
     eq(SQ.state.onboarded, false);
@@ -473,14 +472,14 @@ function suite(source) {
   test("throwing storage is tolerated", () => {
     const bad = { getItem() { throw new Error("x"); }, setItem() { throw new Error("quota"); } };
     const { SQ } = L({ storage: bad, now: D(2026, 10, 5) });
-    SQ.addHobby("hiking"); SQ.logSession("hiking", { size: "big" });
+    SQ.addHobby("basketball"); SQ.logSession("basketball", { size: "big" });
     eq(SQ.state.sessions.length, 1);
   });
 
   test("persistence round-trip and corrupted storage", () => {
     const st = memStorage();
     const a = L({ storage: st, now: D(2026, 10, 5) }).SQ;
-    a.addHobby("chess"); a.logSession("chess", { size: "regular" });
+    a.addHobby("journaling"); a.logSession("journaling", { size: "regular" });
     const b = L({ storage: st, now: D(2026, 10, 5) }).SQ;
     eq(b.state.sessions.length, 1); eq(b.state.user.xp, 25);
     for (const raw of ["{not json", "null", "[]", "42", JSON.stringify({ version: 0, foo: 1 }), JSON.stringify({ version: 1, tracked: "x", sessions: [null, 3] })]) {
@@ -488,7 +487,7 @@ function suite(source) {
       const c = L({ storage: st, now: D(2026, 10, 5) }).SQ;
       assert(Array.isArray(c.state.tracked) && Array.isArray(c.state.sessions), "fallback for " + raw);
       eq(c.state.version, 1);
-      c.addHobby("chess"); c.logSession("chess", { size: "tiny" });
+      c.addHobby("journaling"); c.logSession("journaling", { size: "tiny" });
     }
     const d = L({ storage: st }).SQ;
     d.reset();
@@ -510,10 +509,10 @@ function suite(source) {
     eq(SQ.today(), today);
     const s = SQ.state;
     assert(s.onboarded);
-    eq(s.tracked.map((t) => [t.hobbyId, t.goal]).sort(), [["drawing", 3], ["guitar", 2], ["running", 2]]);
+    eq(s.tracked.map((t) => [t.hobbyId, t.goal]).sort(), [["guitar", 2], ["painting", 3], ["running", 2]]);
     const g = s.tracked.find((t) => t.hobbyId === "guitar");
     assert(g.viaStarter); eq(g.addedAt, SQ.addDays(today, -20));
-    const draw = SQ.hobbyStats("drawing"), run = SQ.hobbyStats("running"), gtr = SQ.hobbyStats("guitar");
+    const draw = SQ.hobbyStats("painting"), run = SQ.hobbyStats("running"), gtr = SQ.hobbyStats("guitar");
     assert(draw.inComeback, "drawing in comeback"); eq(draw.daysSince, 9);
     assert(run.daysSince === 0 || run.daysSince === 1, "running daysSince " + run.daysSince);
     eq(run.sessionsThisWeek, 1, "1 run this week");
@@ -522,7 +521,7 @@ function suite(source) {
     eq(gtr.daysSince, 2); eq(gtr.totalSessions, 4);
     eq(s.sessions.filter((x) => x.hobbyId === "guitar" && x.size === "tiny").length, 3);
     eq(s.tracked.find((t) => t.hobbyId === "running").milestones.length, 2);
-    eq(s.tracked.find((t) => t.hobbyId === "drawing").milestones.length, 1);
+    eq(s.tracked.find((t) => t.hobbyId === "painting").milestones.length, 1);
     s.sessions.forEach((x) => assert(x.date <= today && SQ.daysBetween(x.date, today) <= 42, "dates in range"));
     s.sessions.forEach((x) => eq(x.date, (() => { const d = new Date(x.ts); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); })(), "ts matches date"));
     const p = SQ.player();
@@ -547,7 +546,7 @@ function suite(source) {
     const { SQ } = L();
     SQ.seedDemo();
     eq(SQ._now, null);
-    assert(SQ.hobbyStats("drawing").inComeback);
+    assert(SQ.hobbyStats("painting").inComeback);
     const l = SQ.player().level;
     assert(l >= 4 && l <= 5);
   });

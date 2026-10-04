@@ -382,8 +382,9 @@ appearance, sample data, two-step reset). Character customization is paused unti
 - **Backdrop:** the Me stage shows a city street at night (`src/assets/me-street.jpg`, portrait),
   embedded by `build.py` (`me_background`) as a data URI. It is width-fitted and positioned so the
   road sits under the character's feet (see `.sc-stage` in showcase.css).
-- **Props:** the Me stage also has 3D props on the ground: a parked bike plus gear for the top three
-  hobbies by XP. They're modelled in Blender by `tools/build_props.py` into `assets/models/props.glb`
+- **Props:** the Me stage also has 3D props on the ground, only for hobbies the player tracks (most XP
+  first, up to four; none when nothing is tracked). Custom hobbies about cycling get the bike, which always
+  takes the roomy back-left spot. They're modelled in Blender by `tools/build_props.py` into `assets/models/props.glb`
   (one object per prop, `prop_<hobbyId>`; served as `/models/props.js`), placed by `buildProps` in
   showcase.js; hobbies without a model get a simple tote bag. Only the Me stage shows props.
   New prop → add a function to build_props.py named after the hobby id and re-run it.

@@ -72,8 +72,8 @@
   var still = G.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ------------------------------------------------------------------ props */
-  // Props on the ground around the Me character: a parked bike plus gear for up to three of the player's top
-  // hobbies. They're modelled in Blender (tools/build_props.py -> assets/models/props.glb, one object per
+  // Props on the ground around the Me character: gear for the hobbies the player tracks (most XP first, up to
+  // four) and nothing else. They're modelled in Blender (tools/build_props.py -> assets/models/props.glb, one object per
   // prop named prop_<hobbyId>); hobbies without a model get a simple tote bag. Units are metres next to the
   // 1.8 m character at the origin, feet at y = 0.
   function buildProps(THREE, kit, hobbyIds) {
@@ -90,12 +90,13 @@
       return g;
     }
     function prop(id) { var o = kit && kit.getObjectByName("prop_" + id); return o ? o.clone() : null; }
-    var bike = prop("bike");
-    if (bike) { place(bike, -0.85, -1.1, 0.65, 0.78); shadow(0.42, -0.85, -1.1, 1.35); }
-    // x, z, turn. Long items (guitar, racket) turn so they point away from the camera.
-    var SLOTS = [[0.58, 0.18, -0.7], [-0.55, 0.28, 0.5], [0.8, -0.55, 1.1]];
-    hobbyIds.slice(0, SLOTS.length).forEach(function (id, i) {
-      var sl = SLOTS[i], long = id === "guitar" || id === "tennis";
+    // x, z, turn. The back-left spot is the only one with room for a bike, so a bike always takes it.
+    var SLOTS = [[0.58, 0.18, -0.7], [-0.55, 0.28, 0.5], [0.8, -0.55, 1.1], [-0.85, -1.1, 0.65]], BIKE = 3;
+    var ids = hobbyIds.slice(0, SLOTS.length), free = [0, 1, 2, 3];
+    if (ids.indexOf("bike") >= 0) free.splice(free.indexOf(BIKE), 1);
+    ids.forEach(function (id) {
+      var i = id === "bike" ? BIKE : free.shift(), sl = SLOTS[i], long = id === "guitar" || id === "tennis";
+      if (id === "bike") { place(prop("bike") || tote(), sl[0], sl[1], sl[2], 0.78); shadow(0.42, sl[0], sl[1], 1.35); return; }
       place(prop(id) || tote(), sl[0], sl[1], sl[2] + (long ? (sl[0] > 0 ? 1.1 : -1.1) : 0), long ? 0.8 : 1.1);
       shadow(long ? 0.2 : 0.15, sl[0], sl[1], 1.5);
     });
@@ -222,7 +223,11 @@
       var gltf = res[0], kit = res[1] && res[1].scene;
       if (!wrap.isConnected) return;
       status.hidden = true;
-      var S = sq(), top = S.state.tracked.slice().sort(function (a, b) { return (b.xp || 0) - (a.xp || 0); }).map(function (t) { return t.hobbyId; });
+      // Only the hobbies the player tracks get props. Custom hobbies about cycling get the bike.
+      var S = sq(), top = S.state.tracked.slice().sort(function (a, b) { return (b.xp || 0) - (a.xp || 0); }).map(function (t) {
+        var h = S.getHobby(t.hobbyId) || {};
+        return /bik|cycl/i.test(t.hobbyId + " " + (h.name || "")) ? "bike" : t.hobbyId;
+      }).filter(function (id, i, all) { return all.indexOf(id) === i; });
       stage(wrap, gltf, { controls: true, intro: "wave", props: top, kit: kit, onMove: function (m) {
         var cap = document.querySelector(".sc-move");
         if (cap) cap.textContent = m.replace(/([a-z])([A-Z])/g, "$1 $2"); // SillyDance -> Silly Dance

@@ -133,7 +133,7 @@ test('Hobby filter narrows events and groups, and resets with the feed',()=>{
   action('reset-feed');assert.equal(ids().length,18);
 });
 test('Your tabs list only your hobbies; All events lists every hobby to discover',()=>{
-  const opts=()=>[...screens.community.render().matchAll(/role="option" data-v="([^"]*)"/g)].map(m=>m[1]);
+  const opts=()=>[...screens.community.render().matchAll(/id="cm-hobby-opt-\d+" role="option" data-v="([^"]*)"/g)].map(m=>m[1]);
   action('category','going');assert.deepEqual(opts(),['','running','drawing','guitar']);
   action('category','for-you');assert.deepEqual(opts(),['','running','drawing','guitar']);
   action('category','all');const all=opts();assert.deepEqual(all.slice(0,4),['','running','drawing','guitar']);assert.ok(all.includes('tennis')&&all.includes('chess'));
@@ -147,8 +147,10 @@ test('Hobby filter is a type-to-search combobox',()=>{
   assert.ok(html.includes('role="listbox"'));assert.ok(!html.includes('<select id="cm-hobby"'));
 });
 test('Dates are one dropdown, not a row of buttons',()=>{
-  const html=screens.community.render();assert.ok(html.includes('<select id="cm-when" data-action="date-filter">'));
-  assert.ok(html.includes('>This weekend</option>'));assert.ok(!html.includes('class="cm-dates"'));
+  const html=screens.community.render();assert.ok(/id="cm-when" class="cm-menu-btn" data-menu="date-filter" aria-haspopup="listbox"/.test(html));
+  assert.ok(html.includes('<span>This weekend</span>'));assert.ok(!html.includes('class="cm-dates"'));
+  assert.ok(!html.includes('<select'),'all three filters share the same custom list style');
+  assert.equal((html.match(/class="cm-combo-list" role="listbox"/g)||[]).length,3);
 });
 test('More people going shows more heads (1 to 5), host in front',()=>{
   const html=screens.community.render();

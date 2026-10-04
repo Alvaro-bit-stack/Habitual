@@ -390,6 +390,9 @@ type-to-search combobox (`#cm-hobby`, listbox `#cm-hobby-list`; arrows, Enter, E
 button when set). On Going / For you / Your groups it lists only your tracked hobbies; on All events
 (for discovering new hobbies) your hobbies first, then every other hobby with events. Switching to a
 tab that doesn't offer the picked hobby clears it. Hobby also narrows Your groups. Reset clears both.
+All three filters share one look: a pill that opens the same list panel (`.cm-combo-list`), with an
+icon per option and a check on the current pick. When (`#cm-when`) and Level are buttons
+(`.cm-menu-btn`, `aria-haspopup="listbox"`; arrows, Enter/Space, Escape, tap); Hobby adds typing.
 Level (`#cm-level`: Any level / Beginner / Experienced) shows on For you and All events only;
 "All levels" events count for both choices. The All events search box searches by location
 (the event's `place`) only.

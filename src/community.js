@@ -268,9 +268,9 @@
     "</div>";
   }
 
-  var DATE_FILTERS = [['upcoming', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['weekend', 'This weekend']];
+  var DATE_FILTERS = [['upcoming', 'Any day', 'calendar'], ['today', 'Today', 'sun'], ['tomorrow', 'Tomorrow', 'clock'], ['weekend', 'This weekend', 'star']];
   // Level: "All levels" events welcome everyone, so they show under both choices.
-  var LEVEL_FILTERS = [['', 'Any level'], ['beginner', 'Beginner'], ['experienced', 'Experienced']];
+  var LEVEL_FILTERS = [['', 'Any level', 'users'], ['beginner', 'Beginner', 'leaf'], ['experienced', 'Experienced', 'flame']];
   var LEVEL_MATCH = { beginner: ['Beginner friendly', 'All levels'], experienced: ['Experienced', 'All levels'] };
   function levelFilterOn() { return view.category === 'for-you' || view.category === 'all'; }
   var CATEGORIES = [['going', 'Going', 'calendar'], ['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users']];
@@ -450,16 +450,22 @@
                   : '<span class="cm-filter-caret" aria-hidden="true">' + icon('chevron-right', 14) + '</span>') +
       '<ul id="cm-hobby-list" class="cm-combo-list" role="listbox" aria-label="' + mine + '" hidden>' + opts.map(function (o, i) {
         return '<li id="cm-hobby-opt-' + i + '" role="option" data-v="' + esc(o[0]) + '" aria-selected="' + (o[0] === view.hobby) + '">' +
-          (o[0] ? glyph(o[0], 16) : icon('compass', 16)) + '<span>' + esc(o[1]) + '</span></li>';
+          (o[0] ? glyph(o[0], 16) : icon('compass', 16)) + '<span>' + esc(o[1]) + '</span>' + (o[0] === view.hobby ? '<i class="cm-opt-check">' + icon('check', 16) + '</i>' : '') + '</li>';
       }).join('') + '<li class="cm-combo-none" role="presentation" hidden>No matching hobby</li></ul></div>';
   }
-  function filterSelect(id, label, action, value, options, ic) { // the When dropdown
-    var on = options.some(function (o) { return o[0] === value && o[0] !== options[0][0]; });
-    return '<label class="cm-filter' + (on ? ' on' : '') + '" for="' + id + '"><span aria-hidden="true">' + icon(ic, 16) + '</span>' +
-      '<span class="sr-only">' + label + '</span>' +
-      '<select id="' + id + '" data-action="' + action + '">' + options.map(function (o) {
-        return '<option value="' + esc(o[0]) + '"' + (o[0] === value ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
-      }).join('') + '</select><span class="cm-filter-caret" aria-hidden="true">' + icon('chevron-right', 14) + '</span></label>';
+  // When and Level: a button that opens the same list panel as the Hobby search (no typing).
+  function filterSelect(id, label, action, value, options, ic) {
+    var on = value !== options[0][0];
+    var cur = options.filter(function (o) { return o[0] === value; })[0] || options[0];
+    return '<div class="cm-filter cm-menu' + (on ? ' on' : '') + '">' +
+      '<span aria-hidden="true">' + icon(ic, 16) + '</span>' +
+      '<button type="button" id="' + id + '" class="cm-menu-btn" data-menu="' + action + '" aria-haspopup="listbox" aria-expanded="false" aria-controls="' + id + '-list"' +
+      ' aria-label="' + label + ': ' + esc(cur[1]) + '">' + esc(cur[1]) + '</button>' +
+      '<span class="cm-filter-caret" aria-hidden="true">' + icon('chevron-right', 14) + '</span>' +
+      '<ul id="' + id + '-list" class="cm-combo-list" role="listbox" aria-label="' + label + '" tabindex="-1" hidden>' + options.map(function (o, i) {
+        return '<li id="' + id + '-opt-' + i + '" role="option" data-v="' + esc(o[0]) + '" aria-selected="' + (o[0] === value) + '">' +
+          icon(o[2], 16) + '<span>' + esc(o[1]) + '</span>' + (o[0] === value ? '<i class="cm-opt-check">' + icon('check', 16) + '</i>' : '') + '</li>';
+      }).join('') + '</ul></div>';
   }
   function render() {
     if (!SQ() || !SQ().communityUnlocked()) return renderLocked();
@@ -680,6 +686,53 @@
   }
 
   var comboQuietUntil = 0; // focus returned after a pick (by us or by SQUI.refresh) shouldn't reopen the list
+  var menuQuiet = { id: null, until: 0 }; // a key-up "click" after a pick shouldn't reopen that same menu
+  function bindMenus(host) {
+    var btns = host.querySelectorAll ? host.querySelectorAll(".cm-menu-btn") : [];
+    Array.prototype.forEach.call(btns, function (btn) {
+      var list = document.getElementById(btn.getAttribute("aria-controls"));
+      if (!list) return;
+      var items = Array.prototype.slice.call(list.querySelectorAll('[role="option"]')), active = -1;
+      function setActive(i) {
+        active = (i + items.length) % items.length;
+        items.forEach(function (li, k) { li.classList.toggle("on", k === active); });
+        btn.setAttribute("aria-activedescendant", items[active].id);
+      }
+      function open() {
+        closeAllMenus(btn);
+        list.hidden = false; btn.setAttribute("aria-expanded", "true");
+        var sel = items.findIndex(function (li) { return li.getAttribute("aria-selected") === "true"; });
+        setActive(sel < 0 ? 0 : sel);
+      }
+      function close() { list.hidden = true; btn.setAttribute("aria-expanded", "false"); btn.removeAttribute("aria-activedescendant"); }
+      btn._cmClose = close;
+      function choose(li) {
+        var v = li.getAttribute("data-v") || "", key = btn.getAttribute("data-menu");
+        close();
+        if (key === "date-filter") view.when = v; else if (key === "level-filter") view.level = v;
+        menuQuiet = { id: btn.id, until: Date.now() + 400 };
+        SQUI.refresh();
+        var again = document.getElementById(btn.id);
+        if (again) try { again.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+      }
+      btn.addEventListener("click", function () { if (menuQuiet.id === btn.id && Date.now() < menuQuiet.until) return; if (list.hidden) open(); else close(); });
+      btn.addEventListener("keydown", function (ev) {
+        if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); if (list.hidden) open(); else setActive(active + (ev.key === "ArrowDown" ? 1 : -1)); }
+        else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); if (list.hidden) open(); else choose(items[active]); }
+        else if (ev.key === "Escape" && !list.hidden) { ev.preventDefault(); close(); }
+        else if (ev.key === "Tab") close();
+      });
+      btn.addEventListener("blur", function () { setTimeout(function () { if (!list.contains(document.activeElement)) close(); }, 120); });
+      list.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
+      list.addEventListener("click", function (ev) { var li = ev.target.closest && ev.target.closest('[role="option"]'); if (li) choose(li); });
+    });
+  }
+  function closeAllMenus(except) {
+    Array.prototype.forEach.call(document.querySelectorAll(".cm-menu-btn"), function (b) { if (b !== except && b._cmClose) b._cmClose(); });
+    if (!except) return; // called from the Hobby search itself
+    var h = document.getElementById("cm-hobby-list");
+    if (except && h && !h.hidden) { h.hidden = true; var inp = document.getElementById("cm-hobby"); if (inp) inp.blur(); }
+  }
   function bindHobbyCombo(host) {
     var input = host.querySelector && host.querySelector("#cm-hobby");
     var list = host.querySelector && host.querySelector("#cm-hobby-list");
@@ -689,7 +742,7 @@
     function visible() { return items.filter(function (li) { return !li.hidden; }); }
     function setActive(i) {
       var vis = visible();
-      active = vis.length ? (i + vis.length) % vis.length : -1;
+      active = vis.length && i !== -1 ? (i + vis.length) % vis.length : -1; // -1 = nothing highlighted yet
       items.forEach(function (li) { li.classList.remove("on"); });
       if (active >= 0) { vis[active].classList.add("on"); input.setAttribute("aria-activedescendant", vis[active].id); vis[active].scrollIntoView({ block: "nearest" }); }
       else input.removeAttribute("aria-activedescendant");
@@ -700,7 +753,7 @@
       none.hidden = visible().length > 0;
       setActive(q ? 0 : -1);
     }
-    function open(q) { list.hidden = false; input.setAttribute("aria-expanded", "true"); filter(q || ""); }
+    function open(q) { closeAllMenus(null); var was = list.hidden; list.hidden = false; input.setAttribute("aria-expanded", "true"); if (was) list.scrollTop = 0; filter(q || ""); }
     function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant"); input.value = label; }
     function choose(li) {
       if (!li) return;
@@ -715,7 +768,7 @@
     input.addEventListener("input", function () { open(input.value); });
     input.addEventListener("keydown", function (ev) {
       if (ev.key === "ArrowDown") { ev.preventDefault(); if (list.hidden) open(""); else setActive(active + 1); }
-      else if (ev.key === "ArrowUp") { ev.preventDefault(); if (list.hidden) open(""); else setActive(active - 1); }
+      else if (ev.key === "ArrowUp") { ev.preventDefault(); if (list.hidden) open(""); else setActive(active < 0 ? visible().length - 1 : active - 1); }
       else if (ev.key === "Enter") { var vis = visible(); if (!list.hidden && vis.length) { ev.preventDefault(); choose(vis[Math.max(0, active)]); } }
       else if (ev.key === "Escape") { if (!list.hidden) { ev.preventDefault(); close(); } }
     });
@@ -757,6 +810,7 @@
       if (again) try { again.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     });
     bindHobbyCombo(host);
+    bindMenus(host);
     host.addEventListener("click", function (ev) {
       var el = ev.target.closest ? ev.target.closest("[data-action]") : null;
       if (el && el.tagName === "SELECT") return; // selects change on "change", not click

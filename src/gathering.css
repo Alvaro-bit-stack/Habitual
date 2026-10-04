@@ -137,3 +137,14 @@
   .cm-crowd .cm-attendance-icon + .cm-attendance-icon { margin-left: -15px; }
   .cm-feed-foot .cm-rsvp { padding-inline: 14px; }
 }
+
+/* When / Level: buttons that open the same list panel as Hobby */
+.cm .cm-menu-btn { width: 100%; min-width: 0; min-height: 42px; padding: 0 32px 0 38px; border: 0; border-radius: 22px; background: transparent; color: var(--ink); font: 600 13px var(--font-body); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.cm .cm-menu.on .cm-menu-btn { color: var(--leaf); }
+.cm-menu-btn:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+.cm-menu-btn[aria-expanded="true"] ~ .cm-filter-caret { transform: rotate(-90deg); }
+.cm-combo input[aria-expanded="true"] ~ .cm-filter-caret { transform: rotate(-90deg); }
+.cm-filter-caret { transition: transform .15s ease; }
+.cm-menu .cm-combo-list { left: 0; right: 0; width: auto; }
+.cm-opt-check { margin-left: auto; display: flex; color: var(--leaf); font-style: normal; }
+.cm-combo-list [role="option"] > span { min-width: 0; }

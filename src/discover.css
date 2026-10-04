@@ -559,3 +559,29 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .ob-option-label { font-weight: 800; font-size: 16px; }
 @media (max-width: 380px) { .ob-say { font-size: 18px; padding: 12px 14px; } .ob-guide .ob-guide-mii { --mii-size: 96px !important; } }
 @media (prefers-reduced-motion: reduce) { .ob-flyer, .ob-trail, .ob-wordmark, .ob-tagline, .ob-guide-mii, .ob-say { animation: none; } }
+
+/* No coloured backdrop: the bubbles sit on the page, so give them a tinted rim and soft shadow. */
+.bl-stage { -webkit-mask-image: none; mask-image: none; }
+.bl-blob, .ob-bubble {
+  background: radial-gradient(closest-side at 50% 44%, rgba(255,255,255,.96) 0, rgba(255,255,255,.82) 62%, color-mix(in srgb, var(--tint) 14%, #fff) 100%);
+  border: 1.5px solid color-mix(in srgb, var(--tint) 28%, #fff);
+  box-shadow: inset 0 -10px 30px color-mix(in srgb, var(--tint) 12%, transparent), inset 0 8px 18px rgba(255,255,255,.9), 0 16px 34px -18px color-mix(in srgb, var(--tint) 55%, rgba(22,50,72,.5));
+  -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-theme="dark"] .bl-blob, :root[data-theme="dark"] .ob-bubble { background: radial-gradient(closest-side at 50% 44%, color-mix(in srgb, var(--tint) 10%, var(--surface)) 0, var(--surface) 70%, color-mix(in srgb, var(--tint) 22%, var(--surface)) 100%); border-color: color-mix(in srgb, var(--tint) 35%, var(--line)); box-shadow: 0 16px 34px -18px rgba(0,0,0,.6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-blob, :root:not([data-theme="light"]) .ob-bubble { background: radial-gradient(closest-side at 50% 44%, color-mix(in srgb, var(--tint) 10%, var(--surface)) 0, var(--surface) 70%, color-mix(in srgb, var(--tint) 22%, var(--surface)) 100%); border-color: color-mix(in srgb, var(--tint) 35%, var(--line)); box-shadow: 0 16px 34px -18px rgba(0,0,0,.6); } }
+.ob-stage { height: 320px; }
+
+/* Bubble icons are the glossy hobby tiles from Today, not little glass circles. */
+.bl-orb { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; }
+.bl-orb { position: relative; }
+.bl-orb .sq-badge, .bl-mine .bl-seed .sq-badge, .bl-seed .sq-badge { position: static; inset: auto; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; display: block; overflow: visible; }
+.bl-seed { width: 36px; height: 36px; }
+.bl-mine .bl-seed { width: 30px; height: 30px; }
+.bl-hobby-dot { width: 68px; height: 68px; }
+.bl-hobby.is-mine .bl-hobby-dot { box-shadow: none; }
+.bl-hobby.is-mine .bl-hobby-dot .sq-badge { filter: drop-shadow(0 0 0 transparent); }
+.bl-hobby-check { z-index: 1; }
+@media (max-width: 380px) { .bl-seed { width: 30px; height: 30px; } .bl-hobby-dot { width: 58px; height: 58px; } }
+
+/* Reward card: the player's character */
+.rw-avatar { display: block; margin: -6px auto 0; }

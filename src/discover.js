@@ -683,7 +683,6 @@
   // 1. "What hobbies do you already do?" Type a hobby, pick your level, add another or skip.
   // 2. First run only: "Want to start a new hobby?" Yes opens Discover, No opens Today.
   var LEVELS = [
-    ["new", "Just starting", "Tried it a few times"],
     ["beginner", "Beginner", "Know the basics"],
     ["intermediate", "Intermediate", "Comfortable, still improving"],
     ["advanced", "Advanced", "Years in, chasing hard skills"]
@@ -819,7 +818,7 @@
         '<span class="ob-badge-name">' + e(p.name) + '</span><span class="ob-badge-lv">' + e(lv ? lv[1] : "") + "</span>" +
         '<button type="button" class="ob-badge-x" data-action="ob-remove" data-i="' + i + '" aria-label="Remove ' + e(p.name) + '">' + SQUI.icon("close", 14) + "</button></div>";
     }).join("");
-    return '<div class="ob-stage"><div class="bl-backdrop" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
+    return '<div class="ob-stage">' +
       '<div class="ob-bubble' + (n ? " has-items" : "") + '" aria-label="My hobbies, ' + n + '"><span class="ob-bubble-label">' + svgIcon(CAT_ICON.mine, 18, 1.8) + "<span>My hobbies</span></span>" +
       (n ? "" : '<span class="ob-bubble-empty">Add a hobby below and it lands here</span>') + badges + "</div></div>";
   }
@@ -1110,7 +1109,9 @@
     return '<svg class="sq-ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 1.7) +
       '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + inner + "</svg>";
   }
+  // Same glossy icons as the Today hobby cards.
   function itemIcon(it, size) {
+    if (SQUI.hobbyBadge) return SQUI.hobbyBadge(it.id || it.key, { name: it.name, category: it.category });
     if (it.own || !it.key) return SQUI.hobbyIcon(it.id, size);
     var k = ICON_KEY[it.key] || it.key;
     return (SQUI.iconSvg && SQUI.iconSvg(k, size, 1.6)) || SQUI.hobbyIcon(it.id || it.key, size);
@@ -1251,7 +1252,6 @@
   }
   function stageHtml() {
     return '<div class="bl-stage' + (blobOpen ? " has-open open-" + blobOpen : "") + '" data-role="stage">' +
-      '<div class="bl-backdrop" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
       '<div class="bl-field">' + BLOB_CATS.map(catBlob).join("") + searchBlob() + mineBlob() + "</div></div>";
   }
 

@@ -208,10 +208,79 @@
     basketball: { c: ["#FFA866", "#EE5A1C"], g:
       '<circle F cx="32" cy="33" r="14"/><path d="M18 33h28M32 19v28M22.2 23c3.6 2.8 5.6 6.4 5.6 10s-2 7.2-5.6 10M41.8 23c-3.6 2.8-5.6 6.4-5.6 10s2 7.2 5.6 10" stroke="#9E2F05" stroke-width="1.5" fill="none" opacity=".6"/>' }
   };
+  // Extra Discover hobbies (not in the core catalog) get their own glossy glyphs too.
+  var W = 'fill="#fff"', SW = 'stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  var EXTRA_BADGES = {
+    crossfit: { c: ["#FFA07A", "#E8452C"], g:
+      '<path d="M24.5 29v-4a7.5 7.5 0 0 1 15 0v4" stroke="GRAD" stroke-width="4.4" fill="none" stroke-linecap="round"/>' +
+      '<path F d="M32 25c7.2 0 12 4.8 12 11.2 0 4.6-2.4 8.8-4.4 9.8H24.4c-2-1-4.4-5.2-4.4-9.8C20 29.8 24.8 25 32 25z"/>' +
+      '<rect x="27" y="34" width="10" height="5.2" rx="2.6" ' + W + ' opacity=".85"/>' },
+    climbing: { c: ["#D9B48A", "#9A5E2E"], g:
+      '<path F d="M13 46l14-23.5 7.6 12.4 4.4-6.6L51 46z"/><path d="M27 22.5l4.4 7.3-2.4-1.4-2.3 2.4-3.1-2.2z" ' + W + '/>' +
+      '<path d="M39 28.3V19" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M39 19l6 2.3-6 2.3z" fill="#FF6B6B"/>' },
+    pilates: { c: ["#FFB8DC", "#E0559B"], g:
+      '<circle cx="32" cy="33" r="11.5" stroke="GRAD" stroke-width="4.6" fill="none"/>' +
+      '<rect F x="15" y="28.5" width="6" height="9" rx="3"/><rect F x="43" y="28.5" width="6" height="9" rx="3"/>' },
+    swimming: { c: ["#86E6FF", "#1C93E0"], g:
+      '<circle F cx="39" cy="21" r="4.4"/><path d="M19 33c4-7 11-10 17.5-6.5l4.5 4" stroke="GRAD" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+      '<path F d="M13 39.5c3-2.4 6-2.4 9 0s6 2.4 9 0 6-2.4 9 0 6 2.4 9 0 3-2.4 3-2.4V47H13z"/>' +
+      '<path d="M15 44c2.6-1.6 5-1.6 7.6 0" ' + SW + ' stroke-width="1.4" opacity=".7"/>' },
+    cycling: { c: ["#FFD966", "#F29A0C"], g:
+      '<circle cx="21" cy="38" r="7.2" stroke="GRAD" stroke-width="3.6" fill="none"/><circle cx="43" cy="38" r="7.2" stroke="GRAD" stroke-width="3.6" fill="none"/>' +
+      '<path d="M21 38l7.5-11h10.5L43 38M28.5 27L33 38H21M26 23.5h5.5M39 27l-1.4-4.5h3.6" stroke="GRAD" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="21" cy="38" r="1.6" ' + W + '/><circle cx="43" cy="38" r="1.6" ' + W + '/>' },
+    reading: { c: ["#FFC27A", "#EF7B1A"], g:
+      '<path F d="M31 22.5c-4.6-3-10.6-3.8-16-3v22.6c5.6-.8 11.4.2 16 3.2z"/><path F d="M33 22.5c4.6-3 10.6-3.8 16-3v22.6c-5.6-.8-11.4.2-16 3.2z"/>' +
+      '<path d="M18.5 26c3-.2 6 .3 8.6 1.6M18.5 31c3-.2 6 .3 8.6 1.6M45.5 26c-3-.2-6 .3-8.6 1.6M45.5 31c-3-.2-6 .3-8.6 1.6" ' + SW + ' stroke-width="1.5" opacity=".8"/>' },
+    writing: { c: ["#A7B0FF", "#5560E8"], g:
+      '<path F d="M32 14l10.5 16.5L35.4 46h-6.8L21.5 30.5z"/><circle cx="32" cy="30.5" r="2.6" ' + W + '/>' +
+      '<path d="M32 33.5V45" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>' },
+    chess: { c: ["#9AA8C4", "#3D4A6A"], g:
+      '<circle F cx="32" cy="20.5" r="5.6"/><rect F x="25.5" y="26.5" width="13" height="3.4" rx="1.7"/>' +
+      '<path F d="M28 30h8l3.2 11.5H24.8z"/><rect F x="20.5" y="41" width="23" height="5.6" rx="2.8"/>' },
+    language: { c: ["#86E0FF", "#2B86E0"], g:
+      '<path F d="M19 16h18a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H27l-6 5v-5h-2a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z"/>' +
+      '<path d="M23.6 30l4.4-10.2 4.4 10.2M25.3 26.4h5.4" ' + SW + ' stroke-width="2"/>' +
+      '<path d="M36 33h9a5 5 0 0 1 5 5v3.5a5 5 0 0 1-5 5h-1v4l-5-4h-3a5 5 0 0 1-5-5V37" fill="#fff" stroke="GRAD" stroke-width="1.6"/>' +
+      '<circle cx="39" cy="40" r="1.3" fill="GRAD"/><circle cx="43" cy="40" r="1.3" fill="GRAD"/><circle cx="47" cy="40" r="1.3" fill="GRAD"/>' },
+    yoga: { c: ["#CDAEFF", "#8D4FE8"], g:
+      '<path F d="M32 17c5.4 5.2 6.4 14 0 23-6.4-9-5.4-17.8 0-23z"/>' +
+      '<path F d="M31 40.5c-6.4-.8-14.6-6-15.6-15.4 6.8.2 12.8 4.6 15.6 15.4z"/><path F d="M33 40.5c6.4-.8 14.6-6 15.6-15.4-6.8.2-12.8 4.6-15.6 15.4z"/>' +
+      '<path d="M18 45c9 3.4 19 3.4 28 0" stroke="GRAD" stroke-width="2.6" fill="none" stroke-linecap="round"/>' },
+    drawing: { c: ["#FFDB70", "#F2A118"], g:
+      '<path F d="M23.2 36.4L41.6 18a3.5 3.5 0 0 1 5 0l.4.4a3.5 3.5 0 0 1 0 5L28.6 41.8z"/>' +
+      '<path d="M23.2 36.4l5.4 5.4-8.4 3z" fill="#FFE6BF"/><path d="M20.2 44.8l.9-2.9 2 2z" fill="#4A3418"/>' +
+      '<path d="M39.6 20l5.4 5.4" stroke="#fff" stroke-width="1.6" opacity=".8"/>' },
+    pottery: { c: ["#FFB892", "#D35F33"], g:
+      '<path F d="M26 16.5h12v3.4c0 2-2 3-2 4.8 6.2 2.2 9.4 7.2 9.4 12.4 0 5.4-5.4 9.4-13.4 9.4s-13.4-4-13.4-9.4c0-5.2 3.2-10.2 9.4-12.4 0-1.8-2-2.8-2-4.8z"/>' +
+      '<path d="M20.6 35.5c7.4 1.6 15.4 1.6 22.8 0" ' + SW + ' stroke-width="1.6" opacity=".7"/>' },
+    knitting: { c: ["#FFA6D3", "#E33F98"], g:
+      '<path d="M36.5 13.5L45 33M48 14.5L39.5 33" stroke="#C9CFDA" stroke-width="2.2" stroke-linecap="round"/><circle cx="36.5" cy="13.5" r="2" fill="#FFD36E"/><circle cx="48" cy="14.5" r="2" fill="#FFD36E"/>' +
+      '<circle F cx="29.5" cy="35" r="12"/>' +
+      '<path d="M19 30c6 3 13 3 19-2.2M18.2 36.4c7 3.2 14.6 2.8 22.4-3M21.2 42.6c5.6 1.6 11 .6 16-4.2" ' + SW + ' stroke-width="1.5" opacity=".75"/>' },
+    drums: { c: ["#FF9A9A", "#D9364A"], g:
+      '<path d="M21 13.5l8.6 11.6M44 13l-8.8 12" stroke="#F3D3A2" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path F d="M17.5 28v11.5c0 3.8 6.5 6.8 14.5 6.8s14.5-3 14.5-6.8V28c0 3.4-6.5 5.8-14.5 5.8S17.5 31.4 17.5 28z"/>' +
+      '<ellipse cx="32" cy="28" rx="14.5" ry="5.6" fill="#fff"/>' +
+      '<path d="M18 35l4.8 8 4.8-7.6 4.4 8.2 4.6-8 4.6 7.6 4.4-6.4" ' + SW + ' stroke-width="1.4" opacity=".7"/>' },
+    singing: { c: ["#BFA6FF", "#7044E6"], g:
+      '<rect F x="25.5" y="14.5" width="13" height="19" rx="6.5"/>' +
+      '<path d="M25.5 21.5h13M25.5 26h13" stroke="#fff" stroke-width="1.3" opacity=".55"/>' +
+      '<path d="M21.5 28a10.5 10.5 0 0 0 21 0M32 38.5V45M26.5 46h11" stroke="GRAD" stroke-width="2.8" fill="none" stroke-linecap="round"/>' },
+    ukulele: { c: ["#86F2DC", "#14AE96"], g: null }
+  };
   var BADGE_TINTS = { active: ["#6FF0A0", "#12B85C"], relaxing: ["#6FF0E0", "#10A6B8"], technical: ["#6EC3FF", "#2468F0"], social: ["#FFD36E", "#F5901E"], creative: ["#FF8FE0", "#E02BC0"] };
   // fallback: { name, category } for a hobby that is not saved yet (e.g. typed during onboarding).
+  EXTRA_BADGES.ukulele.g = '<g transform="translate(5.5 5.5) scale(.83)">' + BADGES.guitar.g + "</g>";
+  for (var bk in EXTRA_BADGES) BADGES[bk] = EXTRA_BADGES[bk];
   function hobbyBadge(id, fallback) {
     var b = BADGES[id];
+    if (!b) {
+      var hn = hobby(id) || fallback || {};
+      var nk = hn.name && HOBBY_NAME_ICONS[String(hn.name).toLowerCase()];
+      if (nk && BADGES[nk]) b = BADGES[nk];
+      else if (hn.name && BADGES[String(hn.name).toLowerCase()]) b = BADGES[String(hn.name).toLowerCase()];
+    }
     if (!b) {
       var h = hobby(id) || fallback || {}, cat = h.category;
       var key = h.name && HOBBY_NAME_ICONS[String(h.name).toLowerCase()];
@@ -612,6 +681,13 @@
 
   /* ------------------------------------------------------------------ reward overlay */
   function stageArticle(name) { return /^[AEIOU]/.test(name) ? "an " : "a "; }
+  // The player's chosen character as a 2D sprite (the 3D one takes over when its model is loaded).
+  var AVATAR_IDS = ["neo", "adrian", "alvaro", "avatar1", "avatar2", "avatar3"];
+  function avatarSprite(size) {
+    var c = ((sq().state || {}).user || {}).character;
+    if (AVATAR_IDS.indexOf(c) < 0) c = "neo";
+    return '<span class="cm-mii rw-avatar" data-character="' + c + '" style="--mii-size:' + (size || 112) + 'px" aria-hidden="true"></span>';
+  }
   function showReward(reward, opts) {
     opts = opts || {};
     return new Promise(function (resolve) {
@@ -647,7 +723,7 @@
       var html = '<div class="rw" role="dialog" aria-modal="true" aria-labelledby="rw-title">' +
         (reduced ? "" : '<canvas class="rw-canvas" aria-hidden="true"></canvas>') +
         '<div class="rw-card">' +
-        '<div class="rw-mascot">' + mascot(stage, { mood: "cheer", size: 112, accessories: accs }) + "</div>" +
+        '<div class="rw-mascot">' + avatarSprite(112) + "</div>" +
         '<div class="rw-title" id="rw-title">' + esc(opts.title || (h ? h.name : "Nice work")) + "</div>" +
         (xp > 0 ? '<div class="rw-xp" aria-label="plus ' + xp + ' XP">+<span class="rw-n">' + (reduced ? xp : 0) + "</span><small>XP</small></div>"
           : '<div class="rw-xp" style="font-size:40px">Unlocked</div>') +
@@ -1224,6 +1300,7 @@
   SQUI.iconSvg = function (key, size, sw) { return HOBBY_ICONS[key] ? svgWrap(HOBBY_ICONS[key], size, sw) : (ICONS[key] ? svgWrap(ICONS[key], size, sw) : ""); };
   SQUI.hobbyPicture = hobbyPicture;
   SQUI.hobbyBadge = hobbyBadge;
+  SQUI.avatarSprite = avatarSprite;
   SQUI.mascot = mascot;
   SQUI.money = money;
   SQUI.setTheme = setTheme;

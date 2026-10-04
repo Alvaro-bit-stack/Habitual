@@ -1012,7 +1012,7 @@
 
   // ---------- discover: hobby blobs ----------
   // Overview: a small "My hobbies" blob in the middle, ringed by glassy category blobs.
-  // Tapping a category grows it to fill the screen and pops out its hobbies. Drag a hobby
+  // Tapping a category bursts it: the bubble pops and its hobbies fly out as nodes. Drag a hobby
   // into My hobbies to add it; tap it for a Gemini guide (real gear, videos, community tips).
   var EXTRA = {
     crossfit: { name: "CrossFit", category: "active", place: "indoor", social: "group",
@@ -1597,7 +1597,7 @@
         st.querySelectorAll(".bl-blob").forEach(function (b) {
           var id = b.getAttribute("data-cat");
           if (id === "mine" || id === "search") return;
-          if (view && id !== view && !was) popBlob(b);
+          if (view && id === view && !was && id !== "mine") popBlob(b); // the tapped bubble bursts into its hobbies
           if (!view && was) { b.classList.add("reform"); setTimeout(function () { b.classList.remove("reform"); }, 650); }
         });
         st.className = "bl-stage" + (view ? " has-open open-" + view : "");

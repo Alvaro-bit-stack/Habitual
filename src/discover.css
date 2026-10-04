@@ -404,6 +404,12 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 .bl-stage.has-open:not(.open-mine) .bl-mine { left: 28%; top: 81%; width: 44%; height: 19%; }
 .bl-stage.has-open:not(.open-mine) .bl-mine .bl-seeds { display: none; }
 .bl-stage.open-mine .bl-mine.is-open { left: 0; top: 0; width: 100%; height: 100%; }
+/* A burst category leaves no shell behind, only its title and the hobby nodes that split out of it. */
+.bl-stage.has-open .bl-cat.is-open, :root[data-theme="dark"] .bl-stage.has-open .bl-cat.is-open { background: none; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; animation: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bl-stage.has-open .bl-cat.is-open { background: none; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+/* Nodes start at the bubble's centre (where it was tapped, since the blob is still small then) and fly to their spots. */
+.bl-cat.is-open .bl-hobby { animation: bl-split .6s cubic-bezier(.25,1.35,.45,1) both; animation-delay: calc(.06s + var(--i) * 40ms); }
+@keyframes bl-split { from { left: 50%; top: 50%; opacity: 0; transform: translate(-50%, -50%) scale(.25); } 25% { opacity: 1; } to { left: var(--hx); top: var(--hy); opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .bl-blob.is-open .bl-face { inset: 4% 25% auto 25%; flex-direction: row; gap: 8px; padding: 10px 8px 4px; pointer-events: none; }
 .bl-blob.is-open .bl-seeds, .bl-blob.is-open .bl-hint { display: none; }
 .bl-blob.is-open .bl-label { font-size: 21px; }
@@ -574,6 +580,10 @@ body.has-nav .dc-cta { bottom: calc(var(--nav-h) + 1px + env(safe-area-inset-bot
 /* Bubble icons are the glossy hobby tiles from Today, not little glass circles. */
 .bl-orb { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0; }
 .bl-orb { position: relative; }
+/* The drag copy must stay fixed to the viewport (the rule above would drop it at the end of the page),
+   and the lifted original fades even if its entrance animation is holding its last frame. */
+.bl-orb.bl-ghost { position: fixed; }
+.bl-blob.is-open .bl-hobby.is-lifted { opacity: .25; animation: none; }
 .bl-orb .sq-badge, .bl-mine .bl-seed .sq-badge, .bl-seed .sq-badge { position: static; inset: auto; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; display: block; overflow: visible; }
 .bl-seed { width: 36px; height: 36px; }
 .bl-mine .bl-seed { width: 30px; height: 30px; }

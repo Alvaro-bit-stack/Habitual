@@ -64,3 +64,22 @@ test('Gemini output is validated and the key goes in a header, never the URL', a
   assert.deepEqual(out.steps.map(s => s.minutes), [5, 120, 20]);
   await assert.rejects(generatePath({name:'Guitar', tier:'new'}, {}), e => e.status === 503);
 });
+
+test('search finds people by name, shows request status, and respects opting out', async () => {
+  const api = createApi(new FileStore(), auth);
+  const save = (u, name) => api(new Request('https://habitual.test/api/me/state', {method:'PUT', headers:{Authorization:u, 'If-Match':'"0"'},
+    body:JSON.stringify({version:1, onboarded:true, user:{name, xp:0, character:'neo'}, tracked:[], custom:[], sessions:[], achievements:{}, rsvps:[], checkins:[]})}));
+  await save('alice', 'Alice Rivera'); await save('bob', 'Bobby Tables'); await save('carl', 'Carla Bob');
+  assert.equal((await call(api, 'friends/search?q=b')).status, 400);
+  let r = (await call(api, 'friends/search?q=bob')).jsonBody.results;
+  assert.deepEqual(r.map(x => x.name), ['Bobby Tables', 'Carla Bob']);   // prefix match first
+  assert.ok(r.every(x => Object.keys(x).sort().join() === 'character,code,name,status'));
+  await call(api, 'friends', 'POST', {code:r[0].code});
+  assert.equal((await call(api, 'friends/search?q=bobby')).jsonBody.results[0].status, 'sent');
+  assert.equal((await call(api, 'friends/search?q=alice', 'GET', undefined, 'bob')).jsonBody.results[0].status, 'incoming');
+  assert.equal((await call(api, 'friends/search?q=alice')).jsonBody.results.length, 0);    // never yourself
+  assert.equal((await call(api, 'friends/settings', 'PUT', {discoverable:false}, 'carl')).jsonBody.discoverable, false);
+  assert.deepEqual((await call(api, 'friends/search?q=bob')).jsonBody.results.map(x => x.name), ['Bobby Tables']);
+  assert.equal((await call(api, 'friends', 'GET', undefined, 'carl')).jsonBody.discoverable, false);
+  assert.equal((await call(api, 'friends/search?q=%25%25')).jsonBody.results.length, 0);    // wildcards are literal
+});

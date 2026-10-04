@@ -37,7 +37,7 @@ export class FileStore {
   // ---- friends ----
   profile(user,fields){return this.change(()=>{
     const p=this.data.profiles;let me=p[user.id];
-    if(!me){let code;do code=newCode();while(Object.values(p).some(x=>x.code===code));me=p[user.id]={code,name:user.name,character:null,xp:0,hobbies:[]};}
+    if(!me){let code;do code=newCode();while(Object.values(p).some(x=>x.code===code));me=p[user.id]={code,name:user.name,character:null,xp:0,hobbies:[],discoverable:true};}
     if(fields)Object.assign(me,fields);
     return me;
   });}
@@ -66,6 +66,14 @@ export class FileStore {
   removeFriend(id,code){return this.change(()=>{
     const other=this.byCode(friendCode(code));if(other)delete this.data.friendships[pair(id,other)];return {status:'removed'};
   });}
+  async searchProfiles(id,q){await this.queue;const term=q.toLowerCase(),out=[];
+    for(const [uid,p] of Object.entries(this.data.profiles)){
+      if(uid===id||p.discoverable===false||p.name==='Member'||!p.name.toLowerCase().includes(term))continue;
+      const f=this.data.friendships[pair(id,uid)];
+      out.push({code:p.code,name:p.name,character:p.character,status:!f?null:f.accepted?'friends':f.by===id?'sent':'incoming'});
+    }
+    return out.sort((a,b)=>(b.name.toLowerCase().startsWith(term)-a.name.toLowerCase().startsWith(term))||a.name.localeCompare(b.name)).slice(0,10);}
+  setDiscoverable(id,on){return this.change(()=>{const p=this.data.profiles[id];if(p)p.discoverable=on;return {discoverable:on};});}
   // ---- guided paths ----
   async cachedPath(key,maxAge){await this.queue;const c=this.data.paths[key];return c&&Date.now()-c.at<maxAge?structuredClone(c.payload):null;}
   savePath(key,payload){return this.change(()=>{this.data.paths[key]={at:Date.now(),payload};});}

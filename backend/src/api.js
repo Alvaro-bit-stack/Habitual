@@ -9,6 +9,13 @@ export function sharedHobbies(state) {
     .filter(h => h.name);
 }
 export function createApi(store, authenticate, {makePath = generatePath, login = null} = {}) {
+  // ponytail: in-memory search budget (60 per user per 10 minutes) assumes one app instance.
+  const searches = new Map();
+  function searchSlot(id) {
+    const now = Date.now(), list = (searches.get(id) || []).filter(t => now - t < 600000);
+    if (list.length >= 60) { searches.set(id, list); return false; }
+    list.push(now); searches.set(id, list); return true;
+  }
   return async (request, context = {error:()=>{}}) => {
     try {
       const path = new URL(request.url).pathname.replace(/^\/api\/?/, '').replace(/\/$/, '');
@@ -39,7 +46,20 @@ export function createApi(store, authenticate, {makePath = generatePath, login =
         catch (e) { context.error('Profile sync failed', e.name); }
         return response(200, saved);
       }
-      if (path === 'friends' && method === 'GET') return response(200, {code:(await store.profile(user)).code, ...await store.friends(user.id)});
+      if (path === 'friends' && method === 'GET') { const me = await store.profile(user); return response(200, {code:me.code, discoverable:me.discoverable !== false, ...await store.friends(user.id)}); }
+      if (path === 'friends/search' && method === 'GET') {
+        const q = (new URL(request.url).searchParams.get('q') || '').trim().replace(/\s+/g, ' ');
+        if (q.length < 2 || q.length > 40) throw new ApiError(400, 'Type at least 2 letters of their name');
+        if (!searchSlot(user.id)) throw new ApiError(429, 'Too many searches. Try again in a few minutes.');
+        await store.profile(user);
+        return response(200, {results:await store.searchProfiles(user.id, q)});
+      }
+      if (path === 'friends/settings' && method === 'PUT') {
+        const value = await body();
+        if (typeof value?.discoverable !== 'boolean') throw new ApiError(400, 'Choose on or off');
+        await store.profile(user);
+        return response(200, await store.setDiscoverable(user.id, value.discoverable));
+      }
       if (path === 'friends' && method === 'POST') {
         const value = await body();
         await store.profile(user);

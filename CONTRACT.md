@@ -434,7 +434,7 @@ accepted friends (and new requests). It opens the `friends` screen (`src/showcas
 
 It uses `SQCloud.loadFriends / addFriend / answerFriend / removeFriend` (`src/cloud.js`) and the
 backend `/api/friends`. A friendship counts only after the other person accepts. Friends need
-an account: guests and signed-out users see a prompt to sign in with email. On the first
+an account. Signed-out users verify their email on the Friends screen itself (enter email, then paste or type the 6-digit code, which verifies automatically); guests are told to choose Get started. Signed in, people can search by name (`/api/friends/search`) or add by code, and can turn off "Let people find me by name". On the first
 sign-in to a brand-new account, this device's progress moves into it.
 
 ## 7. Working together

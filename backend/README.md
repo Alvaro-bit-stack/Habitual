@@ -35,6 +35,8 @@ The local server binds only to `127.0.0.1`, rejects foreign Origin/Host headers,
 | `GET /api/friends` | `{ code, friends:[{code,name,character,xp}], incoming:[…], outgoing:[…] }`; your 8-character friend code is created on first use |
 | `POST /api/friends` | `{ "code": "ABCD2345" }` sends a request; if they already asked you, you become friends. Max 50 pending |
 | `PUT /api/friends/:code` | `{ "accept": true/false }` answers an incoming request |
+| `GET /api/friends/search?q=` | Find people by app name (2–40 chars, max 10 results, 60 searches per 10 min). Returns `{code,name,character,status}`; never yourself, never people who opted out or haven't set a name |
+| `PUT /api/friends/settings` | `{ "discoverable": true/false }`: whether others can find you by name (default on) |
 | `DELETE /api/friends/:code` | Removes a friend or cancels a request (either side) |
 | `POST /api/path` | `{ hobbyId \| hobbyName, tier: "new"\|"beginner"\|"intermediate"\|"advanced" }` → Gemini practice path `{ hobby, tier, steps:[{title,detail,minutes}], cached }`. Catalog hobbies are cached 14 days and shared; custom names are never cached. 10 Gemini calls per user per day (`AI_DAILY_LIMIT`) |
 

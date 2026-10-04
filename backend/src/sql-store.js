@@ -66,13 +66,13 @@ export class SqlStore {
   async profile(user, fields) {
     return this.transaction(async tx=>{
       const q=()=>new sql.Request(tx).input('id',sql.VarChar(64),user.id);
-      let me=(await q().query('SELECT Code,Name,Character,Xp,Hobbies FROM dbo.Profiles WITH (UPDLOCK,HOLDLOCK) WHERE UserId=@id')).recordset[0];
+      let me=(await q().query('SELECT Code,Name,Character,Xp,Hobbies,Discoverable FROM dbo.Profiles WITH (UPDLOCK,HOLDLOCK) WHERE UserId=@id')).recordset[0];
       if (!me) {
         for (let tries=0;;tries++) {
           const code=newCode();
           if ((await new sql.Request(tx).input('code',sql.Char(8),code).query('SELECT 1 AS x FROM dbo.Profiles WHERE Code=@code')).recordset.length) { if (tries<5) continue; throw new Error('code space'); }
           await q().input('code',sql.Char(8),code).input('name',sql.NVarChar(100),user.name).query('INSERT dbo.Profiles(UserId,Code,Name) VALUES(@id,@code,@name)');
-          me={Code:code,Name:user.name,Character:null,Xp:0};break;
+          me={Code:code,Name:user.name,Character:null,Xp:0,Discoverable:true};break;
         }
       }
       if (fields) {
@@ -80,7 +80,7 @@ export class SqlStore {
           .query('UPDATE dbo.Profiles SET Name=@name,Character=@ch,Xp=@xp,Hobbies=@hb,UpdatedAt=SYSUTCDATETIME() WHERE UserId=@id');
         me={...me,Name:fields.name,Character:fields.character,Xp:fields.xp};
       }
-      return {code:me.Code,name:me.Name,character:me.Character,xp:me.Xp};
+      return {code:me.Code,name:me.Name,character:me.Character,xp:me.Xp,discoverable:me.Discoverable!==false};
     });
   }
   async friends(id) {
@@ -129,6 +129,19 @@ export class SqlStore {
       if (other) await this.pairRequest(tx,id,other).query('DELETE dbo.Friendships WHERE UserA=@a AND UserB=@b');
       return {status:'removed'};
     });
+  }
+  async searchProfiles(id, q) {
+    const like = q.replace(/[\\%_[]/g, c => '\\' + c);
+    const rows=(await (await this.pool()).request().input('id',sql.VarChar(64),id).input('q',sql.NVarChar(102),'%'+like+'%').input('p',sql.NVarChar(102),like+'%')
+      .query(`SELECT TOP (10) p.Code,p.Name,p.Character,f.Accepted,f.RequestedBy FROM dbo.Profiles p
+        LEFT JOIN dbo.Friendships f ON (f.UserA=@id AND f.UserB=p.UserId) OR (f.UserB=@id AND f.UserA=p.UserId)
+        WHERE p.UserId<>@id AND p.Discoverable=1 AND p.Name<>'Member' AND p.Name LIKE @q ESCAPE '\\'
+        ORDER BY CASE WHEN p.Name LIKE @p ESCAPE '\\' THEN 0 ELSE 1 END, p.Name`)).recordset;
+    return rows.map(r=>({code:r.Code,name:r.Name,character:r.Character,status:r.Accepted==null?null:r.Accepted?'friends':r.RequestedBy===id?'sent':'incoming'}));
+  }
+  async setDiscoverable(id, on) {
+    await (await this.pool()).request().input('id',sql.VarChar(64),id).input('on',sql.Bit,on).query('UPDATE dbo.Profiles SET Discoverable=@on WHERE UserId=@id');
+    return {discoverable:on};
   }
   // ---- guided paths ----
   async cachedPath(key, maxAge) {

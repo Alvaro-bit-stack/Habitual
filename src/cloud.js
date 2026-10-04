@@ -196,5 +196,15 @@
     cachedFriends:function(){return owner?read(key+'.friends',null):null;},loadFriends:loadFriends,
     addFriend:function(code){return request('/friends','POST',{code:code});},
     answerFriend:function(code,accept){return request('/friends/'+encodeURIComponent(code),'PUT',{accept:accept});},
-    removeFriend:function(code){return request('/friends/'+encodeURIComponent(code),'DELETE');}};
+    removeFriend:function(code){return request('/friends/'+encodeURIComponent(code),'DELETE');},
+    searchPeople:function(q){return request('/friends/search?q='+encodeURIComponent(q));},
+    setDiscoverable:function(on){return request('/friends/settings','PUT',{discoverable:on});},
+    // Email sign-in from other screens (Friends): send the code, then verify it.
+    startLogin:function(email){typedEmail=String(email||'').trim();return request('/auth/start','POST',{email:typedEmail},{anonymous:true});},
+    finishLogin:async function(email,code){
+      var s=await request('/auth/verify','POST',{email:String(email||'').trim(),code:String(code||'').replace(/\D/g,'')},{anonymous:true});
+      write('habitual.session',s);stage=null;typedCode='';tell('connecting');await finishSignIn();
+    },
+    importOffered:function(){return offerImport;},
+    resolveImport:async function(bring){offerImport=false;if(bring){backup(persisted());replace(read('sidequest.v1',null));tell('pending');await sync();}else tell(status);refresh();}};
 })(typeof globalThis!=='undefined'?globalThis:window);

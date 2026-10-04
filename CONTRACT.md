@@ -390,6 +390,17 @@ type-to-search combobox (`#cm-hobby`, listbox `#cm-hobby-list`; arrows, Enter, E
 button when set). On Going / For you / Your groups it lists only your tracked hobbies; on All events
 (for discovering new hobbies) your hobbies first, then every other hobby with events. Switching to a
 tab that doesn't offer the picked hobby clears it. Hobby also narrows Your groups. Reset clears both.
+Level (`#cm-level`: Any level / Beginner / Experienced) shows on For you and All events only;
+"All levels" events count for both choices. The All events search box searches by location
+(the event's `place`) only.
+
+Sharing: every event card has a share button on its photo, and the event screen a "Share this
+event" button. The sheet offers Text a friend (`sms:` link with the invite; uses the system share
+sheet where `navigator.share` exists), Copy invite, and Send in Habitual to sample members (hosts
+from the Newark groups). Sends are kept in `SQ.state.user.shares` as `{eventId, to, at}` (on `user`
+so `normalize()` keeps them) and the event screen shows "Shared with …". Delivery to other people
+needs accounts; until then it's recorded on this device only.
+
 Each event shows who's going as a stack of character heads, host in front: 1 head for 1 person,
 2 for 2-3, 3 for 4-7, 4 for 8-14, 5 for 15+ (your character joins the stack once you RSVP). This weekend means the upcoming Saturday-Sunday, or the remaining
 current weekend. Group listings are independent of date filters. Search is rendered only in All events

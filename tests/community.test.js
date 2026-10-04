@@ -57,8 +57,12 @@ SQ._now = new Date(2026, 9, 4, 12);
 test('Sunday weekend excludes the next weekend',()=>assert.deepEqual(ids(),['ev-chess-1','ev-knitting-1','ev-running-1','ev-tennis-1']));
 SQ._now = new Date(2026, 9, 2, 12);
 test('Friday weekend finds the next two days',()=>assert.deepEqual(ids(),['ev-drawing-1','ev-photography-1','ev-soccer-1']));
-action('reset-feed'); query('GUITAR');
-test('Search is case insensitive and reports a singular result',()=>{assert.deepEqual(ids(),['ev-guitar-1']); assert.equal(status.textContent,'1 event');});
+action('reset-feed'); query('MILITARY PARK');
+test('Search is by location, case insensitive, and reports a singular result',()=>{assert.deepEqual(ids(),['ev-chess-1']); assert.equal(status.textContent,'1 event');});
+query('guitar');
+test('Search ignores event titles and hobbies (location only)',()=>assert.deepEqual(ids(),[]));
+query('ironbound');
+test('A neighborhood finds every event there',()=>assert.deepEqual(ids(),['ev-photography-2','ev-soccer-1']));
 query('<script>alert(1)</script>');
 test('Empty search has a reset action and escapes input',()=>{const html=screens.community.render(); assert.ok(html.includes('No events found')); assert.ok(html.includes('data-action="reset-feed"')); assert.ok(!html.includes('<script>'));});
 action('reset-feed'); action('category','going');
@@ -112,7 +116,7 @@ test('Event thumbnails no longer contain character scenes; host avatars remain',
   assert.equal((html.match(/class="cm-crowd"/g)||[]).length,18);
 });
 test('Search exists only in All events and does not filter other tabs',()=>{
-  action('category','all');query('guitar');assert.equal(ids().length,1);
+  action('category','all');query('military');assert.equal(ids().length,1);
   assert.ok(screens.community.render().includes('id="cm-search"'));
   action('category','for-you');assert.equal(ids().length,4);
   assert.ok(!screens.community.render().includes('id="cm-search"'));
@@ -155,6 +159,23 @@ test('More people going shows more heads (1 to 5), host in front',()=>{
 test('Header has no avatar button; location sits under the title',()=>{
   const html=screens.community.render();assert.ok(!html.includes('cm-self-avatar'));
   assert.ok(/<h1>Community<\/h1><span class="cm-location">/.test(html));
+});
+test('Level filter shows on For you and All events only; All levels events count for both',()=>{
+  action('category','going');assert.ok(!screens.community.render().includes('id="cm-level"'));
+  action('category','groups');assert.ok(!screens.community.render().includes('id="cm-level"'));
+  action('category','for-you');assert.ok(screens.community.render().includes('id="cm-level"'));
+  action('category','all');assert.ok(screens.community.render().includes('id="cm-level"'));
+  const lv=id=>context.SQ_DATA.events.find(e=>e.id===id).level;
+  action('level-filter','experienced');assert.ok(ids().length>0&&ids().every(id=>['Experienced','All levels'].includes(lv(id))));assert.ok(ids().includes('ev-tennis-2'));
+  action('level-filter','beginner');assert.ok(ids().every(id=>['Beginner friendly','All levels'].includes(lv(id))));assert.ok(!ids().includes('ev-tennis-2'));
+  action('category','going');action('rsvp',null,'ev-tennis-2');assert.ok(ids().includes('ev-tennis-2'),'Going ignores the level filter');action('rsvp',null,'ev-tennis-2');
+  action('reset-feed');assert.equal(ids().length,18);
+});
+test('Every event card and the event screen can be shared',()=>{
+  const html=screens.community.render();
+  assert.equal((html.match(/data-action="share-event"/g)||[]).length,18);
+  assert.ok(screens.event.render({id:'ev-guitar-1'}).includes('Share this event'));
+  assert.ok(!html.includes('data-action="share" data-id="ev-'),'does not reuse the group "share a session" action');
 });
 test('Community uses a page title instead of the Habitual wordmark',()=>{
   const html=screens.community.render();assert.ok(html.includes('<h1>Community</h1>'));

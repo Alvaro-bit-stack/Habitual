@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Browser test for the Community Hobby search: type to narrow, keyboard and mouse picks,
-your-hobbies-only lists on Going / For you, every hobby on All events.
+"""Browser test for the Community filters and sharing: Hobby search (type to narrow, keyboard and
+mouse picks, your hobbies vs every hobby), Level filter, location search, and the share sheet.
 
 Run: python3 tests/filters.e2e.py   (builds first if dist/Habitual.html is missing)
 """
@@ -84,6 +84,56 @@ def main():
         page.click('[data-action="category"][data-v="going"]')
         page.wait_for_timeout(200)
         check(page.input_value("#cm-hobby") == "", "a hobby you don't track is cleared when you switch to Going")
+        # Level filter
+        page.click('[data-action="category"][data-v="all"]')
+        page.wait_for_timeout(150)
+        check(page.locator("#cm-level").count() == 1, "All events has a Level filter")
+        page.select_option("#cm-level", "experienced")
+        page.wait_for_timeout(200)
+        tags = page.evaluate('[...document.querySelectorAll(".cm-photo-tag")].map(e => e.innerText.trim())')
+        check(tags and all(t in ("Experienced", "All levels", "You’re going", "Checked in") for t in tags), "Experienced shows experienced and all-levels events")
+        page.click('[data-action="category"][data-v="going"]')
+        page.wait_for_timeout(150)
+        check(page.locator("#cm-level").count() == 0, "Going has no Level filter")
+
+        # Location search
+        page.click('[data-action="category"][data-v="all"]')
+        page.select_option("#cm-level", "")
+        page.fill("#cm-search", "branch brook")
+        page.wait_for_timeout(150)
+        places = page.evaluate('[...document.querySelectorAll(".cm-event-place")].map(e => e.innerText.trim())')
+        check(places and all("Branch Brook" in p for p in places), "search finds events by location")
+        page.fill("#cm-search", "")
+
+        # Share sheet
+        page.context.grant_permissions(["clipboard-read", "clipboard-write"])
+        first = page.locator('.cm-feed-event button[data-action="share-event"]').first
+        eid = first.get_attribute("data-id")
+        first.click()
+        page.wait_for_timeout(300)
+        check(page.locator('.cm-share-sheet [role="dialog"]').count() == 1, "the share button opens a share sheet")
+        href = page.get_attribute(".cm-sheet-text", "href") or ""
+        check(href.startswith("sms:") and "Habitual" in page.inner_text("#cm-invite-text"), "Text a friend opens Messages with the invite filled in")
+        page.click("[data-copy]")
+        page.wait_for_timeout(150)
+        clip = page.evaluate("navigator.clipboard.readText()")
+        check("Found it on Habitual" in clip, "Copy invite copies the invite text")
+        page.locator("[data-send]").nth(0).click()
+        page.wait_for_timeout(100)
+        check(page.locator("[data-send]").nth(0).is_disabled() and "Sent" in page.locator("[data-send]").nth(0).inner_text(), "Send in Habitual marks the person as sent")
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(100)
+        check(page.locator(".cm-share-sheet").count() == 0, "Escape closes the share sheet")
+        check(page.evaluate("document.activeElement.getAttribute('data-action')") == "share-event", "focus returns to the share button")
+        page.evaluate(f'SQUI.go("event", {{id: "{eid}"}})')
+        page.wait_for_timeout(200)
+        check("Shared with" in page.inner_text("#app-main"), "the event screen remembers who you shared with")
+        page.reload()
+        page.wait_for_timeout(300)
+        page.evaluate(f'SQUI.go("event", {{id: "{eid}"}})')
+        page.wait_for_timeout(200)
+        check("Shared with" in page.inner_text("#app-main"), "shares survive a reload")
+        check(page.evaluate("document.documentElement.scrollWidth") <= 390, "no sideways scrolling")
         check(not errors, "no page errors " + "; ".join(errors))
         browser.close()
     print(f"{len(failures)} filter failures" if failures else "filters: all green")

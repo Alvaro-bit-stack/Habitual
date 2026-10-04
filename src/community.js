@@ -15,7 +15,7 @@
 
   // view state for the community list (kept for the session)
   var arrivingEvent = null;
-  var view = { when: "upcoming", category: "going", query: "", hobby: "" };
+  var view = { when: "upcoming", category: "going", query: "", hobby: "", level: "" };
 
   function esc(s) { return SQUI.esc(s == null ? "" : String(s)); }
   function icon(n, s) { try { return SQUI.icon(n, s) || ""; } catch (e) { return ""; } }
@@ -102,6 +102,123 @@
       (e.rsvp ? icon("check", 16) + " Going" : "I’m going") + "</button>";
   }
 
+  /* ---------------- sharing ---------------- */
+  function svg(size, body) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+  function shareIcon(size) { return svg(size, '<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'); }
+  function textIcon(size) { return svg(size, '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.1A8 8 0 1 1 21 12z"/>'); }
+  function copyIcon(size) { return svg(size, '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'); }
+  function shareBtn(e) {
+    return '<button type="button" class="cm-share" data-action="share-event" data-id="' + esc(e.id) + '" aria-label="Share ' + esc(e.title) + '">' + shareIcon(20) + '</button>';
+  }
+  function shares() {
+    var u = SQ().state.user;
+    if (!Array.isArray(u.shares)) u.shares = []; // lives on user so normalize() keeps it
+    return u.shares;
+  }
+  function sharedWith(e) {
+    var names = [];
+    shares().forEach(function (s) { if (s.eventId === e.id && names.indexOf(s.to) < 0) names.push(s.to); });
+    return names;
+  }
+  function sharedLine(e) {
+    var n = sharedWith(e);
+    return n.length ? '<p class="small muted cm-hint cm-shared-line">' + icon("check", 14) + ' Shared with ' + esc(n.join(", ")) + '</p>' : '';
+  }
+  function inviteText(e) {
+    return "Want to come with me? " + e.title + " · " + dayLabel(e.date) + " " + e.time + " · " + e.place +
+      ". " + (e.level === "Experienced" ? "For experienced players." : "Beginners welcome.") + " Found it on Habitual.";
+  }
+  // People you can send to inside Habitual: sample members from the Newark groups (hosts you've seen).
+  function sharePeople(e) {
+    var seen = {}, out = [];
+    allEvents().forEach(function (x) { if (x.host !== e.host && !seen[x.host]) { seen[x.host] = 1; out.push({ name: x.host, hobbyId: x.hobbyId }); } });
+    out.unshift({ name: e.host, hobbyId: e.hobbyId, hostOf: true });
+    return out.slice(0, 8);
+  }
+  var shareReturnFocus = null;
+  function closeShare() {
+    var el = document.querySelector(".cm-share-sheet");
+    if (!el) return;
+    el.remove();
+    document.removeEventListener("keydown", shareKeys, true);
+    var r = shareReturnFocus && document.getElementById(shareReturnFocus);
+    try { (r || document.querySelector('[data-action="share-event"]') || document.body).focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+  }
+  function shareKeys(ev) { if (ev.key === "Escape") { ev.preventDefault(); closeShare(); } }
+  function openShare(id) {
+    var e = findEvent(id);
+    if (!e || typeof document === "undefined") return;
+    closeShare();
+    var opener = document.activeElement;
+    if (opener && !opener.id) opener.id = "cm-share-from-" + Math.random().toString(36).slice(2, 8);
+    shareReturnFocus = opener && opener.id;
+    var text = inviteText(e), sent = sharedWith(e);
+    var people = sharePeople(e).map(function (p) {
+      var done = sent.indexOf(p.name) >= 0;
+      return '<li><span class="cm-attendance-icon">' + mii(avatarFor(p.name), 42) + '</span>' +
+        '<span class="cm-sp-name"><strong>' + esc(p.name) + '</strong><span class="small muted">' + (p.hostOf ? "Host" : esc(hobbyName(p.hobbyId)) + " group") + '</span></span>' +
+        '<button type="button" class="btn sm cm-sp-send' + (done ? " on" : "") + '" data-send="' + esc(p.name) + '"' + (done ? " disabled" : "") + '>' +
+        (done ? icon("check", 14) + " Sent" : "Send") + '</button></li>';
+    }).join("");
+    var sms = "sms:?&body=" + encodeURIComponent(text);
+    var wrap = document.createElement("div");
+    wrap.className = "cm-share-sheet";
+    wrap.innerHTML = '<div class="cm-sheet-backdrop" data-close></div>' +
+      '<div class="cm-sheet" role="dialog" aria-modal="true" aria-labelledby="cm-share-title">' +
+        '<div class="cm-sheet-grab" aria-hidden="true"></div>' +
+        '<div class="cm-sheet-head"><h2 id="cm-share-title" class="h3">Share this event</h2>' +
+          '<button type="button" class="icon-btn" data-close aria-label="Close">' + icon("close", 20) + '</button></div>' +
+        '<div class="cm-sheet-event">' + glyph(e.hobbyId, 22) + '<span><strong>' + esc(e.title) + '</strong><span class="small muted">' + esc(dayLabel(e.date)) + " · " + esc(e.time) + " · " + esc(e.place) + '</span></span></div>' +
+        '<div class="cm-sheet-row">' +
+          '<a class="btn primary cm-sheet-text" href="' + esc(sms) + '" data-text-share>' + textIcon(18) + ' Text a friend</a>' +
+          '<button type="button" class="btn cm-sheet-copy" data-copy>' + copyIcon(18) + ' Copy invite</button>' +
+        '</div>' +
+        '<p class="cm-sheet-preview" id="cm-invite-text">' + esc(text) + '</p>' +
+        '<h3 class="eyebrow cm-sheet-sub">Send in Habitual</h3>' +
+        '<ul class="cm-sheet-people">' + people + '</ul>' +
+        '<p class="small muted cm-sample">Sample members · they’ll see it in their Community inbox once accounts are live</p>' +
+      '</div>';
+    (document.getElementById("overlay-root") || document.body).appendChild(wrap);
+    document.addEventListener("keydown", shareKeys, true);
+    wrap.addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (t.closest("[data-close]")) { closeShare(); return; }
+      var send = t.closest("[data-send]");
+      if (send && !send.disabled) {
+        var to = send.getAttribute("data-send");
+        shares().push({ eventId: e.id, to: to, at: today() });
+        try { SQ().save(); } catch (x) { /* storage optional */ }
+        send.disabled = true; send.classList.add("on"); send.innerHTML = icon("check", 14) + " Sent";
+        SQUI.toast("Sent to " + to);
+        return;
+      }
+      if (t.closest("[data-copy]")) {
+        var done = function () { SQUI.toast("Invite copied. Paste it in any chat"); };
+        try { navigator.clipboard.writeText(text).then(done, function () { selectInvite(); }); } catch (x) { selectInvite(); }
+        return;
+      }
+      if (t.closest("[data-text-share]") && navigator.share) {
+        // Phones: the system share sheet covers Messages, WhatsApp and more.
+        ev.preventDefault();
+        navigator.share({ title: e.title, text: text }).catch(function (err) {
+          if (err && err.name === "AbortError") return; // they closed the system sheet
+          selectInvite(); // sharing isn't allowed here: hand them the text instead
+        });
+      }
+    });
+    var first = wrap.querySelector(".cm-sheet-text");
+    try { first.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+  }
+  function selectInvite() {
+    var p = document.getElementById("cm-invite-text");
+    if (!p) return;
+    var r = document.createRange(); r.selectNodeContents(p);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    SQUI.toast("Invite selected. Copy it to share");
+  }
+
   // Shared event row component
   function eventRow(e, opts) {
     opts = opts || {};
@@ -152,6 +269,10 @@
   }
 
   var DATE_FILTERS = [['upcoming', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['weekend', 'This weekend']];
+  // Level: "All levels" events welcome everyone, so they show under both choices.
+  var LEVEL_FILTERS = [['', 'Any level'], ['beginner', 'Beginner'], ['experienced', 'Experienced']];
+  var LEVEL_MATCH = { beginner: ['Beginner friendly', 'All levels'], experienced: ['Experienced', 'All levels'] };
+  function levelFilterOn() { return view.category === 'for-you' || view.category === 'all'; }
   var CATEGORIES = [['going', 'Going', 'calendar'], ['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users']];
 
   var AVATARS = ['neo', 'adrian', 'alvaro'];
@@ -238,7 +359,8 @@
       if (view.category === 'for-you' && !isTracked(e.hobbyId) && !e.rsvp && !e.checkedIn) return false;
       if (view.category === 'going' && !e.rsvp && !e.checkedIn) return false;
       if (view.hobby && e.hobbyId !== view.hobby) return false;
-      return matchesQuery([e.title, e.place, e.host, hobbyName(e.hobbyId), (group(e.hobbyId) || {}).name || ''].join(' '));
+      if (view.level && levelFilterOn() && (LEVEL_MATCH[view.level] || []).indexOf(e.level) < 0) return false;
+      return matchesQuery(e.place); // All events search is by location
     });
   }
   function feedGroups() {
@@ -264,7 +386,7 @@
       '<button type="button" class="cm-event-photo" data-action="open-event" data-id="' + esc(e.id) + '" aria-label="View ' + esc(e.title) + '">' +
       venueCover(e) + '<span class="cm-photo-tag' + (status ? ' cm-photo-going' : '') + '">' +
       (status ? icon('check', 14) : glyph(e.hobbyId, 16)) + ' ' + esc(label) + '</span>' +
-      '<span class="cm-photo-hobby">' + esc(hobbyName(e.hobbyId)) + '</span></button>' +
+      '<span class="cm-photo-hobby">' + esc(hobbyName(e.hobbyId)) + '</span></button>' + shareBtn(e) +
       '<button type="button" class="cm-ev-main' + (e.date === today() ? ' cm-today-top' : '') + '" data-action="open-event" data-id="' + esc(e.id) + '">' +
       '<span class="cm-ev-body"><span class="cm-event-date">' + esc(dayLabel(e.date)) + ' · ' + esc(e.time) + '</span>' +
       '<span class="cm-ev-title">' + esc(e.title) + '</span>' +
@@ -347,10 +469,11 @@
       '<div class="cm-categories" role="group" aria-label="Community categories">' + CATEGORIES.map(function (c) {
         return '<button type="button" data-action="category" data-v="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '" class="' + (view.category === c[0] ? 'on' : '') + '"><span aria-hidden="true">' + icon(c[2], 23) + '</span>' + c[1] + '</button>';
       }).join('') + '</div>' +
-      (view.category === 'all' ? '<label class="cm-search"><span aria-hidden="true">' + icon('search', 20) + '</span><span class="sr-only">Search all events</span>' +
-      '<input id="cm-search" type="search" placeholder="Search events or places…" value="' + esc(view.query) + '" maxlength="120" autocomplete="off"></label>' : '') +
-      '<div class="cm-filters">' +
+      (view.category === 'all' ? '<label class="cm-search"><span aria-hidden="true">' + icon('search', 20) + '</span><span class="sr-only">Search events by location</span>' +
+      '<input id="cm-search" type="search" placeholder="Search by location…" value="' + esc(view.query) + '" maxlength="120" autocomplete="off"></label>' : '') +
+      '<div class="cm-filters' + (levelFilterOn() ? ' has-level' : '') + '">' +
         (groups ? '' : filterSelect('cm-when', 'When', 'date-filter', view.when, DATE_FILTERS, 'calendar')) +
+        (levelFilterOn() ? filterSelect('cm-level', 'Level', 'level-filter', view.level, LEVEL_FILTERS, 'star') : '') +
         hobbyCombo() +
       '</div>' +
       '<div class="cm-feed-label"><h2>' + (groups ? 'Your circles' : view.category === 'going' ? 'On your calendar' : view.category === 'for-you' ? 'For your hobbies' : 'Around you') + '</h2>' +
@@ -438,6 +561,7 @@
       '<div class="progress-bar" style="width:' + pct + '%"></div></div></div>';
 
     h += '<div class="stack cm-actions">';
+    h += '<button type="button" class="btn block cm-share-wide" data-action="share-event" data-id="' + esc(e.id) + '">' + shareIcon(18) + " Share this event</button>" + sharedLine(e);
     if (e.checkedIn) {
       h += '<div class="cm-done cm-done-lg">' + icon("check", 20) + " Checked in · +" + CHECKIN_XP + " XP</div>";
     } else {
@@ -626,6 +750,7 @@
     host.addEventListener("change", function (ev) {
       var t = ev.target, a = t && t.getAttribute && t.getAttribute("data-action");
       if (a === "date-filter") view.when = t.value;
+      else if (a === "level-filter") view.level = t.value;
       else return;
       SQUI.refresh();
       var again = document.getElementById(t.id); // keep keyboard focus on the same filter
@@ -645,12 +770,14 @@
       else if (a === "open-group") { SQUI.go("group", { hobbyId: id }); }
       else if (a === "date-filter") { view.when = el.getAttribute("data-v"); SQUI.refresh(); }
       else if (a === "hobby-filter") { view.hobby = el.getAttribute("data-v") || ""; SQUI.refresh(); }
+      else if (a === "level-filter") { view.level = el.getAttribute("data-v") || ""; SQUI.refresh(); }
+      else if (a === "share-event") { openShare(id); }
       else if (a === "category") {
         view.category = el.getAttribute("data-v");
         if (view.hobby && hobbyIds(view.category).indexOf(view.hobby) < 0) view.hobby = "";
         SQUI.refresh();
       }
-      else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; view.hobby = ""; SQUI.refresh(); }
+      else if (a === "reset-feed") { view.when = "upcoming"; view.category = "all"; view.query = ""; view.hobby = ""; view.level = ""; SQUI.refresh(); }
       else if (a === "open-member") { SQUI.go("member", {id:id}); }
       else if (a === "share") {
         if (isTracked(id)) SQUI.go("log", { id: id });

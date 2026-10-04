@@ -107,7 +107,7 @@ Post  = { author, text, daysAgo, sessionLabel }                 // 3-4 posts eac
 EventDef = { id, hobbyId, title, dayOffset, time, place, level, spots, going, host }
    // dayOffset: 0 = today (at least 4 events with 0), up to 13
    // time "9:00 AM"; place = a plausible PUBLIC venue type in the Newark NJ area
-   // level: "Beginner friendly"|"All levels"|"Experienced"; spots > going
+   // level: "Beginner friendly"|"All levels"|"Intermediate"|"Experienced"; spots > going
    // host: first name + last initial ("Maya R.")
 QuizQuestion = { id, prompt, options: [{value, label, hint}] }
 ```
@@ -334,7 +334,7 @@ skills: { [hobbyId]: { tier: "new"|"beginner"|"intermediate"|"advanced",
 ```
 SQ.evaluateSkill(hobbyId, answers) -> { tier, score, reasons: string[], eventLevel }
    // saves to state.skills, then returns. eventLevel maps tier to EventDef.level:
-   //   new/beginner → "Beginner friendly", intermediate → "All levels", advanced → "Experienced"
+   //   new/beginner → "Beginner friendly", intermediate → "Intermediate", advanced → "Experienced"
 SQ.skill(hobbyId) -> state.skills[hobbyId] | null
 ```
 Open questions for the owner: does a tier change the tiny-win ladder start or the milestones?
@@ -395,8 +395,8 @@ tab that doesn't offer the picked hobby clears it. Hobby also narrows Your group
 All three filters share one look: a pill that opens the same list panel (`.cm-combo-list`), with an
 icon per option and a check on the current pick. When (`#cm-when`) and Level are buttons
 (`.cm-menu-btn`, `aria-haspopup="listbox"`; arrows, Enter/Space, Escape, tap); Hobby adds typing.
-Level (`#cm-level`: Any level / Beginner / Experienced) shows on For you and All events only;
-"All levels" events count for both choices. The All events search box searches by location
+Level (`#cm-level`: Any level / Beginner / Intermediate / Experienced) shows on For you and All
+events only; "All levels" events count for every choice. The All events search box searches by location
 (the event's `place`) only.
 
 Sharing: every event card has a share button on its photo, and the event screen a "Share this

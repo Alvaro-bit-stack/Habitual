@@ -900,10 +900,10 @@
     { id: "ev-gardening-1", hobbyId: "gardening", title: "Fall bulb planting volunteer morning", dayOffset: 4, time: "10:00 AM", place: "Branch Brook Park, Cherry Blossom Welcome Center", level: "All levels", spots: 25, going: 14, host: "Grace E." },
     { id: "ev-bouldering-1", hobbyId: "bouldering", title: "New climber night", dayOffset: 5, time: "7:00 PM", place: "Indoor climbing gym, downtown Newark", level: "Beginner friendly", spots: 14, going: 9, host: "Ben S." },
     { id: "ev-guitar-1", hobbyId: "guitar", title: "Beginner chord circle", dayOffset: 6, time: "6:30 PM", place: "Newark Public Library, Main Branch", level: "Beginner friendly", spots: 12, going: 6, host: "Ray D." },
-    { id: "ev-running-2", hobbyId: "running", title: "Saturday river run, 3 or 5 miles", dayOffset: 7, time: "8:00 AM", place: "Riverfront Park, main entrance", level: "All levels", spots: 40, going: 22, host: "Sofia M." },
-    { id: "ev-soccer-2", hobbyId: "soccer", title: "Weekend small-sided games", dayOffset: 8, time: "10:00 AM", place: "Weequahic Park athletic fields", level: "All levels", spots: 24, going: 15, host: "Pedro L." },
+    { id: "ev-running-2", hobbyId: "running", title: "Saturday river run, 3 or 5 miles", dayOffset: 7, time: "8:00 AM", place: "Riverfront Park, main entrance", level: "Intermediate", spots: 40, going: 22, host: "Sofia M." },
+    { id: "ev-soccer-2", hobbyId: "soccer", title: "Weekend small-sided games", dayOffset: 8, time: "10:00 AM", place: "Weequahic Park athletic fields", level: "Intermediate", spots: 24, going: 15, host: "Pedro L." },
     { id: "ev-chess-2", hobbyId: "chess", title: "Rapid chess night, 15 minute games", dayOffset: 9, time: "6:00 PM", place: "Newark Public Library, Main Branch", level: "Experienced", spots: 20, going: 12, host: "Jamal R." },
-    { id: "ev-hiking-2", hobbyId: "hiking", title: "Eagle Rock sunset loop", dayOffset: 10, time: "4:30 PM", place: "Eagle Rock Reservation, main lot", level: "All levels", spots: 16, going: 8, host: "Chris O." },
+    { id: "ev-hiking-2", hobbyId: "hiking", title: "Eagle Rock sunset loop", dayOffset: 10, time: "4:30 PM", place: "Eagle Rock Reservation, main lot", level: "Intermediate", spots: 16, going: 8, host: "Chris O." },
     { id: "ev-tennis-2", hobbyId: "tennis", title: "Doubles round robin", dayOffset: 11, time: "9:00 AM", place: "Weequahic Park tennis courts", level: "Experienced", spots: 16, going: 11, host: "Hannah C." },
     { id: "ev-photography-2", hobbyId: "photography", title: "Ironbound street photo walk", dayOffset: 13, time: "10:00 AM", place: "Ironbound, Ferry Street at Penn Station", level: "All levels", spots: 15, going: 7, host: "Tomas E." }
   ];

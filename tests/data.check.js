@@ -96,7 +96,7 @@ check("events", () => {
     assert(Number.isInteger(e.dayOffset) && e.dayOffset >= 0 && e.dayOffset <= 13, e.id);
     assert(/^(1[0-2]|[1-9]):[0-5]\d (AM|PM)$/.test(e.time), e.id + " time");
     assert(str(e.title) && str(e.place));
-    assert(["Beginner friendly","All levels","Experienced"].includes(e.level));
+    assert(["Beginner friendly","All levels","Intermediate","Experienced"].includes(e.level));
     assert(Number.isInteger(e.spots) && Number.isInteger(e.going) && e.spots > e.going && e.going >= 0, e.id + " spots");
     assert(/^[A-Z][a-z]+ [A-Z]\.$/.test(e.host), e.id + " host");
   });

@@ -148,3 +148,4 @@
 .cm-menu .cm-combo-list { left: 0; right: 0; width: auto; }
 .cm-opt-check { margin-left: auto; display: flex; color: var(--leaf); font-style: normal; }
 .cm-combo-list [role="option"] > span { min-width: 0; }
+.cm-level-mid { color: var(--sky); background: color-mix(in srgb, var(--sky) 13%, transparent); }

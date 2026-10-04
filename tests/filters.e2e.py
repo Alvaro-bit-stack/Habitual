@@ -100,6 +100,15 @@ def main():
 
         # Location search
         page.click('[data-action="category"][data-v="all"]')
+        page.click('[data-action="category"][data-v="all"]')
+        page.wait_for_timeout(150)
+        page.click("#cm-level")
+        check(page.locator("#cm-level-list [role=option]").count() == 4, "Level offers Any, Beginner, Intermediate and Experienced")
+        page.click('#cm-level-list [data-v="intermediate"]')
+        page.wait_for_timeout(200)
+        tags = page.evaluate('[...document.querySelectorAll(".cm-photo-tag")].map(e => e.innerText.trim())')
+        check("Intermediate" in tags and all(t in ("Intermediate", "All levels", "You’re going", "Checked in") for t in tags), "Intermediate shows intermediate and all-levels events")
+        page.wait_for_timeout(450)
         page.click("#cm-level")
         page.click('#cm-level-list [data-v=""]')
         page.wait_for_timeout(150)

@@ -78,7 +78,7 @@
   }
 
   function levelPill(level) {
-    var cls = level === "Experienced" ? "pill-warn" : "pill-good";
+    var cls = level === "Experienced" ? "pill-warn" : level === "Intermediate" ? "pill-good cm-level-mid" : "pill-good";
     return '<span class="' + cls + ' cm-level">' + esc(level) + "</span>";
   }
   // Sample "going" counts exclude the user; add them once they RSVP (or check in) so the number reacts.
@@ -128,7 +128,7 @@
   }
   function inviteText(e) {
     return "Want to come with me? " + e.title + " · " + dayLabel(e.date) + " " + e.time + " · " + e.place +
-      ". " + (e.level === "Experienced" ? "For experienced players." : "Beginners welcome.") + " Found it on Habitual.";
+      ". " + (e.level === "Experienced" ? "For experienced players." : e.level === "Intermediate" ? "Best if you've done it a few times." : "Beginners welcome.") + " Found it on Habitual.";
   }
   // People you can send to inside Habitual: sample members from the Newark groups (hosts you've seen).
   function sharePeople(e) {
@@ -269,9 +269,9 @@
   }
 
   var DATE_FILTERS = [['upcoming', 'Any day', 'calendar'], ['today', 'Today', 'sun'], ['tomorrow', 'Tomorrow', 'clock'], ['weekend', 'This weekend', 'star']];
-  // Level: "All levels" events welcome everyone, so they show under both choices.
-  var LEVEL_FILTERS = [['', 'Any level', 'users'], ['beginner', 'Beginner', 'leaf'], ['experienced', 'Experienced', 'flame']];
-  var LEVEL_MATCH = { beginner: ['Beginner friendly', 'All levels'], experienced: ['Experienced', 'All levels'] };
+  // Level: "All levels" events welcome everyone, so they show under every choice.
+  var LEVEL_FILTERS = [['', 'Any level', 'users'], ['beginner', 'Beginner', 'leaf'], ['intermediate', 'Intermediate', 'trophy'], ['experienced', 'Experienced', 'flame']];
+  var LEVEL_MATCH = { beginner: ['Beginner friendly', 'All levels'], intermediate: ['Intermediate', 'All levels'], experienced: ['Experienced', 'All levels'] };
   function levelFilterOn() { return view.category === 'for-you' || view.category === 'all'; }
   var CATEGORIES = [['going', 'Going', 'calendar'], ['for-you', 'For you', 'spark'], ['all', 'All events', 'compass'], ['groups', 'Your groups', 'users']];
 

@@ -162,14 +162,15 @@ test('Header has no avatar button; location sits under the title',()=>{
   const html=screens.community.render();assert.ok(!html.includes('cm-self-avatar'));
   assert.ok(/<h1>Community<\/h1><span class="cm-location">/.test(html));
 });
-test('Level filter shows on For you and All events only; All levels events count for both',()=>{
+test('Level filter shows on For you and All events only; All levels events count for every level',()=>{
   action('category','going');assert.ok(!screens.community.render().includes('id="cm-level"'));
   action('category','groups');assert.ok(!screens.community.render().includes('id="cm-level"'));
   action('category','for-you');assert.ok(screens.community.render().includes('id="cm-level"'));
   action('category','all');assert.ok(screens.community.render().includes('id="cm-level"'));
   const lv=id=>context.SQ_DATA.events.find(e=>e.id===id).level;
   action('level-filter','experienced');assert.ok(ids().length>0&&ids().every(id=>['Experienced','All levels'].includes(lv(id))));assert.ok(ids().includes('ev-tennis-2'));
-  action('level-filter','beginner');assert.ok(ids().every(id=>['Beginner friendly','All levels'].includes(lv(id))));assert.ok(!ids().includes('ev-tennis-2'));
+  action('level-filter','intermediate');assert.deepEqual(ids().filter(id=>lv(id)==='Intermediate'),['ev-hiking-2','ev-running-2','ev-soccer-2']);assert.ok(ids().every(id=>['Intermediate','All levels'].includes(lv(id))));assert.ok(!ids().includes('ev-tennis-2')&&!ids().includes('ev-running-1'));
+  action('level-filter','beginner');assert.ok(!ids().includes('ev-running-2'));assert.ok(ids().every(id=>['Beginner friendly','All levels'].includes(lv(id))));assert.ok(!ids().includes('ev-tennis-2'));
   action('category','going');action('rsvp',null,'ev-tennis-2');assert.ok(ids().includes('ev-tennis-2'),'Going ignores the level filter');action('rsvp',null,'ev-tennis-2');
   action('reset-feed');assert.equal(ids().length,18);
 });

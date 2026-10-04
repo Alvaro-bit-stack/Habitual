@@ -4,13 +4,16 @@
 targetScope = 'resourceGroup'
 
 param location string = resourceGroup().location
+@description('Azure SQL sometimes refuses new servers in a region; it can live in a different allowed region')
+param sqlLocation string = location
 @description('Short unique name; becomes <name>.azurewebsites.net')
 param name string
 @description('Your Entra sign-in (UPN) and object id; you become the SQL admin')
 param adminLogin string
 param adminObjectId string
 @secure()
-param geminiApiKey string
+@description('Optional: Gemini features stay off until it is set (re-run deploy.sh)')
+param geminiApiKey string = ''
 @description('App Service plan tier: F1 is free, B1 is ~$13/month with no daily CPU cap')
 param planSku string = 'F1'
 
@@ -36,15 +39,15 @@ resource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(geminiApiKey)) {
   parent: vault
   name: 'gemini-api-key'
   properties: { value: geminiApiKey }
 }
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
-  name: '${name}-sql'
-  location: location
+  name: '${name}-db'
+  location: sqlLocation
   properties: {
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
@@ -69,7 +72,7 @@ resource sqlAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
 resource db 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: 'habitual'
-  location: location
+  location: sqlLocation
   sku: { name: 'GP_S_Gen5_2', tier: 'GeneralPurpose' }
   properties: {
     useFreeLimit: true
@@ -95,14 +98,15 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
       ftpsState: 'Disabled'
       http20Enabled: true
       alwaysOn: planSku != 'F1'
-      appSettings: [
+      appSettings: concat([
         { name: 'HOST', value: '0.0.0.0' }
         { name: 'TRUST_PROXY', value: '1' }
         { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'false' }
         { name: 'SQL_SERVER', value: sqlServer.properties.fullyQualifiedDomainName }
         { name: 'SQL_DATABASE', value: db.name }
-        { name: 'GEMINI_API_KEY', value: '@Microsoft.KeyVault(SecretUri=${geminiSecret.properties.secretUri})' }
-      ]
+      ], empty(geminiApiKey) ? [] : [
+        { name: 'GEMINI_API_KEY', value: '@Microsoft.KeyVault(SecretUri=${vault.properties.vaultUri}secrets/gemini-api-key)' }
+      ])
     }
   }
 }

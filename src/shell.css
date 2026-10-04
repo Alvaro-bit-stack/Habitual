@@ -216,8 +216,6 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 .sq-err code { font-family: var(--font-mono); font-size: 12.5px; color: var(--bad); overflow-wrap: anywhere; }
 
 /* ---------- Today ---------- */
-.td-head { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
-.td-mascot { width: 104px; height: 104px; display: grid; place-items: end center; }
 .td-greet { font-size: 28px; }
 .td-level { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .td-level .lv { font-family: var(--font-display); font-weight: 800; font-size: 18px; }
@@ -427,7 +425,6 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 
 @media (min-width: 720px) {
   .screen { padding-top: 32px; }
-  .td-mascot { width: 120px; height: 120px; }
 }
 @media (max-width: 380px) {
   .h1 { font-size: 27px; }
@@ -440,3 +437,18 @@ body.has-nav #toast-root { bottom: calc(var(--nav-h) + 16px + env(safe-area-inse
 .sq-ach .ach { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: start; padding: 12px 14px; }
 .sq-ach .ach-badge { grid-row: 1 / span 3; }
 .sq-ach .ach-date { margin-top: 2px; }
+
+/* Today header: your character, your level, and the one thing to do today */
+.td-card { position: relative; display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; row-gap: 14px; align-items: end; padding: 16px 16px 14px 8px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--leaf) 14%, var(--surface)), color-mix(in srgb, var(--sky) 10%, var(--surface))); }
+.td-card-char { position: relative; height: 150px; display: flex; align-items: flex-end; justify-content: center; margin: -8px 0 -6px; }
+.td-card-char::after { content: ""; position: absolute; bottom: 12px; left: 18%; right: 18%; height: 10px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 16%, transparent); filter: blur(4px); }
+.td-card-char .cm-mii { position: relative; z-index: 1; }
+.td-card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-bottom: 4px; }
+.td-card .td-greet { margin: 0; font-size: 26px; }
+.td-card .eyebrow { color: var(--leaf); }
+.td-next { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center; margin-left: 8px; padding: 12px 12px 12px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.td-next-k { grid-column: 1; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--leaf); }
+.td-next-l { grid-column: 1; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.td-next-go { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; white-space: nowrap; }
+.td-next-done .td-next-k { color: var(--ink-2); }

@@ -769,7 +769,6 @@
           '<span class="tw-m">' + esc(tw.minutes) + " min</span></button></div>" : "") +
         "</article>";
     }).join("");
-    var mood = anyComeback && !loggedToday ? "sleepy" : "happy";
 
     // week dots (any session per day)
     var mon = weekKey(today), days = "";
@@ -780,15 +779,39 @@
       days += '<span class="td-day' + (dates[d] ? " done" : "") + (d === today ? " today" : "") + '"><i></i>' + DOWS[i].charAt(0) + "</span>";
     }
 
-    var head = '<header class="td-head">' +
-      '<div class="td-mascot">' + mascot(p.stage, { mood: mood, size: 104, accessories: p.accessories || [] }) + "</div>" +
-      '<div style="min-width:0"><div class="eyebrow">' + esc(mood === "sleepy" ? "Sprout is napping" : "Sprout · " + (p.stageName || STAGES[p.stage])) + "</div>" +
+    // Header: your character is the spotlight, with the one thing worth doing today right under it.
+    var CHAR_NAMES = { neo: "Neo", adrian: "Adrian", alvaro: "Alvaro" };
+    var cid = CHAR_NAMES[(st0.user || {}).character] ? st0.user.character : "neo";
+    var pick = null, pickScore = -1;
+    trackedList.forEach(function (t) {
+      var s = stats(t.hobbyId), h = hobby(t.hobbyId);
+      if (!s || !h || !s.nextTinyWin) return;
+      var score = (s.inComeback ? 4 : 0) + (s.daysSince === 0 ? 0 : 2) + (s.sessionsThisWeek < s.goal ? 1 + (s.goal - s.sessionsThisWeek) / Math.max(1, s.goal) : 0);
+      if (score > pickScore) { pickScore = score; pick = { id: t.hobbyId, h: h, s: s, tw: s.nextTinyWin }; }
+    });
+    var caughtUp = pick && pick.s.daysSince === 0 && pick.s.sessionsThisWeek >= pick.s.goal;
+    var nextUp;
+    if (!trackedList.length) {
+      nextUp = '<div class="td-next"><span class="td-next-k">Up next</span><span class="td-next-l">Pick a hobby to start</span>' +
+        '<button type="button" class="btn primary td-next-go" data-action="pick">' + icon("plus", 18) + "Choose</button></div>";
+    } else if (pick && !caughtUp) {
+      var kind = pick.s.inComeback ? "Comeback +20 XP" : stepKind(pick.tw);
+      nextUp = '<div class="td-next"><span class="td-next-k">' + esc(kind) + " · " + esc(pick.h.name) + '</span>' +
+        '<span class="td-next-l">' + esc(pick.tw.label) + '</span>' +
+        '<button type="button" class="btn primary td-next-go" data-action="tiny" data-id="' + esc(pick.id) + '" aria-label="Do it: ' + esc(pick.tw.label) + ', ' + esc(pick.tw.minutes) + ' minutes">' +
+        icon("check", 18) + esc(pick.tw.minutes) + " min</button></div>";
+    } else {
+      nextUp = '<div class="td-next td-next-done"><span class="td-next-k">All caught up</span><span class="td-next-l">' + (loggedToday ? "You showed up today. Anything extra is a bonus." : "Every weekly goal is met.") + "</span></div>";
+    }
+    var head = '<header class="td-card">' +
+      '<div class="td-card-char"><span class="cm-mii" data-character="' + cid + '" style="--mii-size:150px" aria-hidden="true"></span></div>' +
+      '<div class="td-card-body"><div class="eyebrow">' + esc(CHAR_NAMES[cid]) + "</div>" +
       '<h1 class="h1 td-greet">' + esc(greeting()) + "</h1>" +
-      '<div class="td-level" style="margin-top:8px"><span class="lv">Level ' + p.level + '</span><span class="num small muted">' + p.xp + " XP</span></div>" +
-      '<div class="progress xp" style="margin-top:6px" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '">' +
+      '<div class="td-level"><span class="lv">Level ' + p.level + '</span><span class="num small muted">' + p.xp + " XP</span></div>" +
+      '<div class="progress xp" role="progressbar" aria-label="Progress to next level" aria-valuemin="0" aria-valuemax="' + p.xpForNext + '" aria-valuenow="' + p.xpIntoLevel + '">' +
       '<div class="progress-bar" style="width:' + pct(p.xpIntoLevel, p.xpForNext) + '%"></div></div>' +
       '<div class="td-xpline num"><span>' + p.xpIntoLevel + " / " + p.xpForNext + "</span><span>to Lv " + (p.level + 1) + "</span></div>" +
-      "</div></header>";
+      "</div>" + nextUp + "</header>";
 
     var week = '<div class="td-week"><span><strong class="num">' + p.weekSessions + '</strong> <span class="muted">session' + (p.weekSessions === 1 ? "" : "s") + " this week</span></span>" +
       '<span class="td-days" aria-hidden="true">' + days + "</span></div>";

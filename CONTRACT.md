@@ -264,6 +264,11 @@ No inline `onclick`.
 - Skill evaluator: `evaluate` ({id}), see section 5.
 
 Bottom nav (shell): Today · Discover · Community · Me, hidden when a screen's tab is null.
+
+Today header (shell): the player's character (`.cm-mii`, from `user.character`, default neo) is the
+spotlight, beside the greeting, level and XP bar. Under it, "Up next" offers one thing to do today:
+a comeback hobby first, then a hobby not logged today, then the one furthest from its weekly goal.
+Tapping it logs that hobby's next tiny win/step. No hobbies → a Choose button; everything done → "All caught up".
 Community shows a lock until the user tracks a hobby.
 
 **Onboarding and discovery:** a fresh app opens `pick`; navigation stays hidden until the user

@@ -127,7 +127,7 @@ function sampleRaw() {
         geminiCalls++;
         const body = JSON.parse(init.body);
         assert.deepEqual(body.tools, [{ google_search: {} }]);
-        if (geminiCalls === 2) {
+        if (/Skip video ids/.test(body.contents[0].parts[0].text)) {
           assert.match(body.contents[0].parts[0].text, /YouTube tutorial videos/);
           return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ videos: [{ title: "More", channel: "C", url: "https://www.youtube.com/watch?v=DDDDDDDDDDD" }] }) }] } }] }) };
         }
@@ -151,7 +151,7 @@ function sampleRaw() {
       return { ok: false, status: 404 };
     };
     const out = await hobbyGuide({ hobby: "Bouldering" }, { apiKey: "k", fetchImpl, cache: new Map(), model: "m" });
-    assert.equal(geminiCalls, 2);
+    assert.equal(geminiCalls, 3, "kits and extras in parallel, then one search for more videos");
     assert.deepEqual(out.videos.map((v) => v.id), ["AAAAAAAAAAA", "CCCCCCCCCCC", "DDDDDDDDDDD"]);
     assert.equal(out.videos[0].url, "https://www.youtube.com/watch?v=AAAAAAAAAAA");
     assert.equal(out.sources[0].url, "https://www.reddit.com/r/bouldering/comments/real");
@@ -214,8 +214,10 @@ function sampleRaw() {
       if (url.includes("generativelanguage.googleapis.com")) {
         const body = JSON.parse(init.body);
         if (/Skip video ids/.test(body.contents[0].parts[0].text)) return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "{\"videos\":[]}" }] } }] }) };
-        assert.match(body.contents[0].parts[0].text, /Beginner kit/);
-        assert.match(body.contents[0].parts[0].text, /different websites/);
+        const prompt = body.contents[0].parts[0].text;
+        assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingLevel: "low" });
+        if (/starter kits/.test(prompt)) { assert.match(prompt, /Beginner kit/); assert.match(prompt, /different websites/); assert.doesNotMatch(prompt, /firstSteps/); }
+        else { assert.match(prompt, /firstSteps/); assert.doesNotMatch(prompt, /starter kits/); }
         return { ok: true, json: async () => payload };
       }
       if (url.endsWith("/grounding-api-redirect/mp")) return { ok: false, status: 302, headers: { get: (h) => h === "location" ? "https://www.mountainproject.com/forum/topic/123" : null } };
@@ -261,6 +263,21 @@ function sampleRaw() {
     assert.equal(tried.length, 3);
     assert.equal(new Set(tried).size, 3);
     assert.equal(out.hobby, "Running");
+  });
+
+  await test("a model that rejects thinkingLevel is asked again without it", async () => {
+    const seen = [];
+    const fetchImpl = async (url, init) => {
+      if (!url.includes("generativelanguage.googleapis.com")) return { ok: false, status: 404 };
+      const body = JSON.parse(init.body);
+      seen.push(!!(body.generationConfig && body.generationConfig.thinkingConfig));
+      if (body.generationConfig && body.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: "thinking_level is not supported" } }) };
+      const raw = { hobby: "Chess", gear: { entry: { products: [{ name: "Tournament set", brand: "", price: 30 }] } }, videos: [], firstSteps: [] };
+      return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(raw) }] } }] }) };
+    };
+    const out = await hobbyGuide({ hobby: "Chess" }, { apiKey: "k", fetchImpl, cache: new Map(), model: undefined, quiet: true });
+    assert.equal(out.gear.entry.products[0].name, "Tournament set");
+    assert.ok(seen.indexOf(true) >= 0 && seen.indexOf(false) >= 0);
   });
 
   await test("character scripts are allowlisted and the Three.js CDN is permitted", async () => {

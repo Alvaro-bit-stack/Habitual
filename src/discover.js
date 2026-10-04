@@ -111,7 +111,7 @@
         '<div class="dc-trail" aria-hidden="true"></div>' +
         '<div class="dc-mascot">' + SQUI.mascot(0, { mood: "happy", size: 112 }) + "</div>" +
         '<div class="eyebrow dc-brand-eyebrow">Your next chapter starts small</div>' +
-        '<h1 class="dc-brand">Habitual</h1>' +
+        '<h1 class="dc-brand">Hobitual</h1>' +
         '<p class="dc-promise">Trade ten minutes of scrolling for something you actually like doing.</p>' +
         "</div>" +
         '<div class="stack dc-fork">' +
@@ -754,7 +754,7 @@
   function splashStep() {
     return '<div class="screen ob-splash" data-dc="onboard" data-step="splash"><button type="button" class="ob-splash-hit" data-action="ob-splash" aria-label="Start">' +
       '<span class="ob-splash-art" aria-hidden="true"><span class="ob-trail"></span>' + mii(guideId(), 180, "ob-flyer") + "</span>" +
-      '<span class="ob-wordmark">Habitual</span><span class="ob-tagline">Trade the scroll for something you love</span></button></div>';
+      '<span class="ob-wordmark">Hobitual</span><span class="ob-tagline">Make your hobbies a habit</span></button></div>';
   }
   // Saved on this device, or a guest run that disappears when the tab closes.
   function startStep() {
@@ -1421,7 +1421,7 @@
     var lo = 0, hi = 0;
     (it.gear || []).forEach(function (g) { lo += g[1][0]; hi += g[1][1]; });
     var msg = err && err.offline
-      ? "Real product picks and tutorial videos come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them."
+      ? "Real product picks and tutorial videos come from Gemini. Run Hobitual with its server (node server.js) and a Gemini key to load them."
       : (err && err.message) || "Gemini could not finish the research. Try again in a moment.";
     return '<div class="card bl-guide-note" role="note"><div class="h3">Live guide unavailable</div><p class="small muted">' + e(msg) + "</p>" +
       (err && !err.offline ? '<button type="button" class="btn sm" data-sheet="retry">Try again</button>' : "") + "</div>" +
@@ -1443,7 +1443,7 @@
     }, function (err) {
       if (!host.isConnected) return;
       host.innerHTML = '<div class="card bl-guide-note" role="note"><div class="h3">' + (level === "beginner" ? "Crash course and starter kit" : "Your tasks") + '</div><p class="small muted">' +
-        e(err && err.offline ? "These come from Gemini. Run Habitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
+        e(err && err.offline ? "These come from Gemini. Run Hobitual with its server (node server.js) and a Gemini key to load them." : (err && err.message) || "Gemini could not finish the research. Try again in a moment.") + "</p></div>";
     });
   };
 

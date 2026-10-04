@@ -518,7 +518,7 @@ function pageReader(options) {
     if (!pages.has(url)) {
       pages.set(url, (async () => {
         try {
-          const res = await timedFetch(url, { method: "GET", headers: { "user-agent": "Mozilla/5.0 (Habitual hobby guide link check)", accept: "text/html" } }, options);
+          const res = await timedFetch(url, { method: "GET", headers: { "user-agent": "Mozilla/5.0 (Hobitual hobby guide link check)", accept: "text/html" } }, options);
           const ok = !!res && res.status >= 200 && res.status < 400;
           let text = null;
           if (ok && typeof res.text === "function") { try { text = pageText(await res.text()); } catch (_) { text = null; } }
@@ -880,7 +880,7 @@ function createServer() { return http.createServer(handler); }
 
 if (require.main === module) {
   createServer().listen(PORT, HOST, () => {
-    console.log(`Habitual server: http://127.0.0.1:${PORT}`);
+    console.log(`Hobitual server: http://127.0.0.1:${PORT}`);
     console.log(`Gemini research: ${process.env.GEMINI_API_KEY ? "configured" : "not configured"} (models: ${MODELS.join(", ")})`);
   });
 }

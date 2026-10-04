@@ -137,11 +137,11 @@ def main():
         page.wait_for_timeout(300)
         check(page.locator('.cm-share-sheet [role="dialog"]').count() == 1, "the share button opens a share sheet")
         href = page.get_attribute(".cm-sheet-text", "href") or ""
-        check(href.startswith("sms:") and "Habitual" in page.inner_text("#cm-invite-text"), "Text a friend opens Messages with the invite filled in")
+        check(href.startswith("sms:") and "Hobitual" in page.inner_text("#cm-invite-text"), "Text a friend opens Messages with the invite filled in")
         page.click("[data-copy]")
         page.wait_for_timeout(150)
         clip = page.evaluate("navigator.clipboard.readText()")
-        check("Found it on Habitual" in clip, "Copy invite copies the invite text")
+        check("Found it on Hobitual" in clip, "Copy invite copies the invite text")
         page.locator("[data-send]").nth(0).click()
         page.wait_for_timeout(100)
         check(page.locator("[data-send]").nth(0).is_disabled() and "Sent" in page.locator("[data-send]").nth(0).inner_text(), "Send in Habitual marks the person as sent")

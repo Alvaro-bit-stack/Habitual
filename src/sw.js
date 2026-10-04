@@ -15,6 +15,6 @@ self.addEventListener('fetch',event=>{
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
     try{const response=await fetch(request);if(response.ok){await cache.put(isPage?SHELL[0]:request,response.clone());return response;}const saved=await cache.match(isPage?SHELL[0]:request);return saved||response;}
-    catch(e){const saved=await cache.match(isPage?SHELL[0]:request);if(saved)return saved;return new Response('Open Habitual online once to save it for offline use.',{status:503,headers:{'Content-Type':'text/plain'}});}
+    catch(e){const saved=await cache.match(isPage?SHELL[0]:request);if(saved)return saved;return new Response('Open Hobitual online once to save it for offline use.',{status:503,headers:{'Content-Type':'text/plain'}});}
   })());
 });

@@ -532,7 +532,7 @@
     }
     renderNav(tab);
     if (HAS_DOM) {
-      try { document.title = (def && def.title ? def.title + " · " : "") + "Habitual"; } catch (e) { /* ignore */ }
+      try { document.title = (def && def.title ? def.title + " · " : "") + "Hobitual"; } catch (e) { /* ignore */ }
     }
   }
   function logErr(e) { try { console.warn("[Habitual]", e); } catch (x) { /* ignore */ } }
@@ -1283,7 +1283,7 @@
     var S = sq();
     if (!S) {
       var m = mainEl();
-      if (m) m.innerHTML = errorCard("Habitual couldn’t start", new Error("Engine not loaded"));
+      if (m) m.innerHTML = errorCard("Hobitual couldn’t start", new Error("Engine not loaded"));
       return;
     }
     try { S.init(); } catch (e) { logErr(e); }

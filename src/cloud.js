@@ -97,7 +97,7 @@
   }
   function exportProgress(){
     var blob=new Blob([JSON.stringify(G.SQ.state,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download='Habitual-progress.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    var a=document.createElement('a');a.href=url;a.download='Hobitual-progress.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
   var messages={local:'Saved on this device',pending:'Saved on this device · Waiting to sync',syncing:'Syncing your progress…',synced:'Saved on this device and in your account',offline:'Offline · Your hobbies are available. Changes will sync when you reconnect.',signin:'Saved on this device · Sign in to resume syncing',connecting:'Connecting your account…',conflict:'Another device has different progress. Both copies are kept until you choose.',rejected:'Cloud could not accept this progress. Your device copy is kept; export it before making changes.',storage:'Device storage is full or unavailable. Export your progress now; recent changes may not survive closing the app.'};
   function button(action,text){return '<button type="button" class="btn sm" data-cloud-action="'+action+'">'+text+'</button>';}
@@ -163,7 +163,7 @@
       else if(action==='resend'){stage='email';tell(status);}
       else if(action==='import-file'){
         var input=document.createElement('input');input.type='file';input.accept='application/json,.json';
-        input.onchange=async function(){try{var file=input.files[0];if(!file)return;if(file.size>1024*1024)throw new Error('Choose a backup smaller than 1 MB');var value=JSON.parse(await file.text());if(value.version!==1||!Array.isArray(value.tracked)||!Array.isArray(value.sessions)||!Array.isArray(value.custom)||!value.user)throw new Error('This is not a Habitual backup');pendingImport=value;tell(status);}catch(e){G.SQUI.toast(e.message||'Could not read backup');}};input.click();
+        input.onchange=async function(){try{var file=input.files[0];if(!file)return;if(file.size>1024*1024)throw new Error('Choose a backup smaller than 1 MB');var value=JSON.parse(await file.text());if(value.version!==1||!Array.isArray(value.tracked)||!Array.isArray(value.sessions)||!Array.isArray(value.custom)||!value.user)throw new Error('This is not a Hobitual backup');pendingImport=value;tell(status);}catch(e){G.SQUI.toast(e.message||'Could not read backup');}};input.click();
       }else if(action==='import-file-confirm'&&pendingImport){backup(persisted());replace(pendingImport);pendingImport=null;tell(core?'pending':'local');await sync();refresh();}
       else if(action==='device'||action==='cloud'){await core.resolve(action);refresh();}
     }catch(e){G.SQUI.toast(e.message||'Could not complete that action');}finally{b.disabled=false;}

@@ -124,7 +124,7 @@
   }
   function inviteText(e) {
     return "Want to come with me? " + e.title + " · " + dayLabel(e.date) + " " + e.time + " · " + e.place +
-      ". " + (e.level === "Experienced" ? "For experienced players." : e.level === "Intermediate" ? "Best if you've done it a few times." : "Beginners welcome.") + " Found it on Habitual.";
+      ". " + (e.level === "Experienced" ? "For experienced players." : e.level === "Intermediate" ? "Best if you've done it a few times." : "Beginners welcome.") + " Found it on Hobitual.";
   }
   // People you can send to inside Habitual: sample members from the Newark groups (hosts you've seen).
   function sharePeople(e) {
@@ -172,7 +172,7 @@
           '<button type="button" class="btn cm-sheet-copy" data-copy>' + copyIcon(18) + ' Copy invite</button>' +
         '</div>' +
         '<p class="cm-sheet-preview" id="cm-invite-text">' + esc(text) + '</p>' +
-        '<h3 class="eyebrow cm-sheet-sub">Send in Habitual</h3>' +
+        '<h3 class="eyebrow cm-sheet-sub">Send in Hobitual</h3>' +
         '<ul class="cm-sheet-people">' + people + '</ul>' +
         '<p class="small muted cm-sample">Sample members · they’ll see it in their Community inbox once accounts are live</p>' +
       '</div>';
@@ -331,7 +331,7 @@
       '<div class="cm-member-stage">' + character(e.host, 220) + '</div><div class="cm-member-name"><p class="eyebrow">' + esc(hobbyName(e.hobbyId)) + ' community</p><h1 class="h1">' + esc(e.host) + '</h1><p class="muted">Sample host · Newark area</p></div>' +
       '<section class="stack"><h2 class="h2">Hosting next</h2><ul class="cm-evlist">' + eventRow(e, {showDate:true}) + '</ul></section>' +
       '<button type="button" class="btn primary block" data-action="open-group" data-id="' + esc(e.hobbyId) + '">Explore the ' + esc(hobbyName(e.hobbyId)) + ' group</button>' +
-      '<p class="small muted cm-sample">Habitual character · Sample host profile</p></div>';
+      '<p class="small muted cm-sample">Hobitual character · Sample host profile</p></div>';
   }
 
   function matchesDate(e) {

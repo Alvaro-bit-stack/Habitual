@@ -54,7 +54,7 @@ def avatar_styles():
 
 
 def render(venues):
-    parts = ["<title>Habitual</title>",
+    parts = ["<title>Hobitual</title>",
              '<link rel="preconnect" href="https://fonts.googleapis.com">',
              '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
              '<link rel="stylesheet" href="' + FONT_URL + '">']

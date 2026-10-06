@@ -43,6 +43,7 @@ function getCloudApi() {
     .catch((e) => { cloudApi = null; throw e; });
   return cloudApi;
 }
+const PREVIEW_BOT = /LinkedInBot|facebookexternalhit|Twitterbot|Slackbot|Discordbot|WhatsApp|TelegramBot/i;
 const STATIC = { "auth.html": "text/html; charset=utf-8", "sw.js": "text/javascript; charset=utf-8",
   "manifest.webmanifest": "application/manifest+json", "icon.svg": "image/svg+xml", "og.png": "image/png" };
 // GEMINI_MODEL can list several models, comma-separated. If one is unavailable to the key (404) or out
@@ -976,6 +977,12 @@ async function handler(req, res) {
   if (file !== "Habitual.html") return sendJson(res, 404, { error: "Not found." });
   const full = path.join(DIST, file);
   if (!fs.existsSync(full)) return sendJson(res, 503, { error: "Build the app first with: python build.py" });
+  // Link-preview bots give up on the 6 MB inlined page, so they get just its <head> (title + og: tags).
+  if (PREVIEW_BOT.test(req.headers["user-agent"] || "")) {
+    const head = fs.readFileSync(full, "utf8").slice(0, 8192);
+    res.writeHead(200, securityHeaders("text/html; charset=utf-8"));
+    return res.end(head.slice(0, head.indexOf("</head>") + 7) + "<body></body></html>");
+  }
   res.writeHead(200, securityHeaders("text/html; charset=utf-8"));
   if (req.method === "HEAD") return res.end();
   fs.createReadStream(full).pipe(res);

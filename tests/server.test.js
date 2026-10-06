@@ -366,6 +366,9 @@ function sampleRaw() {
       const head = html.slice(0, html.indexOf("</head>"));
       assert.match(head, /<meta property="og:image" content="https:\/\/hobitual\.club\/og\.png">/);
       assert.match(head, /<title>Hobitual<\/title>/);
+      const bot = await (await fetch(base + "/", { headers: { "user-agent": "LinkedInBot/1.0" } })).text();
+      assert.ok(bot.length < 8192, "preview bots get only the head");
+      assert.match(bot, /og:image/);
       const image = await fetch(base + "/og.png", { method: "HEAD" });
       assert.equal(image.status, 200);
       assert.equal(image.headers.get("content-type"), "image/png");

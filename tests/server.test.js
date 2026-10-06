@@ -357,5 +357,22 @@ function sampleRaw() {
     }
   });
 
+  await test("link previews: share tags sit in <head> and og.png is served", async () => {
+    const server = createServer();
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    try {
+      const html = await (await fetch(base + "/")).text();
+      const head = html.slice(0, html.indexOf("</head>"));
+      assert.match(head, /<meta property="og:image" content="https:\/\/hobitual\.club\/og\.png">/);
+      assert.match(head, /<title>Hobitual<\/title>/);
+      const image = await fetch(base + "/og.png", { method: "HEAD" });
+      assert.equal(image.status, 200);
+      assert.equal(image.headers.get("content-type"), "image/png");
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
   if (!process.exitCode) console.log(`${passed} backend tests passed`);
 })();

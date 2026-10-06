@@ -44,7 +44,7 @@ function getCloudApi() {
   return cloudApi;
 }
 const STATIC = { "auth.html": "text/html; charset=utf-8", "sw.js": "text/javascript; charset=utf-8",
-  "manifest.webmanifest": "application/manifest+json", "icon.svg": "image/svg+xml" };
+  "manifest.webmanifest": "application/manifest+json", "icon.svg": "image/svg+xml", "og.png": "image/png" };
 // GEMINI_MODEL can list several models, comma-separated. If one is unavailable to the key (404) or out
 // of quota (429), the next is tried, e.g. GEMINI_MODEL=gemini-3.5-flash,gemini-3.8-flash,gemini-flash-latest
 const MODELS = String(process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.8-flash,gemini-3-flash-preview,gemini-flash-latest")

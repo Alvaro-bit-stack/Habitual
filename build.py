@@ -54,8 +54,7 @@ def avatar_styles():
 
 
 def render(venues):
-    parts = ["<title>Hobitual</title>",
-             '<link rel="preconnect" href="https://fonts.googleapis.com">',
+    parts = ['<link rel="preconnect" href="https://fonts.googleapis.com">',
              '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
              '<link rel="stylesheet" href="' + FONT_URL + '">']
     for name in CSS:
@@ -71,11 +70,29 @@ def render(venues):
     return "\n".join(parts)
 
 
+# Link previews (LinkedIn, iMessage, Slack, Discord). Kept in <head> before the large inlined body so crawlers find them.
+SITE_URL = "https://hobitual.club/"
+SHARE_TITLE = "Hobitual — Make your hobbies a habit"
+SHARE_DESC = "Start a new hobby in minutes. Log tiny wins, level up, and find people who share it."
+SHARE_META = (
+    "<title>Hobitual</title>"
+    f'<meta name="description" content="{SHARE_DESC}">'
+    '<meta property="og:type" content="website"><meta property="og:site_name" content="Hobitual">'
+    f'<meta property="og:url" content="{SITE_URL}"><meta property="og:title" content="{SHARE_TITLE}">'
+    f'<meta property="og:description" content="{SHARE_DESC}">'
+    f'<meta property="og:image" content="{SITE_URL}og.png"><meta property="og:image:width" content="1200">'
+    '<meta property="og:image:height" content="630">'
+    '<meta property="og:image:alt" content="Hobitual app screens: Today, Community and Discover">'
+    '<meta name="twitter:card" content="summary_large_image">'
+)
+
+
 def document(body):
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
             '<meta name="apple-mobile-web-app-capable" content="yes">'
             '<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12649c">'
+            + SHARE_META +
             '<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>'
             '</head><body>' + body + '</body></html>')
 
@@ -89,7 +106,7 @@ def main():
         b64 = base64.b64encode(model.read_bytes()).decode("ascii")
         (DIST / "models" / (model.stem + ".js")).write_text(
             '(window.SQ_MODELS=window.SQ_MODELS||{})[' + json.dumps(model.stem) + ']="' + b64 + '";', encoding="utf-8")
-    for name in ["manifest.webmanifest", "icon.svg", "auth.html"]:
+    for name in ["manifest.webmanifest", "icon.svg", "auth.html", "og.png"]:
         shutil.copyfile(SRC / name, DIST / name)
     config = ROOT / "cloud-config.json"
     (DIST / "cloud-config.json").write_text(config.read_text(encoding="utf-8") if config.exists() else '{"enabled":false}', encoding="utf-8")
